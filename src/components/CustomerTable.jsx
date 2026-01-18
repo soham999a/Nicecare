@@ -1,9 +1,8 @@
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import EditCustomerModal from './EditCustomerModal';
 
 const STATUS_OPTIONS = [
   'Select',
-  'Submitted',
   'Device Received',
   'Under Diagnosis',
   'Waiting for Parts',
@@ -94,9 +93,9 @@ export default function CustomerTable({ customers, onUpdateStatus, onUpdateCusto
     const headers = [
       'Name', 'Email', 'Phone', 'Address', 'Alternate Phone', 'Customer Type', 'Preferred Contact',
       'Device Type', 'Brand', 'Model', 'IMEI', 'Carrier',
-      'Issue Category', 'Issue Description', 'Repair Type', 'Priority',
+      'Issue Category', 'Issue Description', 'Repair Type', 'Priority', 'Technical Staff Name',
       'Estimated Cost', 'Advance Paid', 'Parts Type',
-      'Submission Date', 'Expected Date', 'Device Received Date', 'Repair Start Date',
+      'Submission Date', 'Expected Date', 'Device Received Date by Technical Staff', 'Repair Start Date',
       'Status', 'Notes'
     ];
     const rows = filteredCustomers.map((c) => {
@@ -117,6 +116,7 @@ export default function CustomerTable({ customers, onUpdateStatus, onUpdateCusto
         c.issueDescription || '',
         c.repairType || '',
         c.priority || '',
+        c.technicalStaffName || '',
         c.estimatedCost || '',
         c.advancePaid || '',
         c.partsType || '',
@@ -145,6 +145,12 @@ export default function CustomerTable({ customers, onUpdateStatus, onUpdateCusto
 
   function handleEdit(customer) {
     setEditingCustomer(customer);
+    // Expand the row when editing
+    setExpandedRows((prev) => {
+      const newSet = new Set(prev);
+      newSet.add(customer.id);
+      return newSet;
+    });
   }
 
   async function handleSaveEdit(formData) {
@@ -156,10 +162,14 @@ export default function CustomerTable({ customers, onUpdateStatus, onUpdateCusto
     }
   }
 
+  function handleCancelEdit() {
+    setEditingCustomer(null);
+  }
+
   if (customers.length === 0) {
     return (
       <section className="card">
-        <h3>All Submissions</h3>
+        <h3>Submitted Customer Details</h3>
         <div className="empty">No records yet. Add your first customer!</div>
       </section>
     );
@@ -167,7 +177,7 @@ export default function CustomerTable({ customers, onUpdateStatus, onUpdateCusto
 
   return (
     <section className="card">
-      <h3>All Submissions</h3>
+      <h3>Submitted Customer Details</h3>
 
       <div className="search-bar">
         <input
@@ -199,8 +209,8 @@ export default function CustomerTable({ customers, onUpdateStatus, onUpdateCusto
             </thead>
             <tbody>
               {filteredCustomers.map((customer) => (
-                <>
-                  <tr key={customer.id}>
+                <React.Fragment key={customer.id}>
+                  <tr>
                     <td>
                       <button
                         className="expand-btn"
@@ -278,8 +288,19 @@ export default function CustomerTable({ customers, onUpdateStatus, onUpdateCusto
                     </td>
                   </tr>
                   {expandedRows.has(customer.id) && (
-                    <tr key={`${customer.id}-details`} className="expanded-details">
+                    <tr className="expanded-details">
                       <td colSpan="7">
+                        {editingCustomer?.id === customer.id ? (
+                          <div className="inline-edit-form">
+                            <EditCustomerModal
+                              customer={editingCustomer}
+                              onSave={handleSaveEdit}
+                              onClose={handleCancelEdit}
+                              loading={updatingCustomer}
+                              inline={true}
+                            />
+                          </div>
+                        ) : (
                         <div className="details-grid">
                           {/* Customer Info */}
                           <div className="detail-group">
@@ -342,6 +363,10 @@ export default function CustomerTable({ customers, onUpdateStatus, onUpdateCusto
                               <span className="detail-label">Issue Description</span>
                               {displayValue(customer.issueDescription)}
                             </div>
+                            <div className="detail-item">
+                              <span className="detail-label">Technical Staff</span>
+                              {displayValue(customer.technicalStaffName)}
+                            </div>
                           </div>
 
                           {/* Cost & Parts */}
@@ -392,24 +417,15 @@ export default function CustomerTable({ customers, onUpdateStatus, onUpdateCusto
                             </div>
                           </div>
                         </div>
+                        )}
                       </td>
                     </tr>
                   )}
-                </>
+                </React.Fragment>
               ))}
             </tbody>
           </table>
         </div>
-      )}
-
-      {/* Edit Customer Modal */}
-      {editingCustomer && (
-        <EditCustomerModal
-          customer={editingCustomer}
-          onSave={handleSaveEdit}
-          onClose={() => setEditingCustomer(null)}
-          loading={updatingCustomer}
-        />
       )}
     </section>
   );

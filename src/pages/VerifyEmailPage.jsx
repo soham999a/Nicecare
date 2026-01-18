@@ -74,7 +74,7 @@ export default function VerifyEmailPage() {
       <div className="auth-card">
         <h1 className="brand" style={{ justifyContent: 'center' }}>
           <span className="brand-icon">🛠️</span>
-          Remote Shop Support
+          NiceCare CRM
         </h1>
         <h2>Verify your email</h2>
 

@@ -58,14 +58,14 @@ export default function SignupPage() {
         className="theme-toggle" 
         onClick={toggleTheme}
         style={{ position: 'fixed', top: '20px', right: '20px' }}
-        title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+        aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
       >
         {theme === 'light' ? '🌙' : '☀️'}
       </button>
       <div className="auth-card">
         <h1 className="brand" style={{ justifyContent: 'center' }}>
           <span className="brand-icon">🛠️</span>
-          Remote Shop Support
+          NiceCare CRM
         </h1>
         <h2>Create your account</h2>
 
@@ -73,8 +73,9 @@ export default function SignupPage() {
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label className="label">Shop / Business Name</label>
+            <label className="label" htmlFor="businessName">Shop / Business Name</label>
             <input
+              id="businessName"
               type="text"
               className="input"
               value={displayName}
@@ -85,8 +86,9 @@ export default function SignupPage() {
           </div>
 
           <div className="form-group">
-            <label className="label">Email Address</label>
+            <label className="label" htmlFor="email">Email Address</label>
             <input
+              id="email"
               type="email"
               className="input"
               placeholder="you@example.com"
@@ -97,8 +99,9 @@ export default function SignupPage() {
           </div>
 
           <div className="form-group">
-            <label className="label">Password</label>
+            <label className="label" htmlFor="password">Password</label>
             <input
+              id="password"
               type="password"
               className="input"
               value={password}
@@ -109,8 +112,9 @@ export default function SignupPage() {
           </div>
 
           <div className="form-group">
-            <label className="label">Confirm Password</label>
+            <label className="label" htmlFor="confirmPassword">Confirm Password</label>
             <input
+              id="confirmPassword"
               type="password"
               className="input"
               placeholder="••••••••"

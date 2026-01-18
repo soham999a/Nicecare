@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 // Constants for dropdown options (same as CustomerForm)
 const STATUS_OPTIONS = [
   'Select',
-  'Submitted',
   'Device Received',
   'Under Diagnosis',
   'Waiting for Parts',
@@ -27,13 +27,41 @@ const PARTS_TYPES = ['OEM', 'Aftermarket'];
 
 const FORM_MODE_KEY = 'customerFormMode';
 
-export default function EditCustomerModal({ customer, onSave, onClose, loading }) {
+export default function EditCustomerModal({ customer, onSave, onClose, loading, inline = false }) {
   const [formMode, setFormMode] = useState(() => {
     return localStorage.getItem(FORM_MODE_KEY) || 'minimal';
   });
-  const [formData, setFormData] = useState({});
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    submissionDate: '',
+    expectedDate: '',
+    status: 'Select',
+    notes: '',
+    alternatePhone: '',
+    customerType: '',
+    preferredContact: '',
+    deviceType: '',
+    brand: '',
+    model: '',
+    imei: '',
+    carrier: '',
+    issueCategory: '',
+    issueDescription: '',
+    repairType: '',
+    priority: '',
+    estimatedCost: '',
+    advancePaid: '',
+    partsType: '',
+    deviceReceivedDate: '',
+    repairStartDate: '',
+    technicalStaffName: '',
+  });
   const [error, setError] = useState('');
   const [warning, setWarning] = useState('');
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [expandedSections, setExpandedSections] = useState({
     customerInfo: true,
     deviceInfo: true,
@@ -70,6 +98,7 @@ export default function EditCustomerModal({ customer, onSave, onClose, loading }
         partsType: customer.partsType || '',
         deviceReceivedDate: customer.deviceReceivedDate || '',
         repairStartDate: customer.repairStartDate || '',
+        technicalStaffName: customer.technicalStaffName || '',
       });
     }
   }, [customer]);
@@ -123,8 +152,9 @@ export default function EditCustomerModal({ customer, onSave, onClose, loading }
     onSave(formData);
   }
 
-  // Close modal on Escape key
+  // Close modal on Escape key (only for modal mode)
   useEffect(() => {
+    if (inline) return;
     function handleKeyDown(e) {
       if (e.key === 'Escape') {
         onClose();
@@ -132,48 +162,56 @@ export default function EditCustomerModal({ customer, onSave, onClose, loading }
     }
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
+  }, [onClose, inline]);
 
-  // Prevent body scroll when modal is open
+  // Prevent body scroll when modal is open (only for modal mode or fullscreen inline)
   useEffect(() => {
+    if (inline && !isFullscreen) return;
     document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = 'unset';
     };
-  }, []);
+  }, [inline, isFullscreen]);
 
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3>✏️ Edit Customer Record</h3>
-          <button className="modal-close" onClick={onClose}>×</button>
-        </div>
+  // Handle Escape key for fullscreen mode
+  useEffect(() => {
+    if (!inline || !isFullscreen) return;
+    function handleKeyDown(e) {
+      if (e.key === 'Escape') {
+        setIsFullscreen(false);
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [inline, isFullscreen]);
 
-        {/* Form Mode Toggle */}
-        <div className="form-mode-toggle">
-          <button
-            type="button"
-            className={`toggle-btn ${formMode === 'minimal' ? 'active' : ''}`}
-            onClick={() => setFormMode('minimal')}
-          >
-            📱 Minimal
-          </button>
-          <button
-            type="button"
-            className={`toggle-btn ${formMode === 'detailed' ? 'active' : ''}`}
-            onClick={() => setFormMode('detailed')}
-          >
-            💻 Detailed
-          </button>
-        </div>
+  const formContent = (
+    <>
+      {/* Form Mode Toggle */}
+      <div className="form-mode-toggle">
+        <button
+          type="button"
+          className={`toggle-btn ${formMode === 'minimal' ? 'active' : ''}`}
+          onClick={() => setFormMode('minimal')}
+        >
+          📱 Minimal
+        </button>
+        <button
+          type="button"
+          className={`toggle-btn ${formMode === 'detailed' ? 'active' : ''}`}
+          onClick={() => setFormMode('detailed')}
+        >
+          💻 Detailed
+        </button>
+      </div>
 
-        <form onSubmit={handleSubmit} className="modal-form">
+      <form onSubmit={handleSubmit} className="modal-form" id="edit-customer-form">
           {/* Basic Info - Always visible */}
           <div className="row two">
             <div>
-              <label className="label">Name *</label>
+              <label className="label" htmlFor="edit-name">Name *</label>
               <input
+                id="edit-name"
                 name="name"
                 className="input"
                 value={formData.name}
@@ -182,8 +220,9 @@ export default function EditCustomerModal({ customer, onSave, onClose, loading }
               />
             </div>
             <div>
-              <label className="label">Email</label>
+              <label className="label" htmlFor="edit-email">Email</label>
               <input
+                id="edit-email"
                 name="email"
                 type="email"
                 className="input"
@@ -195,8 +234,9 @@ export default function EditCustomerModal({ customer, onSave, onClose, loading }
 
           <div className="row two">
             <div>
-              <label className="label">Phone</label>
+              <label className="label" htmlFor="edit-phone">Phone</label>
               <input
+                id="edit-phone"
                 name="phone"
                 className="input"
                 value={formData.phone}
@@ -204,8 +244,9 @@ export default function EditCustomerModal({ customer, onSave, onClose, loading }
               />
             </div>
             <div>
-              <label className="label">Address</label>
+              <label className="label" htmlFor="edit-address">Address</label>
               <input
+                id="edit-address"
                 name="address"
                 className="input"
                 value={formData.address}
@@ -229,8 +270,9 @@ export default function EditCustomerModal({ customer, onSave, onClose, loading }
                 <div className="section-content">
                   <div className="row three">
                     <div>
-                      <label className="label">Alternate Phone</label>
+                      <label className="label" htmlFor="edit-alternatePhone">Alternate Phone</label>
                       <input
+                        id="edit-alternatePhone"
                         name="alternatePhone"
                         className="input"
                         value={formData.alternatePhone}
@@ -238,8 +280,9 @@ export default function EditCustomerModal({ customer, onSave, onClose, loading }
                       />
                     </div>
                     <div>
-                      <label className="label">Customer Type</label>
+                      <label className="label" htmlFor="edit-customerType">Customer Type</label>
                       <select
+                        id="edit-customerType"
                         name="customerType"
                         className="select"
                         value={formData.customerType}
@@ -252,8 +295,9 @@ export default function EditCustomerModal({ customer, onSave, onClose, loading }
                       </select>
                     </div>
                     <div>
-                      <label className="label">Preferred Contact</label>
+                      <label className="label" htmlFor="edit-preferredContact">Preferred Contact</label>
                       <select
+                        id="edit-preferredContact"
                         name="preferredContact"
                         className="select"
                         value={formData.preferredContact}
@@ -286,8 +330,9 @@ export default function EditCustomerModal({ customer, onSave, onClose, loading }
                 <div className="section-content">
                   <div className="row three">
                     <div>
-                      <label className="label">Device Type</label>
+                      <label className="label" htmlFor="edit-deviceType">Device Type</label>
                       <select
+                        id="edit-deviceType"
                         name="deviceType"
                         className="select"
                         value={formData.deviceType}
@@ -300,8 +345,9 @@ export default function EditCustomerModal({ customer, onSave, onClose, loading }
                       </select>
                     </div>
                     <div>
-                      <label className="label">Brand</label>
+                      <label className="label" htmlFor="edit-brand">Brand</label>
                       <select
+                        id="edit-brand"
                         name="brand"
                         className="select"
                         value={formData.brand}
@@ -314,8 +360,9 @@ export default function EditCustomerModal({ customer, onSave, onClose, loading }
                       </select>
                     </div>
                     <div>
-                      <label className="label">Model</label>
+                      <label className="label" htmlFor="edit-model">Model</label>
                       <input
+                        id="edit-model"
                         name="model"
                         className="input"
                         placeholder="e.g., iPhone 13 Pro"
@@ -326,8 +373,9 @@ export default function EditCustomerModal({ customer, onSave, onClose, loading }
                   </div>
                   <div className="row two">
                     <div>
-                      <label className="label">IMEI / Serial Number</label>
+                      <label className="label" htmlFor="edit-imei">IMEI / Serial Number</label>
                       <input
+                        id="edit-imei"
                         name="imei"
                         className="input"
                         placeholder="15-digit IMEI"
@@ -336,8 +384,9 @@ export default function EditCustomerModal({ customer, onSave, onClose, loading }
                       />
                     </div>
                     <div>
-                      <label className="label">Carrier</label>
+                      <label className="label" htmlFor="edit-carrier">Carrier</label>
                       <select
+                        id="edit-carrier"
                         name="carrier"
                         className="select"
                         value={formData.carrier}
@@ -370,8 +419,9 @@ export default function EditCustomerModal({ customer, onSave, onClose, loading }
                 <div className="section-content">
                   <div className="row three">
                     <div>
-                      <label className="label">Issue Category</label>
+                      <label className="label" htmlFor="edit-issueCategory">Issue Category</label>
                       <select
+                        id="edit-issueCategory"
                         name="issueCategory"
                         className="select"
                         value={formData.issueCategory}
@@ -384,8 +434,9 @@ export default function EditCustomerModal({ customer, onSave, onClose, loading }
                       </select>
                     </div>
                     <div>
-                      <label className="label">Repair Type</label>
+                      <label className="label" htmlFor="edit-repairType">Repair Type</label>
                       <select
+                        id="edit-repairType"
                         name="repairType"
                         className="select"
                         value={formData.repairType}
@@ -398,14 +449,15 @@ export default function EditCustomerModal({ customer, onSave, onClose, loading }
                       </select>
                     </div>
                     <div>
-                      <label className="label">Priority</label>
+                      <label className="label" htmlFor="edit-priority">Priority</label>
                       <select
+                        id="edit-priority"
                         name="priority"
                         className="select"
                         value={formData.priority}
                         onChange={handleChange}
                       >
-                        <option value="">Normal</option>
+                        <option value="">Select Priority</option>
                         {PRIORITY_LEVELS.map((p) => (
                           <option key={p} value={p}>{p}</option>
                         ))}
@@ -413,13 +465,25 @@ export default function EditCustomerModal({ customer, onSave, onClose, loading }
                     </div>
                   </div>
                   <div>
-                    <label className="label">Issue Description</label>
+                    <label className="label" htmlFor="edit-issueDescription">Issue Description</label>
                     <textarea
+                      id="edit-issueDescription"
                       name="issueDescription"
                       className="textarea"
                       value={formData.issueDescription}
                       onChange={handleChange}
                       placeholder="Describe the issue in detail..."
+                    />
+                  </div>
+                  <div>
+                    <label className="label" htmlFor="edit-technicalStaffName">Technical Staff Name</label>
+                    <input
+                      id="edit-technicalStaffName"
+                      name="technicalStaffName"
+                      className="input"
+                      value={formData.technicalStaffName}
+                      onChange={handleChange}
+                      placeholder="Name of assigned technician"
                     />
                   </div>
                 </div>
@@ -442,8 +506,9 @@ export default function EditCustomerModal({ customer, onSave, onClose, loading }
                 <div className="section-content">
                   <div className="row three">
                     <div>
-                      <label className="label">Estimated Cost ($)</label>
+                      <label className="label" htmlFor="edit-estimatedCost">Estimated Cost ($)</label>
                       <input
+                        id="edit-estimatedCost"
                         name="estimatedCost"
                         type="number"
                         className="input"
@@ -453,8 +518,9 @@ export default function EditCustomerModal({ customer, onSave, onClose, loading }
                       />
                     </div>
                     <div>
-                      <label className="label">Advance Paid ($)</label>
+                      <label className="label" htmlFor="edit-advancePaid">Advance Paid ($)</label>
                       <input
+                        id="edit-advancePaid"
                         name="advancePaid"
                         type="number"
                         className="input"
@@ -464,8 +530,9 @@ export default function EditCustomerModal({ customer, onSave, onClose, loading }
                       />
                     </div>
                     <div>
-                      <label className="label">Parts Type</label>
+                      <label className="label" htmlFor="edit-partsType">Parts Type</label>
                       <select
+                        id="edit-partsType"
                         name="partsType"
                         className="select"
                         value={formData.partsType}
@@ -486,8 +553,9 @@ export default function EditCustomerModal({ customer, onSave, onClose, loading }
           {/* Dates & Status - Always visible */}
           <div className="row three">
             <div>
-              <label className="label">Submission Date *</label>
+              <label className="label" htmlFor="edit-submissionDate">Submission Date *</label>
               <input
+                id="edit-submissionDate"
                 name="submissionDate"
                 type="date"
                 className="input"
@@ -497,8 +565,9 @@ export default function EditCustomerModal({ customer, onSave, onClose, loading }
               />
             </div>
             <div>
-              <label className="label">Status *</label>
+              <label className="label" htmlFor="edit-status">Status *</label>
               <select
+                id="edit-status"
                 name="status"
                 className="select"
                 value={formData.status}
@@ -510,8 +579,9 @@ export default function EditCustomerModal({ customer, onSave, onClose, loading }
               </select>
             </div>
             <div>
-              <label className="label">Expected Date</label>
+              <label className="label" htmlFor="edit-expectedDate">Expected Date</label>
               <input
+                id="edit-expectedDate"
                 name="expectedDate"
                 type="date"
                 className="input"
@@ -525,8 +595,9 @@ export default function EditCustomerModal({ customer, onSave, onClose, loading }
           {formMode === 'detailed' && (
             <div className="row two">
               <div>
-                <label className="label">Device Received Date</label>
+                <label className="label" htmlFor="edit-deviceReceivedDate">Device Received Date by Technical Staff</label>
                 <input
+                  id="edit-deviceReceivedDate"
                   name="deviceReceivedDate"
                   type="date"
                   className="input"
@@ -535,8 +606,9 @@ export default function EditCustomerModal({ customer, onSave, onClose, loading }
                 />
               </div>
               <div>
-                <label className="label">Repair Start Date</label>
+                <label className="label" htmlFor="edit-repairStartDate">Repair Start Date</label>
                 <input
+                  id="edit-repairStartDate"
                   name="repairStartDate"
                   type="date"
                   className="input"
@@ -548,8 +620,9 @@ export default function EditCustomerModal({ customer, onSave, onClose, loading }
           )}
 
           <div>
-            <label className="label">Notes</label>
+            <label className="label" htmlFor="edit-notes">Notes</label>
             <textarea
+              id="edit-notes"
               name="notes"
               className="textarea"
               value={formData.notes}
@@ -561,15 +634,72 @@ export default function EditCustomerModal({ customer, onSave, onClose, loading }
           {warning && <div className="warning-message">⚠️ {warning}</div>}
           {error && <div className="error-message">{error}</div>}
 
+          {!inline && (
+            <div className="modal-actions">
+              <button type="button" className="btn-outline" onClick={onClose}>
+                Cancel
+              </button>
+              <button type="submit" className="btn" disabled={loading}>
+                {loading ? '⏳ Saving...' : '💾 Save Changes'}
+              </button>
+            </div>
+          )}
+        </form>
+        {inline && (
           <div className="modal-actions">
             <button type="button" className="btn-outline" onClick={onClose}>
               Cancel
             </button>
-            <button type="submit" className="btn" disabled={loading}>
+            <button type="submit" form="edit-customer-form" className="btn" disabled={loading}>
               {loading ? '⏳ Saving...' : '💾 Save Changes'}
             </button>
           </div>
-        </form>
+        )}
+    </>
+  );
+
+  // Inline mode: render form content directly without modal wrapper
+  if (inline) {
+    const inlineContent = (
+      <div className={`inline-edit-container ${isFullscreen ? 'fullscreen' : ''}`}>
+        <div className="inline-edit-header">
+          <h4>✏️ Edit Customer Record</h4>
+          <div className="inline-edit-actions">
+            <button
+              type="button"
+              className="btn-icon"
+              onClick={() => setIsFullscreen(!isFullscreen)}
+              title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+            >
+              {isFullscreen ? '⛶' : '⛶'}
+            </button>
+          </div>
+        </div>
+        {formContent}
+      </div>
+    );
+
+    if (isFullscreen) {
+      return createPortal(
+        <div className="fullscreen-overlay">
+          {inlineContent}
+        </div>,
+        document.body
+      );
+    }
+
+    return inlineContent;
+  }
+
+  // Modal mode: render with overlay and modal wrapper
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3>✏️ Edit Customer Record</h3>
+          <button className="modal-close" onClick={onClose} aria-label="Close">×</button>
+        </div>
+        {formContent}
       </div>
     </div>
   );

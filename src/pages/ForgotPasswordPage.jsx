@@ -45,14 +45,14 @@ export default function ForgotPasswordPage() {
         className="theme-toggle" 
         onClick={toggleTheme}
         style={{ position: 'fixed', top: '20px', right: '20px' }}
-        title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+        aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
       >
         {theme === 'light' ? '🌙' : '☀️'}
       </button>
       <div className="auth-card">
         <h1 className="brand" style={{ justifyContent: 'center' }}>
           <span className="brand-icon">🛠️</span>
-          Remote Shop Support
+          NiceCare CRM
         </h1>
         <h2>Reset your password</h2>
 
@@ -61,8 +61,9 @@ export default function ForgotPasswordPage() {
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label className="label">Email Address</label>
+            <label className="label" htmlFor="email">Email Address</label>
             <input
+              id="email"
               type="email"
               className="input"
               value={email}

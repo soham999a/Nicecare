@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 // Constants for dropdown options
 const STATUS_OPTIONS = [
   'Select',
-  'Submitted',
   'Device Received',
   'Under Diagnosis',
   'Waiting for Parts',
@@ -58,6 +57,8 @@ const getInitialFormData = () => ({
   // Additional dates
   deviceReceivedDate: '',
   repairStartDate: '',
+  // Technical staff
+  technicalStaffName: '',
 });
 
 const AUTOSAVE_KEY = 'customerFormAutosave';
@@ -123,6 +124,12 @@ export default function CustomerForm({ onSubmit, loading }) {
     setError('');
     setWarning('');
 
+    // Validate that either email or phone is provided
+    if (!formData.email && !formData.phone) {
+      setError('Please provide either an email or phone number');
+      return;
+    }
+
     const today = new Date().toISOString().slice(0, 10);
 
     // Validate submission date is not in the future
@@ -184,14 +191,15 @@ export default function CustomerForm({ onSubmit, loading }) {
         </button>
       </div>
 
-      <h3>New Customer Submission</h3>
+      <h3>Add a New Customer Detail</h3>
 
       <form onSubmit={handleSubmit}>
         {/* Basic Info - Always visible */}
         <div className="row two">
           <div>
-            <label className="label">Name *</label>
+            <label className="label" htmlFor="name">Name *</label>
             <input
+              id="name"
               name="name"
               className="input"
               value={formData.name}
@@ -200,8 +208,9 @@ export default function CustomerForm({ onSubmit, loading }) {
             />
           </div>
           <div>
-            <label className="label">Email</label>
+            <label className="label" htmlFor="email">Email</label>
             <input
+              id="email"
               name="email"
               type="email"
               className="input"
@@ -213,8 +222,9 @@ export default function CustomerForm({ onSubmit, loading }) {
 
         <div className="row two">
           <div>
-            <label className="label">Phone</label>
+            <label className="label" htmlFor="phone">Phone</label>
             <input
+              id="phone"
               name="phone"
               className="input"
               value={formData.phone}
@@ -222,8 +232,9 @@ export default function CustomerForm({ onSubmit, loading }) {
             />
           </div>
           <div>
-            <label className="label">Address</label>
+            <label className="label" htmlFor="address">Address</label>
             <input
+              id="address"
               name="address"
               className="input"
               value={formData.address}
@@ -247,8 +258,9 @@ export default function CustomerForm({ onSubmit, loading }) {
               <div className="section-content">
                 <div className="row three">
                   <div>
-                    <label className="label">Alternate Phone</label>
+                    <label className="label" htmlFor="alternatePhone">Alternate Phone</label>
                     <input
+                      id="alternatePhone"
                       name="alternatePhone"
                       className="input"
                       value={formData.alternatePhone}
@@ -256,8 +268,9 @@ export default function CustomerForm({ onSubmit, loading }) {
                     />
                   </div>
                   <div>
-                    <label className="label">Customer Type</label>
+                    <label className="label" htmlFor="customerType">Customer Type</label>
                     <select
+                      id="customerType"
                       name="customerType"
                       className="select"
                       value={formData.customerType}
@@ -270,8 +283,9 @@ export default function CustomerForm({ onSubmit, loading }) {
                     </select>
                   </div>
                   <div>
-                    <label className="label">Preferred Contact</label>
+                    <label className="label" htmlFor="preferredContact">Preferred Contact</label>
                     <select
+                      id="preferredContact"
                       name="preferredContact"
                       className="select"
                       value={formData.preferredContact}
@@ -304,8 +318,9 @@ export default function CustomerForm({ onSubmit, loading }) {
               <div className="section-content">
                 <div className="row three">
                   <div>
-                    <label className="label">Device Type</label>
+                    <label className="label" htmlFor="deviceType">Device Type</label>
                     <select
+                      id="deviceType"
                       name="deviceType"
                       className="select"
                       value={formData.deviceType}
@@ -318,8 +333,9 @@ export default function CustomerForm({ onSubmit, loading }) {
                     </select>
                   </div>
                   <div>
-                    <label className="label">Brand</label>
+                    <label className="label" htmlFor="brand">Brand</label>
                     <select
+                      id="brand"
                       name="brand"
                       className="select"
                       value={formData.brand}
@@ -332,8 +348,9 @@ export default function CustomerForm({ onSubmit, loading }) {
                     </select>
                   </div>
                   <div>
-                    <label className="label">Model</label>
+                    <label className="label" htmlFor="model">Model</label>
                     <input
+                      id="model"
                       name="model"
                       className="input"
                       placeholder="e.g., iPhone 13 Pro"
@@ -344,8 +361,9 @@ export default function CustomerForm({ onSubmit, loading }) {
                 </div>
                 <div className="row two">
                   <div>
-                    <label className="label">IMEI / Serial Number</label>
+                    <label className="label" htmlFor="imei">IMEI / Serial Number</label>
                     <input
+                      id="imei"
                       name="imei"
                       className="input"
                       placeholder="15-digit IMEI"
@@ -354,8 +372,9 @@ export default function CustomerForm({ onSubmit, loading }) {
                     />
                   </div>
                   <div>
-                    <label className="label">Carrier</label>
+                    <label className="label" htmlFor="carrier">Carrier</label>
                     <select
+                      id="carrier"
                       name="carrier"
                       className="select"
                       value={formData.carrier}
@@ -388,8 +407,9 @@ export default function CustomerForm({ onSubmit, loading }) {
               <div className="section-content">
                 <div className="row three">
                   <div>
-                    <label className="label">Issue Category</label>
+                    <label className="label" htmlFor="issueCategory">Issue Category</label>
                     <select
+                      id="issueCategory"
                       name="issueCategory"
                       className="select"
                       value={formData.issueCategory}
@@ -402,8 +422,9 @@ export default function CustomerForm({ onSubmit, loading }) {
                     </select>
                   </div>
                   <div>
-                    <label className="label">Repair Type</label>
+                    <label className="label" htmlFor="repairType">Repair Type</label>
                     <select
+                      id="repairType"
                       name="repairType"
                       className="select"
                       value={formData.repairType}
@@ -416,8 +437,9 @@ export default function CustomerForm({ onSubmit, loading }) {
                     </select>
                   </div>
                   <div>
-                    <label className="label">Priority</label>
+                    <label className="label" htmlFor="priority">Priority</label>
                     <select
+                      id="priority"
                       name="priority"
                       className="select"
                       value={formData.priority}
@@ -431,13 +453,25 @@ export default function CustomerForm({ onSubmit, loading }) {
                   </div>
                 </div>
                 <div>
-                  <label className="label">Issue Description</label>
+                  <label className="label" htmlFor="issueDescription">Issue Description</label>
                   <textarea
+                    id="issueDescription"
                     name="issueDescription"
                     className="textarea"
                     value={formData.issueDescription}
                     onChange={handleChange}
                     placeholder="Describe the issue in detail..."
+                  />
+                </div>
+                <div>
+                  <label className="label" htmlFor="technicalStaffName">Technical Staff Name</label>
+                  <input
+                    id="technicalStaffName"
+                    name="technicalStaffName"
+                    className="input"
+                    value={formData.technicalStaffName}
+                    onChange={handleChange}
+                    placeholder="Name of assigned technician"
                   />
                 </div>
               </div>
@@ -460,8 +494,9 @@ export default function CustomerForm({ onSubmit, loading }) {
               <div className="section-content">
                 <div className="row three">
                   <div>
-                    <label className="label">Estimated Cost ($)</label>
+                    <label className="label" htmlFor="estimatedCost">Estimated Cost ($)</label>
                     <input
+                      id="estimatedCost"
                       name="estimatedCost"
                       type="number"
                       className="input"
@@ -471,8 +506,9 @@ export default function CustomerForm({ onSubmit, loading }) {
                     />
                   </div>
                   <div>
-                    <label className="label">Advance Paid ($)</label>
+                    <label className="label" htmlFor="advancePaid">Advance Paid ($)</label>
                     <input
+                      id="advancePaid"
                       name="advancePaid"
                       type="number"
                       className="input"
@@ -482,8 +518,9 @@ export default function CustomerForm({ onSubmit, loading }) {
                     />
                   </div>
                   <div>
-                    <label className="label">Parts Type</label>
+                    <label className="label" htmlFor="partsType">Parts Type</label>
                     <select
+                      id="partsType"
                       name="partsType"
                       className="select"
                       value={formData.partsType}
@@ -504,8 +541,9 @@ export default function CustomerForm({ onSubmit, loading }) {
         {/* Dates & Status - Always visible */}
         <div className="row three">
           <div>
-            <label className="label">Submission Date *</label>
+            <label className="label" htmlFor="submissionDate">Submission Date *</label>
             <input
+              id="submissionDate"
               name="submissionDate"
               type="date"
               className="input"
@@ -515,8 +553,9 @@ export default function CustomerForm({ onSubmit, loading }) {
             />
           </div>
           <div>
-            <label className="label">Status *</label>
+            <label className="label" htmlFor="status">Status *</label>
             <select
+              id="status"
               name="status"
               className="select"
               value={formData.status}
@@ -528,8 +567,9 @@ export default function CustomerForm({ onSubmit, loading }) {
             </select>
           </div>
           <div>
-            <label className="label">Expected Date</label>
+            <label className="label" htmlFor="expectedDate">Expected Date</label>
             <input
+              id="expectedDate"
               name="expectedDate"
               type="date"
               className="input"
@@ -543,8 +583,9 @@ export default function CustomerForm({ onSubmit, loading }) {
         {formMode === 'detailed' && (
           <div className="row two">
             <div>
-              <label className="label">Device Received Date</label>
+              <label className="label" htmlFor="deviceReceivedDate">Device Received Date by Technical Staff</label>
               <input
+                id="deviceReceivedDate"
                 name="deviceReceivedDate"
                 type="date"
                 className="input"
@@ -553,8 +594,9 @@ export default function CustomerForm({ onSubmit, loading }) {
               />
             </div>
             <div>
-              <label className="label">Repair Start Date</label>
+              <label className="label" htmlFor="repairStartDate">Repair Start Date</label>
               <input
+                id="repairStartDate"
                 name="repairStartDate"
                 type="date"
                 className="input"
@@ -566,8 +608,9 @@ export default function CustomerForm({ onSubmit, loading }) {
         )}
 
         <div>
-          <label className="label">Notes</label>
+          <label className="label" htmlFor="notes">Notes</label>
           <textarea
+            id="notes"
             name="notes"
             className="textarea"
             value={formData.notes}

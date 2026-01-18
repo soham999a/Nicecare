@@ -65,7 +65,7 @@ export default function DashboardPage() {
           
           {loading ? (
             <section className="card">
-              <h3>All Submissions</h3>
+              <h3>Submitted Customer Details</h3>
               <div className="loading">Loading...</div>
             </section>
           ) : (
