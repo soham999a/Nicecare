@@ -157,7 +157,7 @@ export default function LoginPage() {
           </div>
           
           <h1 className="login-hero-title">
-            The Modern <span className="gradient-text">Customer Management Platform</span> for Your Business
+            The Modern <span className="gradient-text">CRM</span> and <span className="gradient-text">Inventory Management Platform</span> for Your Business
           </h1>
           
           <p className="login-hero-subtitle">
@@ -198,7 +198,7 @@ export default function LoginPage() {
             <img src="/images/NiceCareLogo.png" alt="NiceCare" width="150" height="50" style={{ marginTop: '-20px', marginBottom: '20px' }} />
           </div>
           <h2>Welcome to NiceCare CRM</h2>
-          <p className="auth-subtitle">Simplest solution for your business!</p>
+          <p className="auth-subtitle">All-in-one platform for repair shops - CRM & Inventory, seamlessly connected.</p>
 
           {error && <div className="error-message">{error}</div>}
 
