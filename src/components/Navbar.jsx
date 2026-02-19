@@ -19,9 +19,9 @@ export default function Navbar() {
   return (
     <header className="navbar">
       <div className="brand">
-        <div className="brand-logo">
+        {/*<div className="brand-logo">
           <img src="/images/NiceCareLogo.png" alt="NiceCare" width="150" height="50" style={{ marginLeft: '100px', marginTop: '-38px', marginBottom: '-38px' }} />
-        </div>
+        </div>*/}
         
       </div>
       <div className="navbar-right">

@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 
@@ -67,9 +68,23 @@ const testimonials = [
 export default function LandingPage() {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
+  const [navOpen, setNavOpen] = useState(false);
+
+  const closeNav = () => setNavOpen(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setNavOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   return (
     <div className="landing-page">
+      <a className="skip-link" href="#main-content">Skip to main content</a>
       {/* Animated Background */}
       <div className="landing-bg">
         <div className="bg-gradient-1"></div>
@@ -103,10 +118,26 @@ export default function LandingPage() {
           </div>
           <span className="brand-text">CounterOne</span>
         </div>
-        <nav className="landing-nav">
-          <a href="#features" className="nav-link">Features</a>
-          <a href="#platforms" className="nav-link">Platforms</a>
-          <a href="#testimonials" className="nav-link">Testimonials</a>
+        <button
+          className="nav-toggle"
+          type="button"
+          aria-expanded={navOpen}
+          aria-controls="landing-nav"
+          onClick={() => setNavOpen(!navOpen)}
+          aria-label="Toggle navigation"
+        >
+          <span className="nav-toggle-bar" aria-hidden="true"></span>
+          <span className="nav-toggle-bar" aria-hidden="true"></span>
+          <span className="nav-toggle-bar" aria-hidden="true"></span>
+        </button>
+        <nav
+          id="landing-nav"
+          className={`landing-nav ${navOpen ? 'open' : ''}`}
+          aria-label="Primary"
+        >
+          <a href="#features" className="nav-link" onClick={closeNav}>Features</a>
+          <a href="#platforms" className="nav-link" onClick={closeNav}>Platforms</a>
+          <a href="#testimonials" className="nav-link" onClick={closeNav}>Testimonials</a>
         </nav>
         <div className="header-actions">
           <button 
@@ -136,11 +167,11 @@ export default function LandingPage() {
       </header>
 
       {/* Hero Section */}
-      <main className="landing-main">
+      <main className="landing-main" id="main-content">
         <section className="hero-section">
           <div className="hero-badge animate-fade-in">
             <span className="badge-dot"></span>
-            Smarter Inventory. Stronger Customer Relationships.
+            Smarter Inventory | Stronger Customer Relationships.
           </div>
           <h1 className="hero-title animate-fade-in-up">
             One Unified Platform for

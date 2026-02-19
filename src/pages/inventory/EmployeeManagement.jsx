@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useEmployees } from '../../hooks/useEmployees';
 import { useStores } from '../../hooks/useStores';
 import InventoryNavbar from '../../components/inventory/InventoryNavbar';
+import InventoryChatbot from '../../components/inventory/InventoryChatbot';
 
 export default function EmployeeManagement() {
   const { employees, loading, error, creating, createEmployee, updateEmployee, toggleEmployeeActive, deleteEmployee } = useEmployees();
@@ -447,6 +448,9 @@ export default function EmployeeManagement() {
           )}
         </div>
       </main>
+
+      {/* AI Chatbot */}
+      <InventoryChatbot />
     </div>
   );
 }

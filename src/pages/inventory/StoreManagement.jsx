@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useStores } from '../../hooks/useStores';
 import InventoryNavbar from '../../components/inventory/InventoryNavbar';
+import InventoryChatbot from '../../components/inventory/InventoryChatbot';
 
 export default function StoreManagement() {
   const { stores, loading, error, addStore, updateStore, deleteStore } = useStores();
@@ -268,6 +269,9 @@ export default function StoreManagement() {
           )}
         </div>
       </main>
+
+      {/* AI Chatbot */}
+      <InventoryChatbot />
     </div>
   );
 }

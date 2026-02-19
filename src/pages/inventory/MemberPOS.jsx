@@ -3,6 +3,7 @@ import { usePOS } from '../../hooks/usePOS';
 import { useInventoryAuth } from '../../context/InventoryAuthContext';
 import InventoryNavbar from '../../components/inventory/InventoryNavbar';
 import DigitalReceipt from '../../components/inventory/DigitalReceipt';
+import InventoryChatbot from '../../components/inventory/InventoryChatbot';
 
 export default function MemberPOS() {
   const { userProfile } = useInventoryAuth();
@@ -522,6 +523,9 @@ export default function MemberPOS() {
           onClose={handleCloseReceipt}
         />
       )}
+
+      {/* AI Chatbot */}
+      <InventoryChatbot />
     </div>
   );
 }

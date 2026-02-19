@@ -5,6 +5,8 @@ import { useSales } from '../../hooks/useSales';
 import { useInventoryAuth } from '../../context/InventoryAuthContext';
 import InventoryNavbar from '../../components/inventory/InventoryNavbar';
 import LowStockAlert from '../../components/inventory/LowStockAlert';
+import InventoryChatbot from '../../components/inventory/InventoryChatbot';
+
 
 export default function MasterDashboard() {
   const { userProfile } = useInventoryAuth();
@@ -229,6 +231,9 @@ export default function MasterDashboard() {
           </div>
         </div>
       </main>
+
+      {/* AI Chatbot */}
+      <InventoryChatbot />
     </div>
   );
 }

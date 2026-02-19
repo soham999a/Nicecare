@@ -1,0 +1,136 @@
+PROBLEM
+
+Current Architecture & Its Problem
+Right now your RAG chatbot works like this:
+
+CURRENT: Everything runs in the browser
+──────────────────────────────────────────────────────────────────────
+
+ Browser (Client)
+ ┌─────────────────────────────────────────────────────────────────┐
+ │                                                                 │
+ │  1. User asks a question                                        │
+ │          │                                                      │
+ │          ▼                                                      │
+ │  2. Fetch data from Firestore          ◄──── Firestore          │
+ │     (products, stores, employees,             (direct read)     │
+ │      sales — up to 100 docs)                                    │
+ │          │                                                      │
+ │          ▼                                                      │
+ │  3. Build context string in-memory                              │
+ │     (buildInventoryContext)                                     │
+ │          │                                                      │
+ │          ▼                                                      │
+ │  4. Call Gemini API directly           ──── ► Google Gemini     │
+ │     (generateContentStream)            ◄────  (HTTP streaming)  │
+ │          │                                                      │
+ │          ▼                                                      │
+ │  5. Render streamed tokens in UI                                │
+ │                                                                 │
+ │  ⚠️  VITE_GOOGLE_AI_API_KEY is in the browser bundle!           │
+ │  ⚠️  Rate limiting is per-tab (useless — just open a new tab)   │
+ │  ⚠️  Firestore rules are the only security layer                │
+ │                                                                 │
+ └─────────────────────────────────────────────────────────────────┘
+
+This works, but has serious production concerns:
+
+API key exposed — VITE_GOOGLE_AI_API_KEY is baked into the client bundle. Anyone can extract it from browser DevTools and use your Gemini quota.
+Rate limiting is fake — requestTimestamps in ragService.js and inventoryRagService.js live in browser memory. Refreshing the page resets them. Opening a second tab bypasses them entirely.
+No cost control — A malicious user could call Gemini thousands of times on your dime.
+
+----
+
+The Fix: Move RAG Logic Server-Side
+You need a server-side layer between the browser and Gemini. The question is: Cloud Functions or Cloud Run?
+
+Decision Framework
+Factor	Cloud Functions (2nd gen)	Cloud Run
+Max request timeout	60 min (2nd gen)	60 min
+HTTP streaming (SSE)	✅ Supported (2nd gen)	✅ Supported
+Cold starts	~1-3s	~1-3s (similar, both use Cloud Run under the hood)
+Firestore integration	Native (firebase-admin)	Native (firebase-admin)
+Scaling	Auto (0 to N)	Auto (0 to N)
+Complexity	Low (just write functions)	Medium (need a small Express/Hono server)
+Firebase Auth verification	Built-in with onCall / easy with middleware	Manual (verify ID token yourself)
+Cost at low traffic	Scale to zero ✅	Scale to zero ✅ (min instances = 0)
+Your use case duration	~5-30s (Firestore read + Gemini stream)	Same
+Already in your stack	✅ Firebase project exists	Would need setup
+
+My Recommendation: Cloud Functions (2nd gen) only
+Your chatbot request lifecycle is:
+
+Firestore read (~200ms) → Build context (~5ms) → Gemini stream (~5-25s)
+
+This is a single short-lived request-response with streaming. You don't need a persistent server, custom routing, or long-running containers. Cloud Functions 2nd gen (which runs on Cloud Run under the hood anyway) gives you everything you need with less setup.
+
+You'd only need standalone Cloud Run if you had:
+
+Complex multi-route API (you don't — you have 3-4 endpoints max)
+Long-running background jobs >60 min (you don't)
+Custom binary dependencies or GPU needs (you don't)
+Need for WebSocket (you don't — HTTP streaming is sufficient as we established)
+
+----
+
+Target Architecture
+
+PROPOSED: Server-side RAG with HTTP Streaming
+──────────────────────────────────────────────────────────────────────
+
+ Browser (Client)
+ ┌───────────────────────────────┐
+ │                               │
+ │  1. User asks a question      │
+ │          │                    │
+ │          ▼                    │
+ │  2. Call Cloud Function       │──── POST /askAboutInventory ────┐
+ │     with Firebase Auth        │     (Authorization: Bearer      │
+ │     ID token                  │      <firebase_id_token>)       │
+ │          │                    │                                 │
+ │          │  ◄── SSE stream ───┼─────────────────────────────────┤
+ │          ▼                    │                                 │
+ │  3. Render streamed tokens    │                                 │
+ │                               │                                 │
+ │  ✅ No API keys in browser    │                                 │
+ │  ✅ No Gemini SDK in bundle   │                                 │
+ └───────────────────────────────┘                                 │
+                                                                   │
+ Cloud Function (2nd gen)                                          │
+ ┌───────────────────────────────────────────────────────┐         │
+ │                                                       │ ◄───────┘
+ │  1. Verify Firebase ID token                          │
+ │          │                                            │
+ │  2. Server-side rate limiting                         │
+ │     (per-user, in Firestore or in-memory)             │
+ │          │                                            │
+ │  3. Fetch data from Firestore (admin SDK)             │
+ │     (products, stores, employees, sales)              │
+ │          │                                            │
+ │  4. Build RAG context                                 │
+ │          │                                            │
+ │  5. Call Gemini API (server-side key)                 │
+ │     generateContentStream()                           │
+ │          │                                            │
+ │  6. Pipe chunks back as SSE                           │
+ │     res.write(`data: ${chunk}\n\n`)                   │
+ │                                                       │
+ │  🔒 GOOGLE_AI_API_KEY is in env (never sent to client)│
+ │  🔒 Rate limit enforced server-side per user UID      │
+ │  🔒 Auth verified before any Firestore/Gemini call    │
+ └───────────────────────────────────────────────────────┘
+          │                              │
+          ▼                              ▼
+    ┌───────────┐               ┌─────────────────┐
+    │ Firestore │               │  Gemini API     │
+    │ (admin)   │               │  (server key)   │
+    └───────────┘               └─────────────────┘
+
+----
+V.V.I: 
+Summary
+Question	                    Answer
+HTTP streaming or WebSocket?	HTTP streaming (SSE) — your request is always request→stream-response, never server-initiated
+Cloud Functions or Cloud Run?	Cloud Functions (2nd gen) — simpler, fits your 5-30s request lifecycle, scales to zero, and is already Cloud Run under the hood
+What moves server-side?	        API key, rate limiting, Firestore reads for RAG context, Gemini calls
+What stays client-side?	        Auth token acquisition, SSE reader, UI rendering

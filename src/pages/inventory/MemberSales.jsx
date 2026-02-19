@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useSales } from '../../hooks/useSales';
 import { useInventoryAuth } from '../../context/InventoryAuthContext';
 import InventoryNavbar from '../../components/inventory/InventoryNavbar';
+import InventoryChatbot from '../../components/inventory/InventoryChatbot';
 
 export default function MemberSales() {
   const { userProfile, currentUser } = useInventoryAuth();
@@ -175,6 +176,9 @@ export default function MemberSales() {
           )}
         </div>
       </main>
+
+      {/* AI Chatbot */}
+      <InventoryChatbot />
     </div>
   );
 }

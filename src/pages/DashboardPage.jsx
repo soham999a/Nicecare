@@ -1,6 +1,7 @@
 import Navbar from '../components/Navbar';
 import CustomerForm from '../components/CustomerForm';
 import CustomerTable from '../components/CustomerTable';
+import CustomerChatbot from '../components/CustomerChatbot';
 import { useCustomers } from '../hooks/useCustomers';
 import { useState } from 'react';
 
@@ -79,6 +80,9 @@ export default function DashboardPage() {
           )}
         </div>
       </main>
+      
+      {/* AI Chatbot for customer data queries */}
+      <CustomerChatbot />
     </div>
   );
 }

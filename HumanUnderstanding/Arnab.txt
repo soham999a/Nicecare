@@ -1,0 +1,46 @@
+There are different communication protocols: 
+    - Websocket
+    - HTTP 
+Design decision made on 7th Feb, 2026: 
+    - Server Streaming
+    - Bidirectional Realtime
+    - Single Response (Synchronous)
+
+***** Key learning is: Streaming is also possible with HTTP [and not only with Websocket]
+
+***** My Architecture vs Senior Dev's Architecture
+
+SENIOR DEV'S PROJECT (AWS, decoupled pipeline)
+──────────────────────────────────────────────
+Browser ──WebSocket──► API Gateway ──► Lambda A (receives request)
+                                          │
+                                          ▼
+                                        SQS Queue
+                                          │
+                                          ▼
+                                      Step Functions
+                                          │
+                                          ▼
+                                      Lambda B (generates response)
+                                          │
+                                          ▼
+Browser ◄──WebSocket push──── API Gateway Management API
+                              (uses connectionId to find client)
+
+❌ SSE won't work: Lambda B has no access to Lambda A's HTTP connection
+✅ WebSocket works: any Lambda can push to client via connectionId
+
+
+YOUR PROJECT (direct client-to-API, no backend server)
+──────────────────────────────────────────────────────
+Browser ──HTTP POST──► Gemini API
+Browser ◄──chunked response body (streaming)──── Gemini API
+
+✅ HTTP streaming works perfectly: single request, single connection, no handoff
+❌ WebSocket would be pointless overkill: there's nothing decoupled
+
+***** x 2
+API Gateway has a 29-second timeout: reason why Desion Memory was failing in-between with error code 500 (as the connection was getting lost in reading a lot of GitHub commits and PRs).
+
+
+------- xxxx ------ 

@@ -1,0 +1,36 @@
+Feature branch: dev/platform-ai
+
+-> Plan: Server-Side RAG + Streaming + Feedback
+Move both chatbots' RAG logic behind Cloud Functions (2nd gen) with SSE streaming, secure the API key server-side, enforce real rate limiting, and add a thumbs up/down feedback mechanism persisted to Firestore.
+
+Phase 1 — Initialize Cloud Functions
+Run firebase init functions (choose JavaScript, 2nd gen) to scaffold the functions/ directory with its own package.json, and add @google/generative-ai + firebase-admin as dependencies.
+Update firebase.json to include the new "functions" block alongside the existing "hosting" and "firestore" config.
+Add GOOGLE_AI_API_KEY to Functions environment config (firebase functions:secrets:set GOOGLE_AI_API_KEY) — this replaces the browser-exposed VITE_GOOGLE_AI_API_KEY.
+
+Phase 2 — Server-Side RAG Endpoints (3 Cloud Functions)
+Create functions/askAboutInventory.js — migrate the data-fetching (getAllInventoryData), context-building (buildInventoryContext), and Gemini streaming logic from src/services/inventoryRagService.js into an onRequest handler that: verifies the Firebase ID token, enforces per-UID rate limiting (in-memory Map), reads Firestore via Admin SDK, streams Gemini's response back as SSE (text/event-stream with res.write()).
+Create functions/askAboutCustomers.js — same pattern, migrating logic from src/services/ragService.js. This endpoint does not need streaming today (the CRM chatbot doesn't stream), but should use SSE anyway for consistency and future-proofing.
+Create functions/submitFeedback.js — a simple onRequest POST handler that verifies the ID token, validates the payload ({ messageId, response, question, answer, rating, module }) and writes to a chatFeedback Firestore collection.
+
+Phase 3 — Refactor Client Services
+Refactor src/services/inventoryRagService.js — remove all Firestore queries, Gemini SDK usage, embeddings, and context-building. Replace with a thin fetch() call to the Cloud Function URL, passing the Firebase ID token in the Authorization header and reading the SSE stream via ReadableStream reader. Keep the onStream callback interface unchanged so the UI code doesn't break.
+Refactor src/services/ragService.js — same treatment. Remove the @google/generative-ai import entirely. Add SSE reading + onStream callback support (upgrade CRM chatbot to streaming).
+Remove VITE_GOOGLE_AI_API_KEY from .env — add VITE_FUNCTIONS_URL instead (the Cloud Functions base URL).
+
+Phase 4 — Feedback UI
+Add a feedbackService.js in src/services/ — a single submitFeedback(data) function that POSTs to the submitFeedback Cloud Function with the ID token.
+Update the message object shape in InventoryChatbot.jsx — add id (generated via crypto.randomUUID()), question (the user query that triggered this response), and feedback (null | 'up' | 'down') fields to each assistant message.
+Add thumbs up/down buttons to the assistant message render block in InventoryChatbot.jsx — show them only when !msg.isStreaming && msg.role === 'assistant'. On click: call submitFeedback(), optimistically set msg.feedback in local state to highlight the selected button and disable both.
+Apply the same message shape changes and feedback buttons to CustomerChatbot.jsx. Since this chatbot will now also stream (from step 8), align its rendering pattern with InventoryChatbot.
+
+Phase 5 — Firestore Rules & Security
+Add a chatFeedback collection rule to firestore.rules — allow create if request.auth.uid == request.resource.data.userId, allow read/update for the same user (so they can change their vote), deny delete.
+Remove or restrict client-side Firestore read access for collections that are now read server-side via Admin SDK (e.g., products, stores, sales for RAG purposes) — but keep the existing rules for the non-RAG CRUD operations that still run client-side.
+
+Phase 6 — CI/CD
+Update the GitHub Actions workflows (firebase-hosting-merge.yml, firebase-hosting-pull-request.yml) to also cd functions && npm install && npm run build and deploy functions alongside hosting (firebase deploy --only hosting,functions).
+Further Considerations
+Feedback granularity — Should feedback also capture a free-text comment (e.g., "Why was this unhelpful?"), or is thumbs up/down sufficient for now? Recommendation: start with just thumbs, add optional text later.
+CRM chatbot streaming upgrade — Step 8 adds streaming to CustomerChatbot which currently waits for the full response. This is a UX improvement but requires updating CustomerChatbot.jsx to use the same onStream + placeholder message pattern as InventoryChatbot. Recommendation: do it — the code already exists to copy from.
+Emulator setup — Consider adding a "emulators" block in firebase.json for local development of Functions + Firestore. This avoids hitting production during development. Recommended but not blocking.

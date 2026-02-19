@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useSales } from '../../hooks/useSales';
 import { useStores } from '../../hooks/useStores';
 import InventoryNavbar from '../../components/inventory/InventoryNavbar';
+import InventoryChatbot from '../../components/inventory/InventoryChatbot';
 
 export default function SalesReports() {
   const { stores } = useStores();
@@ -284,6 +285,9 @@ export default function SalesReports() {
           )}
         </div>
       </main>
+
+      {/* AI Chatbot */}
+      <InventoryChatbot />
     </div>
   );
 }

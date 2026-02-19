@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useProducts } from '../../hooks/useProducts';
 import { useStores } from '../../hooks/useStores';
 import InventoryNavbar from '../../components/inventory/InventoryNavbar';
+import InventoryChatbot from '../../components/inventory/InventoryChatbot';
 
 export default function ProductManagement() {
   const [filterStore, setFilterStore] = useState('');
@@ -589,6 +590,9 @@ export default function ProductManagement() {
           )}
         </div>
       </main>
+
+      {/* AI Chatbot */}
+      <InventoryChatbot />
     </div>
   );
 }
