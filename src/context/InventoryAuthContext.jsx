@@ -257,33 +257,53 @@ export function InventoryAuthProvider({ children }) {
     return newInviteCode;
   }
 
-  // Login for both Master and Member
+  // Login for both Master and Member. Existing accounts without an inventory profile
+  // get needsInventoryRegistration and can complete setup at /inventory/complete-registration.
   async function login(email, password) {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
 
-    // Fetch user profile to check account type
     const profileDoc = await getDoc(doc(db, 'inventoryUsers', user.uid));
-    
+
     if (!profileDoc.exists()) {
-      await signOut(auth);
-      throw new Error('This account is not registered for Inventory Management. Please use the CRM login.');
+      setUserProfile(null);
+      return { user, needsInventoryRegistration: true };
     }
 
     const profile = profileDoc.data();
-    
+
     if (profile.accountType !== 'inventory') {
-      await signOut(auth);
-      throw new Error('This account is not registered for Inventory Management. Please use the CRM login.');
+      setUserProfile(null);
+      return { user, needsInventoryRegistration: true };
     }
 
-    // Check if employee account is active
     if (profile.role === 'member' && !profile.isActive) {
       await signOut(auth);
       throw new Error('Your account has been deactivated. Please contact your administrator.');
     }
 
     setUserProfile(profile);
+    return user;
+  }
+
+  // Register an existing Firebase account (e.g. from old CRM signup) as a master inventory account.
+  async function registerExistingAccountAsMaster(businessName) {
+    if (!auth.currentUser) {
+      throw new Error('You must be signed in to complete registration.');
+    }
+    const user = auth.currentUser;
+
+    const profileData = {
+      email: user.email,
+      displayName: (businessName || '').trim() || user.displayName || '',
+      role: 'master',
+      accountType: 'inventory',
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    };
+
+    await setDoc(doc(db, 'inventoryUsers', user.uid), profileData);
+    setUserProfile(profileData);
     return user;
   }
 
@@ -325,7 +345,7 @@ export function InventoryAuthProvider({ children }) {
 
     const q = query(
       collection(db, 'employees'),
-      where('masterUid', '==', currentUser.uid)
+      where('ownerUid', '==', currentUser.uid)
     );
     
     const snapshot = await getDocs(q);
@@ -373,6 +393,7 @@ export function InventoryAuthProvider({ children }) {
     checkInvitation,
     resendInvitation,
     login,
+    registerExistingAccountAsMaster,
     logout,
     resetPassword,
     resendVerificationEmail,

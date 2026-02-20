@@ -2,43 +2,24 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 
-const platformOptions = [
-  {
-    id: 'crm',
-    title: 'CRM',
-    subtitle: 'Customer Relationship Management',
-    description: 'Manage customer profiles, track repair orders, and streamline your service workflow.',
-    icon: (
-      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-        <circle cx="9" cy="7" r="4"/>
-        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-      </svg>
-    ),
-    features: ['Customer Profiles', 'Repair Tracking', 'Service History', 'Analytics'],
-    gradient: 'linear-gradient(135deg, #3b82f6 0%, #0ea5e9 100%)',
-    accentColor: '#3b82f6',
-    path: '/crm/login'
-  },
-  {
-    id: 'inventory',
-    title: 'Inventory',
-    subtitle: 'Inventory & POS Management',
-    description: 'Manage stores, employees, products, and process sales with our point-of-sale system.',
-    icon: (
-      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
-        <line x1="3" y1="6" x2="21" y2="6"/>
-        <path d="M16 10a4 4 0 0 1-8 0"/>
-      </svg>
-    ),
-    features: ['Store Management', 'Employee Roles', 'Product Catalog', 'POS System'],
-    gradient: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-    accentColor: '#6366f1',
-    path: '/inventory/login'
-  }
-];
+const platformOption = {
+  id: 'app',
+  title: 'CounterOne',
+  subtitle: 'Inventory, POS & CRM',
+  description: 'One platform for stores, employees, products, point-of-sale, and customer relationship management. Create your master account and get started.',
+  icon: (
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+      <line x1="3" y1="6" x2="21" y2="6"/>
+      <path d="M16 10a4 4 0 0 1-8 0"/>
+    </svg>
+  ),
+  features: ['Store Management', 'POS & Sales', 'Customer CRM', 'Employee Roles'],
+  gradient: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+  accentColor: '#6366f1',
+  signupPath: '/inventory/signup',
+  loginPath: '/inventory/login',
+};
 
 const stats = [
   { value: '10K+', label: 'Active Users' },
@@ -274,54 +255,51 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Platform Selection Cards */}
+        {/* Get Started Section */}
         <section id="platforms" className="platforms-section">
           <div className="section-header">
-            <span className="section-badge">Platforms</span>
-            <h2 className="section-title">&nbsp;Choose your solution</h2>
+            <span className="section-badge">Get Started</span>
+            <h2 className="section-title">&nbsp;One platform for your business</h2>
             <p className="section-subtitle">
-              Select the platform that best fits your business needs. You can always add more later.
+              Create your master account to manage stores, employees, products, POS, and CRM in one place.
             </p>
           </div>
           <div className="platform-cards">
-            {platformOptions.map((platform, index) => (
+            <div
+              className="platform-card animate-fade-in-up delay-1"
+              onClick={() => navigate(platformOption.signupPath)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => e.key === 'Enter' && navigate(platformOption.signupPath)}
+            >
+              <div className="card-glow" style={{ background: platformOption.gradient }}></div>
               <div
-                key={platform.id}
-                className={`platform-card animate-fade-in-up delay-${index + 1}`}
-                onClick={() => navigate(platform.path)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => e.key === 'Enter' && navigate(platform.path)}
+                className="platform-icon"
+                style={{ background: platformOption.gradient }}
               >
-                <div className="card-glow" style={{ background: platform.gradient }}></div>
-                <div 
-                  className="platform-icon"
-                  style={{ background: platform.gradient }}
-                >
-                  {platform.icon}
-                </div>
-                <h2 className="platform-title">{platform.title}</h2>
-                <p className="platform-subtitle" style={{ color: platform.accentColor }}>{platform.subtitle}</p>
-                <p className="platform-description">{platform.description}</p>
-                <ul className="platform-features">
-                  {platform.features.map((feature, idx) => (
-                    <li key={idx}>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={platform.accentColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20 6 9 17 4 12"/>
-                      </svg>
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-                <div className="platform-cta" style={{ background: platform.gradient }}>
-                  Get Started
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="5" y1="12" x2="19" y2="12"/>
-                    <polyline points="12 5 19 12 12 19"/>
-                  </svg>
-                </div>
+                {platformOption.icon}
               </div>
-            ))}
+              <h2 className="platform-title">{platformOption.title}</h2>
+              <p className="platform-subtitle" style={{ color: platformOption.accentColor }}>{platformOption.subtitle}</p>
+              <p className="platform-description">{platformOption.description}</p>
+              <ul className="platform-features">
+                {platformOption.features.map((feature, idx) => (
+                  <li key={idx}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={platformOption.accentColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+              <div className="platform-cta" style={{ background: platformOption.gradient }}>
+                Get Started
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="5" y1="12" x2="19" y2="12"/>
+                  <polyline points="12 5 19 12 12 19"/>
+                </svg>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -363,11 +341,11 @@ export default function LandingPage() {
             <h2>Ready to transform your business?</h2>
             <p>Join thousands of businesses already using CounterOne to streamline their operations.</p>
             <div className="cta-buttons">
-              <button className="btn-primary btn-lg" onClick={() => navigate('/crm/login')}>
-                Start with CRM
+              <button className="btn-primary btn-lg" onClick={() => navigate('/inventory/signup')}>
+                Create account
               </button>
               <button className="btn-primary btn-lg btn-purple" onClick={() => navigate('/inventory/login')}>
-                Start with Inventory
+                Sign in
               </button>
             </div>
           </div>

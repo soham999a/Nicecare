@@ -1,15 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { InventoryAuthProvider } from './context/InventoryAuthContext';
 
-// CRM Components
-import ProtectedRoute from './components/ProtectedRoute';
-import LoginPage from './pages/LoginPage';
-import SignupPage from './pages/SignupPage';
-import ForgotPasswordPage from './pages/ForgotPasswordPage';
-import VerifyEmailPage from './pages/VerifyEmailPage';
-import DashboardPage from './pages/DashboardPage';
 // Landing Page
 import LandingPage from './pages/LandingPage';
 
@@ -19,6 +11,7 @@ import InventoryLoginPage from './pages/inventory/InventoryLoginPage';
 import InventorySignupPage from './pages/inventory/InventorySignupPage';
 import InventoryForgotPasswordPage from './pages/inventory/InventoryForgotPasswordPage';
 import InventoryVerifyEmailPage from './pages/inventory/InventoryVerifyEmailPage';
+import CompleteRegistrationPage from './pages/inventory/CompleteRegistrationPage';
 import MasterDashboard from './pages/inventory/MasterDashboard';
 import StoreManagement from './pages/inventory/StoreManagement';
 import EmployeeManagement from './pages/inventory/EmployeeManagement';
@@ -26,6 +19,7 @@ import ProductManagement from './pages/inventory/ProductManagement';
 import SalesReports from './pages/inventory/SalesReports';
 import MemberPOS from './pages/inventory/MemberPOS';
 import MemberSales from './pages/inventory/MemberSales';
+import CRMPage from './pages/inventory/CRMPage';
 
 import './styles/theme.css';
 import './styles/landing.css';
@@ -39,50 +33,25 @@ function App() {
           {/* Landing Page */}
           <Route path="/" element={<LandingPage />} />
 
-          {/* ===== CRM Routes ===== */}
-          <Route path="/crm/*" element={
-            <AuthProvider>
-              <Routes>
-                {/* CRM Public routes */}
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/signup" element={<SignupPage />} />
-                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-                <Route path="/verify-email" element={<VerifyEmailPage />} />
+          {/* Legacy auth routes - redirect to inventory */}
+          <Route path="/login" element={<Navigate to="/inventory/login" replace />} />
+          <Route path="/signup" element={<Navigate to="/inventory/signup" replace />} />
+          <Route path="/dashboard" element={<Navigate to="/inventory/dashboard" replace />} />
+          <Route path="/verify-email" element={<Navigate to="/inventory/verify-email" replace />} />
+          <Route path="/forgot-password" element={<Navigate to="/inventory/forgot-password" replace />} />
 
-                {/* CRM Protected routes */}
-                <Route
-                  path="/dashboard"
-                  element={
-                    <ProtectedRoute>
-                      <DashboardPage />
-                    </ProtectedRoute>
-                  }
-                />
-
-                {/* CRM Default redirect */}
-                <Route path="/" element={<Navigate to="/crm/dashboard" replace />} />
-                <Route path="*" element={<Navigate to="/crm/dashboard" replace />} />
-              </Routes>
-            </AuthProvider>
-          } />
-
-          {/* Legacy CRM routes - redirect to new paths */}
-          <Route path="/login" element={<Navigate to="/crm/login" replace />} />
-          <Route path="/signup" element={<Navigate to="/crm/signup" replace />} />
-          <Route path="/dashboard" element={<Navigate to="/crm/dashboard" replace />} />
-          <Route path="/verify-email" element={<Navigate to="/crm/verify-email" replace />} />
-
-          {/* ===== Inventory Routes ===== */}
+          {/* ===== Inventory Routes (single app: Inventory + POS + CRM) ===== */}
           <Route path="/inventory/*" element={
             <InventoryAuthProvider>
               <Routes>
-                {/* Inventory Public routes */}
+                {/* Public routes */}
                 <Route path="/login" element={<InventoryLoginPage />} />
                 <Route path="/signup" element={<InventorySignupPage />} />
                 <Route path="/forgot-password" element={<InventoryForgotPasswordPage />} />
                 <Route path="/verify-email" element={<InventoryVerifyEmailPage />} />
+                <Route path="/complete-registration" element={<CompleteRegistrationPage />} />
 
-                {/* Inventory Master routes */}
+                {/* Master routes */}
                 <Route
                   path="/dashboard"
                   element={
@@ -124,7 +93,7 @@ function App() {
                   }
                 />
 
-                {/* Inventory Member routes */}
+                {/* Member routes */}
                 <Route
                   path="/pos"
                   element={
@@ -142,7 +111,17 @@ function App() {
                   }
                 />
 
-                {/* Inventory Default redirect */}
+                {/* CRM - both master and member (store-scoped for member) */}
+                <Route
+                  path="/crm"
+                  element={
+                    <InventoryProtectedRoute>
+                      <CRMPage />
+                    </InventoryProtectedRoute>
+                  }
+                />
+
+                {/* Default redirect */}
                 <Route path="/" element={<Navigate to="/inventory/login" replace />} />
                 <Route path="*" element={<Navigate to="/inventory/login" replace />} />
               </Routes>

@@ -12,9 +12,9 @@ export default function InventoryProtectedRoute({ children, requireMaster = fals
     return <Navigate to="/inventory/verify-email" replace />;
   }
 
-  // Check if account is an inventory account
-  if (userProfile?.accountType !== 'inventory') {
-    return <Navigate to="/inventory/login" replace />;
+  // Signed in but no inventory profile (e.g. legacy CRM account) → complete registration
+  if (!userProfile || userProfile?.accountType !== 'inventory') {
+    return <Navigate to="/inventory/complete-registration" replace />;
   }
 
   // Check for master role if required

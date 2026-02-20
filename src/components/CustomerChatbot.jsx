@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useInventoryAuth } from '../context/InventoryAuthContext';
 import { askAboutCustomers, generateCustomerSummary } from '../services/ragService';
 import { submitFeedback } from '../services/feedbackService';
 
@@ -27,7 +27,7 @@ export default function CustomerChatbot() {
   const inputRef = useRef(null);
   const streamingMessageIndexRef = useRef(null);
   
-  const { currentUser } = useAuth();
+  const { currentUser } = useInventoryAuth();
 
   // Scroll to bottom when new messages arrive
   useEffect(() => {

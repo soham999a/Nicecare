@@ -12,30 +12,62 @@ import {
   orderBy,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
-import { useAuth } from '../context/AuthContext';
+import { useInventoryAuth } from '../context/InventoryAuthContext';
 
-export function useCustomers() {
+/**
+ * Store-scoped CRM customers. Pass storeId to filter by store (master only).
+ * Members always see only their assigned store.
+ */
+export function useCustomers(storeId = null) {
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [addingCustomer, setAddingCustomer] = useState(false);
 
-  const { currentUser } = useAuth();
+  const { currentUser, userProfile } = useInventoryAuth();
 
   useEffect(() => {
-    if (!currentUser) {
+    if (!currentUser || !userProfile) {
       setCustomers([]);
       setLoading(false);
       return;
     }
 
-    // Query flat /customers collection filtered by ownerUid
+    const ownerUid = userProfile.role === 'master' ? currentUser.uid : (userProfile.ownerUid || currentUser.uid);
     const customersRef = collection(db, 'customers');
-    const q = query(
-      customersRef,
-      where('ownerUid', '==', currentUser.uid),
-      orderBy('createdAt', 'desc')
-    );
+
+    let q;
+
+    if (userProfile.role === 'member') {
+      const memberStoreId = userProfile.assignedStoreId;
+      if (!memberStoreId || !ownerUid) {
+        setCustomers([]);
+        setLoading(false);
+        return;
+      }
+      q = query(
+        customersRef,
+        where('ownerUid', '==', ownerUid),
+        where('storeId', '==', memberStoreId),
+        orderBy('createdAt', 'desc')
+      );
+    } else {
+      // Master: filter by storeId if provided, otherwise all stores (ownerUid only for legacy + multi-store)
+      if (storeId) {
+        q = query(
+          customersRef,
+          where('ownerUid', '==', ownerUid),
+          where('storeId', '==', storeId),
+          orderBy('createdAt', 'desc')
+        );
+      } else {
+        q = query(
+          customersRef,
+          where('ownerUid', '==', ownerUid),
+          orderBy('createdAt', 'desc')
+        );
+      }
+    }
 
     const unsubscribe = onSnapshot(
       q,
@@ -56,17 +88,25 @@ export function useCustomers() {
     );
 
     return () => unsubscribe();
-  }, [currentUser]);
+  }, [currentUser, userProfile, storeId]);
 
   async function addCustomer(customerData) {
-    if (!currentUser) throw new Error('Not authenticated');
+    if (!currentUser || !userProfile) throw new Error('Not authenticated');
+
+    const ownerUid = userProfile.role === 'master' ? currentUser.uid : (userProfile.ownerUid || currentUser.uid);
+    const resolvedStoreId = customerData.storeId ?? (userProfile.role === 'member' ? userProfile.assignedStoreId : null);
+
+    if (!resolvedStoreId) {
+      throw new Error('Store is required to add a customer. Please select a store.');
+    }
 
     setAddingCustomer(true);
     try {
-      const customersRef = collection(db, 'customers');
-      await addDoc(customersRef, {
-        ...customerData,
-        ownerUid: currentUser.uid,
+      const { storeId: _sd, ...rest } = customerData;
+      await addDoc(collection(db, 'customers'), {
+        ...rest,
+        ownerUid,
+        storeId: resolvedStoreId,
         createdAt: serverTimestamp(),
       });
     } catch (err) {
@@ -94,8 +134,9 @@ export function useCustomers() {
 
     try {
       const customerRef = doc(db, 'customers', customerId);
+      const { storeId: _sd, ...rest } = customerData;
       await updateDoc(customerRef, {
-        ...customerData,
+        ...rest,
         updatedAt: serverTimestamp(),
       });
     } catch (err) {

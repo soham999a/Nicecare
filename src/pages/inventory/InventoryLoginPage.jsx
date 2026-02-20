@@ -19,8 +19,14 @@ export default function InventoryLoginPage() {
     setLoading(true);
 
     try {
-      const user = await login(email, password);
-      
+      const result = await login(email, password);
+      const user = result?.user ?? result;
+
+      if (result?.needsInventoryRegistration) {
+        navigate('/inventory/complete-registration');
+        return;
+      }
+
       if (!user.emailVerified) {
         navigate('/inventory/verify-email');
       } else {
@@ -225,13 +231,6 @@ export default function InventoryLoginPage() {
             <p>
               New business owner?{' '}
               <Link to="/inventory/signup">Create a master account</Link>
-            </p>
-          </div>
-
-          <div className="account-type-switch">
-            <p>
-              Looking for CRM?{' '}
-              <Link to="/crm/login">Go to CRM Login</Link>
             </p>
           </div>
         </div>
