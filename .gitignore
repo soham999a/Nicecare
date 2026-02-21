@@ -33,3 +33,8 @@ dist-ssr
 firebase-debug.log
 firestore-debug.log
 ui-debug.log
+
+# Service account keys – NEVER commit these
+*-sa.json
+*service-account*.json
+*serviceaccount*.json
