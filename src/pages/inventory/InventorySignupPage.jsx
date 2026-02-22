@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Eye, EyeOff } from 'lucide-react';
 import { useInventoryAuth } from '../../context/InventoryAuthContext';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -15,12 +16,16 @@ export default function InventorySignupPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   // Employee form state
   const [inviteCode, setInviteCode] = useState(initialInviteCode);
   const [employeeEmail, setEmployeeEmail] = useState('');
   const [employeePassword, setEmployeePassword] = useState('');
   const [employeeConfirmPassword, setEmployeeConfirmPassword] = useState('');
+  const [showEmployeePassword, setShowEmployeePassword] = useState(false);
+  const [showEmployeeConfirmPassword, setShowEmployeeConfirmPassword] = useState(false);
   const [invitationDetails, setInvitationDetails] = useState(null);
   const [checkingInvite, setCheckingInvite] = useState(false);
   
@@ -345,28 +350,87 @@ export default function InventorySignupPage() {
 
                 <div className="form-group">
                   <label className="label">Password</label>
-                  <input
-                    type="password"
-                    className="input"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Create a strong password"
-                    required
-                    autoComplete="new-password"
-                  />
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      className="input"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Create a strong password"
+                      required
+                      autoComplete="new-password"
+                      style={{ paddingRight: '40px' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      style={{
+                        position: 'absolute',
+                        right: '12px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        padding: '4px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        color: '#9ca3af'
+                      }}
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                    >
+                      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="form-group">
                   <label className="label">Confirm Password</label>
-                  <input
-                    type="password"
-                    className="input"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Confirm your password"
-                    required
-                    autoComplete="new-password"
-                  />
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      className="input"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Confirm your password"
+                      required
+                      autoComplete="new-password"
+                      style={{
+                        paddingRight: '40px',
+                        borderColor: confirmPassword && password && confirmPassword === password ? '#22c55e' : confirmPassword && password && confirmPassword !== password ? '#ef4444' : ''
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      style={{
+                        position: 'absolute',
+                        right: '12px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        padding: '4px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        color: '#9ca3af'
+                      }}
+                      aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                    >
+                      {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                  </div>
+                  {confirmPassword && password && confirmPassword === password && (
+                    <small style={{ color: '#22c55e', fontSize: '12px', marginTop: '4px', display: 'block' }}>
+                      Passwords match ✓
+                    </small>
+                  )}
+                  {confirmPassword && password && confirmPassword !== password && (
+                    <small style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', display: 'block' }}>
+                      Passwords don't match
+                    </small>
+                  )}
                 </div>
 
                 <button 
@@ -460,15 +524,38 @@ export default function InventorySignupPage() {
 
                 <div className="form-group">
                   <label className="label">Password</label>
-                  <input
-                    type="password"
-                    className="input"
-                    value={employeePassword}
-                    onChange={(e) => setEmployeePassword(e.target.value)}
-                    placeholder="Create a password"
-                    required
-                    autoComplete="new-password"
-                  />
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type={showEmployeePassword ? "text" : "password"}
+                      className="input"
+                      value={employeePassword}
+                      onChange={(e) => setEmployeePassword(e.target.value)}
+                      placeholder="Create a password"
+                      required
+                      autoComplete="new-password"
+                      style={{ paddingRight: '40px' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowEmployeePassword(!showEmployeePassword)}
+                      style={{
+                        position: 'absolute',
+                        right: '12px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        padding: '4px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        color: '#9ca3af'
+                      }}
+                      aria-label={showEmployeePassword ? "Hide password" : "Show password"}
+                    >
+                      {showEmployeePassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                  </div>
                   <small className="input-hint">
                     If you already have an account (e.g., CRM), use your existing password
                   </small>
@@ -476,15 +563,51 @@ export default function InventorySignupPage() {
 
                 <div className="form-group">
                   <label className="label">Confirm Password</label>
-                  <input
-                    type="password"
-                    className="input"
-                    value={employeeConfirmPassword}
-                    onChange={(e) => setEmployeeConfirmPassword(e.target.value)}
-                    placeholder="Confirm your password"
-                    required
-                    autoComplete="new-password"
-                  />
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type={showEmployeeConfirmPassword ? "text" : "password"}
+                      className="input"
+                      value={employeeConfirmPassword}
+                      onChange={(e) => setEmployeeConfirmPassword(e.target.value)}
+                      placeholder="Confirm your password"
+                      required
+                      autoComplete="new-password"
+                      style={{
+                        paddingRight: '40px',
+                        borderColor: employeeConfirmPassword && employeePassword && employeeConfirmPassword === employeePassword ? '#22c55e' : employeeConfirmPassword && employeePassword && employeeConfirmPassword !== employeePassword ? '#ef4444' : ''
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowEmployeeConfirmPassword(!showEmployeeConfirmPassword)}
+                      style={{
+                        position: 'absolute',
+                        right: '12px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        padding: '4px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        color: '#9ca3af'
+                      }}
+                      aria-label={showEmployeeConfirmPassword ? "Hide password" : "Show password"}
+                    >
+                      {showEmployeeConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                  </div>
+                  {employeeConfirmPassword && employeePassword && employeeConfirmPassword === employeePassword && (
+                    <small style={{ color: '#22c55e', fontSize: '12px', marginTop: '4px', display: 'block' }}>
+                      Passwords match ✓
+                    </small>
+                  )}
+                  {employeeConfirmPassword && employeePassword && employeeConfirmPassword !== employeePassword && (
+                    <small style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', display: 'block' }}>
+                      Passwords don't match
+                    </small>
+                  )}
                 </div>
 
                 <button 
