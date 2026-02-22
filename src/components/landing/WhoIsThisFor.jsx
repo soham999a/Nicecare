@@ -37,12 +37,16 @@ const businesses = [
 export default function WhoIsThisFor() {
   return (
     <section className="who-section">
-      <div className="section-header">
-        <span className="section-badge">Who Is This For</span>
-        <h2 className="section-title">Built for Your Kind of Business</h2>
-        <p className="section-subtitle">
-          Whether you run a single shop or multiple locations, CounterOne adapts to your needs.
-        </p>
+      <div className="section-header two-column">
+        <div className="section-left">
+          <span className="section-badge">Who Is This For</span>
+          <h2 className="section-title">Built for Your Kind of Business</h2>
+        </div>
+        <div className="section-right">
+          <p className="section-subtitle">
+            Whether you run a single shop or multiple locations, CounterOne adapts to your needs.
+          </p>
+        </div>
       </div>
       <div className="who-grid">
         {businesses.map((business, index) => (

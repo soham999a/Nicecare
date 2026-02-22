@@ -42,12 +42,16 @@ const features = [
 export default function FeaturesSection() {
   return (
     <section id="features" className="features-section">
-      <div className="section-header">
-        <span className="section-badge">Features</span>
-        <h2 className="section-title">Everything You Need to Run Your Store</h2>
-        <p className="section-subtitle">
-          Powerful tools designed to help you manage inventory, process sales, and grow your business.
-        </p>
+      <div className="section-header two-column">
+        <div className="section-left">
+          <span className="section-badge">Features</span>
+          <h2 className="section-title">Everything You Need to Run Your Store</h2>
+        </div>
+        <div className="section-right">
+          <p className="section-subtitle">
+            Powerful tools designed to help you manage inventory, process sales, and grow your business.
+          </p>
+        </div>
       </div>
       <div className="features-grid">
         {features.map((feature, index) => {

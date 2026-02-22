@@ -37,12 +37,16 @@ const steps = [
 export default function HowItWorks() {
   return (
     <section id="how-it-works" className="how-it-works-section">
-      <div className="section-header">
-        <span className="section-badge">How It Works</span>
-        <h2 className="section-title">Get Started in 3 Simple Steps</h2>
-        <p className="section-subtitle">
-          Set up your complete retail management system in under 10 minutes.
-        </p>
+      <div className="section-header two-column">
+        <div className="section-left">
+          <span className="section-badge">How It Works</span>
+          <h2 className="section-title">Get Started in 3 Simple Steps</h2>
+        </div>
+        <div className="section-right">
+          <p className="section-subtitle">
+            Set up your complete retail management system in under 10 minutes.
+          </p>
+        </div>
       </div>
       <div className="steps-container">
         {steps.map((step, index) => (

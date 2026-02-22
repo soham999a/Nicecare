@@ -22,12 +22,16 @@ export default function GetStartedSection() {
 
   return (
     <section id="get-started" className="platforms-section">
-      <div className="section-header">
-        <span className="section-badge">Get Started</span>
-        <h2 className="section-title">Ready to Transform Your Business?</h2>
-        <p className="section-subtitle">
-          Create your master account to manage stores, employees, products, POS, and CRM in one place.
-        </p>
+      <div className="section-header two-column">
+        <div className="section-left">
+          <span className="section-badge">Get Started</span>
+          <h2 className="section-title">Ready to Transform Your Business?</h2>
+        </div>
+        <div className="section-right">
+          <p className="section-subtitle">
+            Create your master account to manage stores, employees, products, POS, and CRM in one place.
+          </p>
+        </div>
       </div>
       <div className="platform-cards">
         <div

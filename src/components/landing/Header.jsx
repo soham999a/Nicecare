@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
 
 export default function Header() {
   const { theme, toggleTheme } = useTheme();
   const [navOpen, setNavOpen] = useState(false);
+  const navigate = useNavigate();
 
   const closeNav = () => setNavOpen(false);
 
@@ -17,45 +19,57 @@ export default function Header() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  const scrollToSection = (sectionClass) => {
+    closeNav();
+    const section = document.querySelector(`.${sectionClass}`);
+    if (section) {
+      section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   return (
-    <header className="landing-header">
+    <header 
+      className="landing-header"
+      style={{ 
+        backgroundColor: theme === 'dark' ? '#0f172a' : '#ffffff'
+      }}
+    >
       <div className="landing-brand">
-        <div className="brand-icon">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <defs>
-              <linearGradient id="brandGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#3b82f6" />
-                <stop offset="100%" stopColor="#0ea5e9" />
-              </linearGradient>
-            </defs>
-            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke="url(#brandGradient)"/>
-            <line x1="3" y1="9" x2="21" y2="9" stroke="url(#brandGradient)"/>
-            <line x1="9" y1="21" x2="9" y2="9" stroke="url(#brandGradient)"/>
+        <div className="brand-icon-square">
+          <svg width="40" height="40" viewBox="0 0 100 100" fill="none">
+            <rect x="10" y="10" width="80" height="80" rx="12" stroke="#3b82f6" strokeWidth="8" fill="none"/>
           </svg>
         </div>
-        <span className="brand-text">CounterOne</span>
+        <span className="brand-text-teal">CounterOne</span>
       </div>
-      <button
-        className="nav-toggle"
-        type="button"
-        aria-expanded={navOpen}
-        aria-controls="landing-nav"
-        onClick={() => setNavOpen(!navOpen)}
-        aria-label="Toggle navigation"
-      >
-        <span className="nav-toggle-bar" aria-hidden="true"></span>
-        <span className="nav-toggle-bar" aria-hidden="true"></span>
-        <span className="nav-toggle-bar" aria-hidden="true"></span>
-      </button>
       <nav
         id="landing-nav"
         className={`landing-nav ${navOpen ? 'open' : ''}`}
         aria-label="Primary"
       >
-        <a href="#features" className="nav-link" onClick={closeNav}>Features</a>
-        <a href="#how-it-works" className="nav-link" onClick={closeNav}>How It Works</a>
+        <button className="nav-link" onClick={() => scrollToSection('features-section')}>
+          Features
+        </button>
+        <button className="nav-link" onClick={() => scrollToSection('how-it-works-section')}>
+          How It Works
+        </button>
+        <button className="nav-link" onClick={() => navigate('/inventory/login')}>
+          Sign In
+        </button>
       </nav>
       <div className="header-actions">
+        <button
+          className="nav-toggle"
+          type="button"
+          aria-expanded={navOpen}
+          aria-controls="landing-nav"
+          onClick={() => setNavOpen(!navOpen)}
+          aria-label="Toggle navigation"
+        >
+          <span className="nav-toggle-bar" aria-hidden="true"></span>
+          <span className="nav-toggle-bar" aria-hidden="true"></span>
+          <span className="nav-toggle-bar" aria-hidden="true"></span>
+        </button>
         <button 
           className="theme-toggle-btn"
           onClick={toggleTheme}

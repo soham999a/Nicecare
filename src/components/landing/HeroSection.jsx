@@ -7,15 +7,15 @@ export default function HeroSection() {
     <section className="hero-section">
       <div className="hero-badge">
         <span className="badge-dot"></span>
-        One Login. Every Store. Total Control.
+        Smarter Inventory | Stronger Customer Relationships.
       </div>
       <h1 className="hero-title">
-        More Time, More Control,
-        <span className="gradient-text"> Your Business on Autopilot</span>
+        One Unified Platform for
+        <span className="gradient-text"> Inventory and Customer Management</span>
       </h1>
       <p className="hero-subtitle">
-        If you sell it, repair it, or stock it — CounterOne runs it. Manage stores, track inventory, 
-        process sales, and grow your business from one powerful platform.
+        Streamline your operations with our powerful Inventory Management solutions and CRM. 
+        Built for repair shops, retail stores, and service businesses of small to medium sizes.
       </p>
       <div className="hero-features-list">
         <div className="hero-feature-item">
