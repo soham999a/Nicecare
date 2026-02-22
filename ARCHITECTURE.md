@@ -323,3 +323,4 @@
 | **Testing**    | Vitest, React Testing Library, jsdom, v8 coverage|
 | **CI/CD**      | GitHub Actions → Firebase Hosting                |
 | **Linting**    | ESLint 9 (flat config)                           |
+
