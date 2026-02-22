@@ -37,6 +37,41 @@ export default function InventorySignupPage() {
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
+  // Password strength calculation
+  const calculatePasswordStrength = (pwd) => {
+    if (!pwd) return { strength: 'weak', score: 0 };
+    
+    const hasMinLength = pwd.length >= 8;
+    const hasUpperCase = /[A-Z]/.test(pwd);
+    const hasLowerCase = /[a-z]/.test(pwd);
+    const hasNumber = /[0-9]/.test(pwd);
+    const hasSpecial = /[!@#$%^&*]/.test(pwd);
+    
+    const checks = {
+      minLength: hasMinLength,
+      uppercase: hasUpperCase,
+      number: hasNumber,
+      special: hasSpecial
+    };
+    
+    if (pwd.length < 6) {
+      return { strength: 'weak', score: 1, checks };
+    }
+    
+    if (hasMinLength && hasUpperCase && hasLowerCase && hasNumber && hasSpecial) {
+      return { strength: 'strong', score: 3, checks };
+    }
+    
+    if (pwd.length >= 6 && ((hasLowerCase || hasUpperCase) && hasNumber)) {
+      return { strength: 'medium', score: 2, checks };
+    }
+    
+    return { strength: 'weak', score: 1, checks };
+  };
+
+  const masterPasswordStrength = calculatePasswordStrength(password);
+  const employeePasswordStrength = calculatePasswordStrength(employeePassword);
+
   // Auto-check invitation code if provided in URL
   useEffect(() => {
     if (initialInviteCode && activeTab === 'employee') {
@@ -382,6 +417,32 @@ export default function InventorySignupPage() {
                       {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                     </button>
                   </div>
+                  {password && (
+                    <>
+                      <div style={{ display: 'flex', gap: '4px', marginTop: '8px' }}>
+                        <div style={{ flex: 1, height: '4px', borderRadius: '2px', background: masterPasswordStrength.score >= 1 ? (masterPasswordStrength.strength === 'weak' ? '#ef4444' : masterPasswordStrength.strength === 'medium' ? '#f59e0b' : '#22c55e') : '#e5e7eb' }}></div>
+                        <div style={{ flex: 1, height: '4px', borderRadius: '2px', background: masterPasswordStrength.score >= 2 ? (masterPasswordStrength.strength === 'medium' ? '#f59e0b' : '#22c55e') : '#e5e7eb' }}></div>
+                        <div style={{ flex: 1, height: '4px', borderRadius: '2px', background: masterPasswordStrength.score >= 3 ? '#22c55e' : '#e5e7eb' }}></div>
+                      </div>
+                      <div style={{ fontSize: '12px', marginTop: '4px', color: masterPasswordStrength.strength === 'weak' ? '#ef4444' : masterPasswordStrength.strength === 'medium' ? '#f59e0b' : '#22c55e', fontWeight: '600' }}>
+                        {masterPasswordStrength.strength.charAt(0).toUpperCase() + masterPasswordStrength.strength.slice(1)}
+                      </div>
+                      <div style={{ fontSize: '11px', marginTop: '6px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                        <div style={{ color: masterPasswordStrength.checks.minLength ? '#22c55e' : '#9ca3af' }}>
+                          {masterPasswordStrength.checks.minLength ? '✓' : '○'} At least 8 characters
+                        </div>
+                        <div style={{ color: masterPasswordStrength.checks.uppercase ? '#22c55e' : '#9ca3af' }}>
+                          {masterPasswordStrength.checks.uppercase ? '✓' : '○'} One uppercase letter
+                        </div>
+                        <div style={{ color: masterPasswordStrength.checks.number ? '#22c55e' : '#9ca3af' }}>
+                          {masterPasswordStrength.checks.number ? '✓' : '○'} One number
+                        </div>
+                        <div style={{ color: masterPasswordStrength.checks.special ? '#22c55e' : '#9ca3af' }}>
+                          {masterPasswordStrength.checks.special ? '✓' : '○'} One special character (!@#$)
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 <div className="form-group">
@@ -556,6 +617,32 @@ export default function InventorySignupPage() {
                       {showEmployeePassword ? <EyeOff size={20} /> : <Eye size={20} />}
                     </button>
                   </div>
+                  {employeePassword && (
+                    <>
+                      <div style={{ display: 'flex', gap: '4px', marginTop: '8px' }}>
+                        <div style={{ flex: 1, height: '4px', borderRadius: '2px', background: employeePasswordStrength.score >= 1 ? (employeePasswordStrength.strength === 'weak' ? '#ef4444' : employeePasswordStrength.strength === 'medium' ? '#f59e0b' : '#22c55e') : '#e5e7eb' }}></div>
+                        <div style={{ flex: 1, height: '4px', borderRadius: '2px', background: employeePasswordStrength.score >= 2 ? (employeePasswordStrength.strength === 'medium' ? '#f59e0b' : '#22c55e') : '#e5e7eb' }}></div>
+                        <div style={{ flex: 1, height: '4px', borderRadius: '2px', background: employeePasswordStrength.score >= 3 ? '#22c55e' : '#e5e7eb' }}></div>
+                      </div>
+                      <div style={{ fontSize: '12px', marginTop: '4px', color: employeePasswordStrength.strength === 'weak' ? '#ef4444' : employeePasswordStrength.strength === 'medium' ? '#f59e0b' : '#22c55e', fontWeight: '600' }}>
+                        {employeePasswordStrength.strength.charAt(0).toUpperCase() + employeePasswordStrength.strength.slice(1)}
+                      </div>
+                      <div style={{ fontSize: '11px', marginTop: '6px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                        <div style={{ color: employeePasswordStrength.checks.minLength ? '#22c55e' : '#9ca3af' }}>
+                          {employeePasswordStrength.checks.minLength ? '✓' : '○'} At least 8 characters
+                        </div>
+                        <div style={{ color: employeePasswordStrength.checks.uppercase ? '#22c55e' : '#9ca3af' }}>
+                          {employeePasswordStrength.checks.uppercase ? '✓' : '○'} One uppercase letter
+                        </div>
+                        <div style={{ color: employeePasswordStrength.checks.number ? '#22c55e' : '#9ca3af' }}>
+                          {employeePasswordStrength.checks.number ? '✓' : '○'} One number
+                        </div>
+                        <div style={{ color: employeePasswordStrength.checks.special ? '#22c55e' : '#9ca3af' }}>
+                          {employeePasswordStrength.checks.special ? '✓' : '○'} One special character (!@#$)
+                        </div>
+                      </div>
+                    </>
+                  )}
                   <small className="input-hint">
                     If you already have an account (e.g., CRM), use your existing password
                   </small>
