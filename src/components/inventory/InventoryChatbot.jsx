@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useInventoryAuth } from '../../context/InventoryAuthContext';
 import { askAboutInventory, generateInventorySummary, analyzeLowStock } from '../../services/inventoryRagService';
+import { askAboutCustomers, generateCustomerSummary } from '../../services/ragService';
 import { submitFeedback } from '../../services/feedbackService';
+import { useLocation } from 'react-router-dom';
 
 const MASTER_SUGGESTED_QUESTIONS = [
   "What's my total inventory value?",
@@ -17,12 +19,19 @@ const MEMBER_SUGGESTED_QUESTIONS = [
   "Which items need restocking?",
 ];
 
+const CRM_SUGGESTED_QUESTIONS = [
+  "How many customers do I have?",
+  "Show repairs in progress",
+  "Any urgent repairs pending?",
+  "Summarize today's status",
+];
+
 export default function InventoryChatbot() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      content: "Hi! I'm your inventory assistant. Ask me anything about your products, stores, sales, and more!",
+      content: "Hi! I'm your business assistant. Ask me anything about your products, stores, customers, and sales!",
     },
   ]);
   const [inputValue, setInputValue] = useState('');
@@ -33,12 +42,14 @@ export default function InventoryChatbot() {
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const streamingMessageIndexRef = useRef(null);
-  
-  const { currentUser, userProfile } = useInventoryAuth();
 
-  const suggestedQuestions = userProfile?.role === 'master' 
-    ? MASTER_SUGGESTED_QUESTIONS 
-    : MEMBER_SUGGESTED_QUESTIONS;
+  const { currentUser, userProfile } = useInventoryAuth();
+  const location = useLocation();
+  const isCrmPage = location.pathname.includes('/inventory/crm');
+
+  const suggestedQuestions = isCrmPage
+    ? CRM_SUGGESTED_QUESTIONS
+    : (userProfile?.role === 'master' ? MASTER_SUGGESTED_QUESTIONS : MEMBER_SUGGESTED_QUESTIONS);
 
   // Scroll to bottom when new messages arrive
   useEffect(() => {
@@ -87,8 +98,9 @@ export default function InventoryChatbot() {
         question: msg.question || '',
         answer: msg.content,
         rating,
+        rating,
         comment: null,
-        module: 'inventory',
+        module: isCrmPage ? 'crm' : 'inventory',
       });
     } catch (err) {
       console.error('Feedback error:', err);
@@ -113,7 +125,7 @@ export default function InventoryChatbot() {
         answer: msg.content,
         rating: msg.feedback || 'down',
         comment: feedbackComment.text.trim(),
-        module: 'inventory',
+        module: isCrmPage ? 'crm' : 'inventory',
       });
       setFeedbackComment({ messageId: null, text: '' });
     } catch (err) {
@@ -123,7 +135,7 @@ export default function InventoryChatbot() {
 
   const handleSubmit = async (e) => {
     e?.preventDefault();
-    
+
     const query = inputValue.trim();
     if (!query || isLoading || isStreaming) return;
 
@@ -135,29 +147,34 @@ export default function InventoryChatbot() {
     // Add user message and placeholder for assistant response
     setMessages(prev => {
       const newMessages = [
-        ...prev, 
+        ...prev,
         { role: 'user', content: query },
         { role: 'assistant', content: '', isStreaming: true, id: crypto.randomUUID(), question: query, feedback: null }
       ];
       streamingMessageIndexRef.current = newMessages.length - 1;
       return newMessages;
     });
-    
+
     setInputValue('');
     setIsLoading(true);
     setIsStreaming(true);
     setError(null);
 
     try {
-      const result = await askAboutInventory(
-        query, 
-        currentUser.uid, 
-        userProfile?.role || 'member',
-        userProfile?.assignedStoreId,
-        userProfile?.ownerUid,
-        handleStreamChunk
-      );
-      
+      let result;
+      if (isCrmPage) {
+        result = await askAboutCustomers(query, currentUser.uid, true, handleStreamChunk);
+      } else {
+        result = await askAboutInventory(
+          query,
+          currentUser.uid,
+          userProfile?.role || 'member',
+          userProfile?.assignedStoreId,
+          userProfile?.ownerUid,
+          handleStreamChunk
+        );
+      }
+
       // Update final message with meta data
       setMessages(prev => {
         const newMessages = [...prev];
@@ -166,7 +183,7 @@ export default function InventoryChatbot() {
           newMessages[streamIndex] = {
             ...newMessages[streamIndex],
             content: result.answer,
-            meta: result.dataUsed,
+            meta: isCrmPage ? { customers: result.customersUsed } : result.dataUsed,
             isStreaming: false,
           };
         }
@@ -198,7 +215,7 @@ export default function InventoryChatbot() {
     setInputValue(question);
     // Auto-submit after a brief delay
     setTimeout(() => {
-      handleSubmit({ preventDefault: () => {} });
+      handleSubmit({ preventDefault: () => { } });
     }, 100);
   };
 
@@ -208,27 +225,32 @@ export default function InventoryChatbot() {
     // Add user message and placeholder for assistant response
     setMessages(prev => {
       const newMessages = [
-        ...prev, 
+        ...prev,
         { role: 'user', content: 'Give me a business summary' },
         { role: 'assistant', content: '', isStreaming: true, id: crypto.randomUUID(), question: 'Give me a business summary', feedback: null }
       ];
       streamingMessageIndexRef.current = newMessages.length - 1;
       return newMessages;
     });
-    
+
     setIsLoading(true);
     setIsStreaming(true);
     setError(null);
 
     try {
-      const result = await generateInventorySummary(
-        currentUser.uid,
-        userProfile?.role || 'member',
-        userProfile?.assignedStoreId,
-        userProfile?.ownerUid,
-        handleStreamChunk
-      );
-      
+      let result;
+      if (isCrmPage) {
+        result = await generateCustomerSummary(currentUser.uid, handleStreamChunk);
+      } else {
+        result = await generateInventorySummary(
+          currentUser.uid,
+          userProfile?.role || 'member',
+          userProfile?.assignedStoreId,
+          userProfile?.ownerUid,
+          handleStreamChunk
+        );
+      }
+
       // Update final message with meta data
       setMessages(prev => {
         const newMessages = [...prev];
@@ -237,7 +259,7 @@ export default function InventoryChatbot() {
           newMessages[streamIndex] = {
             ...newMessages[streamIndex],
             content: result.answer,
-            meta: result.dataUsed,
+            meta: isCrmPage ? { customers: result.customersUsed } : result.dataUsed,
             isStreaming: false,
           };
         }
@@ -271,14 +293,14 @@ export default function InventoryChatbot() {
     // Add user message and placeholder for assistant response
     setMessages(prev => {
       const newMessages = [
-        ...prev, 
+        ...prev,
         { role: 'user', content: 'Analyze low stock items' },
         { role: 'assistant', content: '', isStreaming: true, id: crypto.randomUUID(), question: 'Analyze low stock items', feedback: null }
       ];
       streamingMessageIndexRef.current = newMessages.length - 1;
       return newMessages;
     });
-    
+
     setIsLoading(true);
     setIsStreaming(true);
     setError(null);
@@ -291,7 +313,7 @@ export default function InventoryChatbot() {
         userProfile?.ownerUid,
         handleStreamChunk
       );
-      
+
       // Update final message with meta data
       setMessages(prev => {
         const newMessages = [...prev];
@@ -340,6 +362,12 @@ export default function InventoryChatbot() {
 
   const formatMeta = (meta) => {
     if (!meta) return null;
+    if (isCrmPage) {
+      if (meta.customers !== undefined) {
+        return `Analyzed ${meta.customers} customer record${meta.customers !== 1 ? 's' : ''}`;
+      }
+      return null;
+    }
     const parts = [];
     if (meta.products > 0) parts.push(`${meta.products} products`);
     if (meta.stores > 0) parts.push(`${meta.stores} stores`);
@@ -379,14 +407,23 @@ export default function InventoryChatbot() {
           <div className="inventory-chatbot-header">
             <div className="inventory-chatbot-header-info">
               <div className="inventory-chatbot-avatar">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
-                  <line x1="3" y1="6" x2="21" y2="6"/>
-                  <path d="M16 10a4 4 0 0 1-8 0"/>
-                </svg>
+                {isCrmPage ? (
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 2a10 10 0 0 1 10 10c0 5.52-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2z"></path>
+                    <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
+                    <line x1="9" y1="9" x2="9.01" y2="9"></line>
+                    <line x1="15" y1="9" x2="15.01" y2="9"></line>
+                  </svg>
+                ) : (
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+                    <line x1="3" y1="6" x2="21" y2="6" />
+                    <path d="M16 10a4 4 0 0 1-8 0" />
+                  </svg>
+                )}
               </div>
               <div>
-                <h4>Inventory Assistant</h4>
+                <h4>{isCrmPage ? 'Customer Assistant' : 'Inventory Assistant'}</h4>
                 <span className="inventory-chatbot-status">
                   <span className="status-dot"></span>
                   Powered by Gemini AI
@@ -394,8 +431,8 @@ export default function InventoryChatbot() {
               </div>
             </div>
             <div className="inventory-chatbot-header-actions">
-              <button 
-                className="inventory-chatbot-action-btn" 
+              <button
+                className="inventory-chatbot-action-btn"
                 onClick={handleGetSummary}
                 disabled={isLoading || isStreaming}
                 title="Get business summary"
@@ -407,20 +444,22 @@ export default function InventoryChatbot() {
                   <line x1="16" y1="17" x2="8" y2="17"></line>
                 </svg>
               </button>
-              <button 
-                className="inventory-chatbot-action-btn warning" 
-                onClick={handleLowStockAnalysis}
-                disabled={isLoading || isStreaming}
-                title="Analyze low stock"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-                  <line x1="12" y1="9" x2="12" y2="13"></line>
-                  <line x1="12" y1="17" x2="12.01" y2="17"></line>
-                </svg>
-              </button>
-              <button 
-                className="inventory-chatbot-action-btn" 
+              {!isCrmPage && (
+                <button
+                  className="inventory-chatbot-action-btn warning"
+                  onClick={handleLowStockAnalysis}
+                  disabled={isLoading || isStreaming}
+                  title="Analyze low stock"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                    <line x1="12" y1="9" x2="12" y2="13"></line>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                  </svg>
+                </button>
+              )}
+              <button
+                className="inventory-chatbot-action-btn"
                 onClick={clearChat}
                 title="Clear chat"
               >
@@ -445,9 +484,9 @@ export default function InventoryChatbot() {
                     <div className="loading-indicator">
                       <div className="ai-thinking-icon">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
-                          <line x1="3" y1="6" x2="21" y2="6"/>
-                          <path d="M16 10a4 4 0 0 1-8 0"/>
+                          <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+                          <line x1="3" y1="6" x2="21" y2="6" />
+                          <path d="M16 10a4 4 0 0 1-8 0" />
                         </svg>
                       </div>
                       <div className="loading-text">Analyzing</div>
@@ -480,7 +519,7 @@ export default function InventoryChatbot() {
                           aria-label="Thumbs up"
                         >
                           <svg width="14" height="14" viewBox="0 0 24 24" fill={msg.feedback === 'up' ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
-                            <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
+                            <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
                           </svg>
                         </button>
                         <button
@@ -490,7 +529,7 @@ export default function InventoryChatbot() {
                           aria-label="Thumbs down"
                         >
                           <svg width="14" height="14" viewBox="0 0 24 24" fill={msg.feedback === 'down' ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
-                            <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10zM17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/>
+                            <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10zM17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17" />
                           </svg>
                         </button>
                         {msg.feedback && (
@@ -500,7 +539,7 @@ export default function InventoryChatbot() {
                             title="Add comment"
                           >
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                             </svg>
                           </button>
                         )}
@@ -528,7 +567,7 @@ export default function InventoryChatbot() {
                 )}
               </div>
             ))}
-            
+
             <div ref={messagesEndRef} />
           </div>
 
@@ -562,7 +601,7 @@ export default function InventoryChatbot() {
               type="text"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              placeholder="Ask about inventory, sales, stores..."
+              placeholder={isCrmPage ? "Ask about your customers..." : "Ask about inventory, sales, stores..."}
               disabled={isLoading || isStreaming}
               className="inventory-chatbot-input"
             />

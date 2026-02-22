@@ -7,6 +7,7 @@ import LandingPage from './pages/LandingPage';
 
 // Inventory Components
 import InventoryProtectedRoute from './components/inventory/InventoryProtectedRoute';
+import InventoryLayout from './components/inventory/InventoryLayout';
 import InventoryLoginPage from './pages/inventory/InventoryLoginPage';
 import InventorySignupPage from './pages/inventory/InventorySignupPage';
 import InventoryForgotPasswordPage from './pages/inventory/InventoryForgotPasswordPage';
@@ -51,79 +52,86 @@ function App() {
                 <Route path="/verify-email" element={<InventoryVerifyEmailPage />} />
                 <Route path="/complete-registration" element={<CompleteRegistrationPage />} />
 
-                {/* Master routes */}
-                <Route
-                  path="/dashboard"
-                  element={
-                    <InventoryProtectedRoute requireMaster={true}>
-                      <MasterDashboard />
-                    </InventoryProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/stores"
-                  element={
-                    <InventoryProtectedRoute requireMaster={true}>
-                      <StoreManagement />
-                    </InventoryProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/employees"
-                  element={
-                    <InventoryProtectedRoute requireMaster={true}>
-                      <EmployeeManagement />
-                    </InventoryProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/products"
-                  element={
-                    <InventoryProtectedRoute requireMaster={true}>
-                      <ProductManagement />
-                    </InventoryProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/sales"
-                  element={
-                    <InventoryProtectedRoute requireMaster={true}>
-                      <SalesReports />
-                    </InventoryProtectedRoute>
-                  }
-                />
+                {/* Authenticated routes wrapped in persistent layout */}
+                <Route path="*" element={
+                  <InventoryLayout>
+                    <Routes>
+                      {/* Master routes */}
+                      <Route
+                        path="/dashboard"
+                        element={
+                          <InventoryProtectedRoute requireMaster={true}>
+                            <MasterDashboard />
+                          </InventoryProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/stores"
+                        element={
+                          <InventoryProtectedRoute requireMaster={true}>
+                            <StoreManagement />
+                          </InventoryProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/employees"
+                        element={
+                          <InventoryProtectedRoute requireMaster={true}>
+                            <EmployeeManagement />
+                          </InventoryProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/products"
+                        element={
+                          <InventoryProtectedRoute requireMaster={true}>
+                            <ProductManagement />
+                          </InventoryProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/sales"
+                        element={
+                          <InventoryProtectedRoute requireMaster={true}>
+                            <SalesReports />
+                          </InventoryProtectedRoute>
+                        }
+                      />
 
-                {/* Member routes */}
-                <Route
-                  path="/pos"
-                  element={
-                    <InventoryProtectedRoute>
-                      <MemberPOS />
-                    </InventoryProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/my-sales"
-                  element={
-                    <InventoryProtectedRoute>
-                      <MemberSales />
-                    </InventoryProtectedRoute>
-                  }
-                />
+                      {/* Member routes */}
+                      <Route
+                        path="/pos"
+                        element={
+                          <InventoryProtectedRoute>
+                            <MemberPOS />
+                          </InventoryProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/my-sales"
+                        element={
+                          <InventoryProtectedRoute>
+                            <MemberSales />
+                          </InventoryProtectedRoute>
+                        }
+                      />
 
-                {/* CRM - both master and member (store-scoped for member) */}
-                <Route
-                  path="/crm"
-                  element={
-                    <InventoryProtectedRoute>
-                      <CRMPage />
-                    </InventoryProtectedRoute>
-                  }
-                />
+                      {/* CRM - both master and member (store-scoped for member) */}
+                      <Route
+                        path="/crm"
+                        element={
+                          <InventoryProtectedRoute>
+                            <CRMPage />
+                          </InventoryProtectedRoute>
+                        }
+                      />
 
-                {/* Default redirect */}
-                <Route path="/" element={<Navigate to="/inventory/login" replace />} />
-                <Route path="*" element={<Navigate to="/inventory/login" replace />} />
+                      {/* Default redirect within inventory */}
+                      <Route path="/" element={<Navigate to="/inventory/login" replace />} />
+                      <Route path="*" element={<Navigate to="/inventory/login" replace />} />
+                    </Routes>
+                  </InventoryLayout>
+                } />
               </Routes>
             </InventoryAuthProvider>
           } />

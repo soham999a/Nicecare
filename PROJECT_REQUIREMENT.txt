@@ -1,0 +1,120 @@
+WirelessPOS – SaaS Architecture Specification
+(Detailed Version)
+1. Multi-Tenant SaaS Architecture (Mandatory)
+WirelessPOS must be built as a true multi-tenant SaaS system. Each store operates as an isolated
+tenant environment.
+• Each store must have isolated data (no cross-store data visibility).
+• Role-based authentication required.
+• Subscription billing per store.
+• Store-level configuration settings.
+• Corporate-level (Super Admin) global oversight dashboard.
+• Stripe Connect architecture for stores that opt into Stripe.
+2. Role-Based Access Hierarchy
+2.1 Super Admin (Corporate Level)
+• Create, disable, and manage stores.
+• Create and assign Store Managers.
+• View financial reports across all stores.
+• Configure global commission templates.
+• Configure SaaS subscription billing.
+• Access platform-wide analytics.
+• Configure Stripe Connect settings.
+• No daily sales entry required.
+2.2 Franchise Owner (Future Expansion Layer)
+• Access only assigned store(s).
+• View financial reports for owned stores.
+• View employee performance metrics.
+• Cannot edit system-wide configurations.
+• Cannot access other franchise data.
+2.3 Store Manager
+• Manage assigned store only.
+• Add and remove employees within store.
+• Adjust store inventory.
+• View store-level financial reports.
+• Approve refunds (with logging).
+• Override limited discounts (configurable %).
+• View commission reports for store team.
+• Close daily register.
+• Cannot create new stores.
+• Cannot access corporate analytics.
+2.4 Employee
+• Create sales.
+• Create repair tickets.
+• View store inventory (read-only).
+• View personal commission only.
+• Cannot edit pricing.
+• Cannot override discounts beyond limit.
+• Cannot access reporting beyond personal metrics.
+3. Repair Management Module (Core Requirement)
+• Unique Repair ID generation.
+• IMEI and Serial Number capture.
+• Device model dropdown database.
+• Device condition checklist (water damage, cracked screen, no power, etc.).
+• Repair type selection.
+• Estimated completion time field.
+• Status stages: Received, Diagnosing, Waiting for Part, Repair in Progress, Ready for Pickup,
+Delivered.
+• Auto SMS status updates.
+• Technician assignment field.
+• Repair profit margin tracking.
+4. Inventory Management Module
+• SKU field.
+• Serialized toggle (Yes/No).
+• Stock quantity per store.
+• Low stock alerts.
+• Supplier tracking.
+• Cost history tracking.
+• Category classification (Accessory, Phone, Part).
+• Store-level stock isolation.
+• Transfer inventory between stores.
+• Inventory audit log.
+5. Sales Engine Requirements
+• Customer profile auto-save.
+• Warranty option selection.
+• Protection plan add-on.
+• Accessory bundle suggestion logic.
+• Commission auto-calculation.
+• Auto tax calculation by store location.
+• Payment type selection (Cash, External Card, Stripe, Financing, Other).
+• Refund tracking system.
+• Daily closing report generation.
+6. Commission Engine
+• Commission rules per product category.
+• Repair-specific commission rules.
+• Accessory commission rules.
+• Review bonus tracking.
+• Weekly payout export report.
+• Store-level commission dashboard.
+• Manager override capability (with audit log).
+7. Payment Architecture
+7.1 External Merchant Support (Manual Mode)
+• Payment type options: Cash, Card (External Terminal), Financing, Zelle/Other.
+• Optional transaction reference field.
+• Optional terminal batch ID field.
+• Payment status tracking (Paid / Pending).
+• Separation of POS record from actual payment processor.
+7.2 Stripe Connect Integration (Optional Per Store)
+• Each store connects its own Stripe account.
+• Funds go directly to store’s bank account.
+• No central fund holding by platform.
+• Stripe Connect required (not basic API integration).
+• Store-level reconciliation reporting.
+8. Reporting Requirements
+8.1 Store Dashboard
+• Gross sales.
+• Tax collected.
+• Cash total.
+• External card total.
+• Stripe total.
+• Refund totals.
+• Net revenue.
+• Daily closing export.
+8.2 Corporate Dashboard
+• Revenue by store.
+• Payment method breakdown by store.
+• Commission payout totals.
+• SaaS Monthly Recurring Revenue (MRR).
+9. Data Ownership & Control
+• All customer data owned by WirelessPOS platform.
+• No third-party CRM dependency.
+• No external payment collection handling.
+• No outsourced call center control over CRM.
