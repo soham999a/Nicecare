@@ -503,13 +503,13 @@ export default function ProductManagement() {
               <table className="data-table enhanced-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr>
-                    <th style={{ padding: '12px 16px', color: '#6b7280', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #f0f0f0' }}>PRODUCT</th>
-                    <th style={{ padding: '12px 16px', color: '#6b7280', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #f0f0f0' }}>SKU</th>
-                    <th style={{ padding: '12px 16px', color: '#6b7280', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #f0f0f0' }}>CATEGORY</th>
-                    <th style={{ padding: '12px 16px', color: '#6b7280', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #f0f0f0' }}>STORE</th>
-                    <th style={{ padding: '12px 16px', color: '#6b7280', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #f0f0f0' }}>PRICE</th>
-                    <th style={{ padding: '12px 16px', color: '#6b7280', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #f0f0f0' }}>STOCK STATUS</th>
-                    <th style={{ padding: '12px 16px', color: '#6b7280', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #f0f0f0' }}>ACTIONS</th>
+                    <th style={{ padding: '12px 16px', color: 'var(--text-secondary)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border-primary)' }}>PRODUCT</th>
+                    <th style={{ padding: '12px 16px', color: 'var(--text-secondary)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border-primary)' }}>SKU</th>
+                    <th style={{ padding: '12px 16px', color: 'var(--text-secondary)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border-primary)' }}>CATEGORY</th>
+                    <th style={{ padding: '12px 16px', color: 'var(--text-secondary)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border-primary)' }}>STORE</th>
+                    <th style={{ padding: '12px 16px', color: 'var(--text-secondary)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border-primary)' }}>PRICE</th>
+                    <th style={{ padding: '12px 16px', color: 'var(--text-secondary)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border-primary)' }}>STOCK STATUS</th>
+                    <th style={{ padding: '12px 16px', color: 'var(--text-secondary)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border-primary)' }}>ACTIONS</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -536,9 +536,8 @@ export default function ProductManagement() {
                     return (
                       <tr 
                         key={product.id} 
-                        style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.2s', cursor: 'pointer' }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = '#f8faff'}
-                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                        className="table-row-hover"
+                        style={{ borderBottom: '1px solid var(--border-primary)', transition: 'background 0.2s', cursor: 'pointer' }}
                       >
                         <td style={{ padding: '12px 16px' }}>
                           <div className="product-info">
@@ -567,15 +566,7 @@ export default function ProductManagement() {
                         <td style={{ padding: '12px 16px' }}>
                           <div className="stock-status-wrapper">
                             <span 
-                              style={{ 
-                                display: 'inline-block',
-                                padding: '2px 8px', 
-                                borderRadius: '999px', 
-                                fontSize: '12px',
-                                fontWeight: '600',
-                                backgroundColor: stockBgColor,
-                                color: stockTextColor
-                              }}
+                              className={`stock-status-badge ${stockStatus}`}
                             >
                               {stockLabel}
                             </span>
@@ -603,8 +594,6 @@ export default function ProductManagement() {
                               className="btn-icon btn-icon-edit" 
                               onClick={() => handleEdit(product)}
                               title="Edit"
-                              onMouseEnter={(e) => e.currentTarget.style.color = '#3b82f6'}
-                              onMouseLeave={(e) => e.currentTarget.style.color = '#6366f1'}
                             >
                               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -615,8 +604,6 @@ export default function ProductManagement() {
                               className="btn-icon btn-icon-delete" 
                               onClick={() => handleDelete(product.id, product.name)}
                               title="Delete"
-                              onMouseEnter={(e) => e.currentTarget.style.color = '#ef4444'}
-                              onMouseLeave={(e) => e.currentTarget.style.color = '#ef4444'}
                             >
                               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <polyline points="3 6 5 6 21 6"/>
