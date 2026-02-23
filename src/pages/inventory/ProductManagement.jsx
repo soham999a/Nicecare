@@ -489,16 +489,16 @@ export default function ProductManagement() {
           </div>
         ) : (
           <div className="table-container">
-            <table className="data-table enhanced-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <table className="data-table enhanced-table">
               <thead>
                 <tr>
-                  <th style={{ padding: '12px 16px', color: 'var(--text-secondary)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border-primary)' }}>PRODUCT</th>
-                  <th style={{ padding: '12px 16px', color: 'var(--text-secondary)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border-primary)' }}>SKU</th>
-                  <th style={{ padding: '12px 16px', color: 'var(--text-secondary)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border-primary)' }}>CATEGORY</th>
-                  <th style={{ padding: '12px 16px', color: 'var(--text-secondary)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border-primary)' }}>STORE</th>
-                  <th style={{ padding: '12px 16px', color: 'var(--text-secondary)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border-primary)' }}>PRICE</th>
-                  <th style={{ padding: '12px 16px', color: 'var(--text-secondary)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border-primary)' }}>STOCK STATUS</th>
-                  <th style={{ padding: '12px 16px', color: 'var(--text-secondary)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border-primary)' }}>ACTIONS</th>
+                  <th>Product</th>
+                  <th>SKU</th>
+                  <th>&nbsp;&nbsp;Category</th>
+                  <th>&nbsp;&nbsp;Store</th>
+                  <th className="align-center">Price</th>
+                  <th className="align-center">&nbsp;&nbsp;Stock Status</th>
+                  <th className="align-center">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -520,9 +520,8 @@ export default function ProductManagement() {
                     <tr
                       key={product.id}
                       className="table-row-hover"
-                      style={{ borderBottom: '1px solid var(--border-primary)', transition: 'background 0.2s', cursor: 'pointer' }}
                     >
-                      <td style={{ padding: '12px 16px' }}>
+                      <td>
                         <div className="product-info">
                           <div className="product-name">{product.name}</div>
                           {product.description && (
@@ -530,23 +529,23 @@ export default function ProductManagement() {
                           )}
                         </div>
                       </td>
-                      <td style={{ padding: '12px 16px' }}>
+                      <td>
                         <span className="sku-text">{product.sku || '-'}</span>
                       </td>
-                      <td style={{ padding: '12px 16px' }}>
+                      <td>
                         {product.category ? (
                           <span className="category-badge">{product.category}</span>
                         ) : (
                           <span className="text-muted">-</span>
                         )}
                       </td>
-                      <td style={{ padding: '12px 16px' }}>
+                      <td>
                         <span className="store-badge">{product.storeName || 'Unknown'}</span>
                       </td>
-                      <td style={{ padding: '12px 16px' }}>
+                      <td className="align-right">
                         <span className="price-text">{formatCurrency(product.price)}</span>
                       </td>
-                      <td style={{ padding: '12px 16px' }}>
+                      <td className="align-center">
                         <div className="stock-status-wrapper">
                           <span className={`stock-status-badge ${stockStatus}`}>
                             {stockLabel}
@@ -554,7 +553,7 @@ export default function ProductManagement() {
                           <span className="stock-quantity">({stock} units)</span>
                         </div>
                       </td>
-                      <td style={{ padding: '12px 16px' }}>
+                      <td className="align-center">
                         <div className="action-buttons">
                           <button
                             className="btn-icon btn-icon-update"

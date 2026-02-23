@@ -231,16 +231,16 @@ export default function SalesReports() {
           </div>
         ) : (
           <div className="table-container">
-            <table className="data-table">
+            <table className="data-table sales-table">
               <thead>
                 <tr>
                   <th>Date</th>
                   <th>Customer</th>
-                  <th>Items</th>
+                  <th className="align-center">Items</th>
                   <th>Payment</th>
-                  <th>Total</th>
-                  <th>Employee</th>
-                  <th>Store</th>
+                  <th className="align-center">Total</th>
+                  <th className="align-left">&nbsp;&nbsp;&nbsp;Employee</th>
+                  <th>&nbsp;&nbsp;&nbsp;Store</th>
                 </tr>
               </thead>
               <tbody>
@@ -255,7 +255,7 @@ export default function SalesReports() {
                         )}
                       </div>
                     </td>
-                    <td>
+                    <td className="align-center">
                       <span className="items-count">{sale.itemCount} items</span>
                     </td>
                     <td>
@@ -263,7 +263,7 @@ export default function SalesReports() {
                         {sale.paymentMethod}
                       </span>
                     </td>
-                    <td>
+                    <td className="align-center">
                       <strong>{formatCurrency(sale.total)}</strong>
                     </td>
                     <td>{sale.employeeName || '-'}</td>

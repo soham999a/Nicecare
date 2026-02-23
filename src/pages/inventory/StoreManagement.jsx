@@ -197,16 +197,16 @@ export default function StoreManagement() {
           </div>
         ) : (
           <div className="table-container">
-            <table className="data-table enhanced-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <table className="data-table enhanced-table">
               <thead>
                 <tr>
-                  <th style={{ padding: '12px 16px', color: 'var(--text-secondary)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border-primary)', minWidth: '120px' }}>STORE NAME</th>
-                  <th style={{ padding: '12px 16px', color: 'var(--text-secondary)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border-primary)' }}>ADDRESS</th>
-                  <th style={{ padding: '12px 16px', color: 'var(--text-secondary)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border-primary)' }}>CONTACT</th>
-                  <th style={{ padding: '12px 16px', color: 'var(--text-secondary)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border-primary)' }}>MANAGER</th>
-                  <th style={{ padding: '12px 16px', color: 'var(--text-secondary)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border-primary)' }}>EMPLOYEES</th>
-                  <th style={{ padding: '12px 16px', color: 'var(--text-secondary)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border-primary)' }}>PRODUCTS</th>
-                  <th style={{ padding: '12px 16px', color: 'var(--text-secondary)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border-primary)' }}>ACTIONS</th>
+                  <th>Store Name</th>
+                  <th>Address</th>
+                  <th>Contact</th>
+                  <th>Manager</th>
+                  <th className="align-center">Employees</th>
+                  <th className="align-center">Products</th>
+                  <th className="align-center">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -214,33 +214,32 @@ export default function StoreManagement() {
                   <tr
                     key={store.id}
                     className="table-row-hover"
-                    style={{ borderBottom: '1px solid var(--border-primary)', transition: 'background 0.2s', cursor: 'pointer' }}
                   >
-                    <td style={{ padding: '12px 16px', minWidth: '120px' }}>
+                    <td>
                       <div className="store-name-cell">
                         <strong>{store.name}</strong>
                       </div>
                     </td>
-                    <td style={{ padding: '12px 16px' }}>
+                    <td>
                       <span className="address-text">{store.address || '-'}</span>
                     </td>
-                    <td style={{ padding: '12px 16px' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        {store.phone && <div style={{ fontWeight: 'bold' }}>{store.phone}</div>}
-                        {store.email && <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{store.email}</div>}
+                    <td>
+                      <div className="contact-stack">
+                        {store.phone && <div className="contact-phone">{store.phone}</div>}
+                        {store.email && <div className="contact-email">{store.email}</div>}
                         {!store.phone && !store.email && <span className="text-muted">-</span>}
                       </div>
                     </td>
-                    <td style={{ padding: '12px 16px' }}>
+                    <td>
                       <span className="manager-text">{store.manager || '-'}</span>
                     </td>
-                    <td style={{ padding: '12px 16px' }}>
+                    <td className="align-center">
                       <span className="count-badge employees-badge">{store.employeeCount || 0}</span>
                     </td>
-                    <td style={{ padding: '12px 16px' }}>
+                    <td className="align-center">
                       <span className="count-badge products-badge">{store.productCount || 0}</span>
                     </td>
-                    <td style={{ padding: '12px 16px' }}>
+                    <td className="align-center">
                       <div className="action-buttons">
                         <button
                           className="btn-icon btn-icon-edit"

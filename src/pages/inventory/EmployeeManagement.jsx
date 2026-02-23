@@ -367,7 +367,7 @@ export default function EmployeeManagement() {
                   <th>Email</th>
                   <th>Phone</th>
                   <th>Assigned Store</th>
-                  <th>Status</th>
+                  <th>&nbsp;&nbsp;Status</th>
                   <th>Actions</th>
                 </tr>
               </thead>
