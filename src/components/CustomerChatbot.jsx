@@ -1,7 +1,10 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useInventoryAuth } from '../context/InventoryAuthContext';
-import { askAboutCustomers, generateCustomerSummary } from '../services/ragService';
-import { submitFeedback } from '../services/feedbackService';
+import {
+  askAboutCustomers,
+  generateCustomerSummary,
+} from '../backend/endpoints/crmEndpoints';
+import { submitFeedback } from '../backend/endpoints/feedbackEndpoints';
 
 const SUGGESTED_QUESTIONS = [
   "How many customers do I have?",
