@@ -231,7 +231,7 @@ export default function SalesReports() {
           </div>
         ) : (
           <div className="table-container">
-            <table className="data-table sales-table">
+            <table className="data-table sales-table inventory-list-table">
               <thead>
                 <tr>
                   <th>Date</th>
@@ -239,8 +239,8 @@ export default function SalesReports() {
                   <th className="align-center">Items</th>
                   <th>Payment</th>
                   <th className="align-center">Total</th>
-                  <th className="align-left">&nbsp;&nbsp;&nbsp;Employee</th>
-                  <th>&nbsp;&nbsp;&nbsp;Store</th>
+                  <th className="align-left">Employee</th>
+                  <th>Store</th>
                 </tr>
               </thead>
               <tbody>

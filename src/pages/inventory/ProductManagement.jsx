@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useRef, useLayoutEffect } from 'react';
 import { useProducts } from '../../hooks/useProducts';
 import { useStores } from '../../hooks/useStores';
 
 export default function ProductManagement() {
+  const formCardRef = useRef(null);
   const [filterStore, setFilterStore] = useState('');
   const { products, loading, error, lowStockProducts, addProduct, updateProduct, updateStock, deleteProduct } = useProducts(filterStore || null);
   const { stores } = useStores();
@@ -82,6 +83,12 @@ export default function ProductManagement() {
     setEditingProduct(product);
     setShowForm(true);
   }
+
+  useLayoutEffect(() => {
+    if (showForm && formCardRef.current) {
+      formCardRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [showForm]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -214,11 +221,11 @@ export default function ProductManagement() {
 
       {/* Stock Update Modal */}
       {showStockModal && (
-        <div className="modal-overlay">
-          <div className="modal stock-modal">
+        <div className="modal-overlay" onClick={() => setShowStockModal(null)}>
+          <div className="modal-content stock-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>Update Stock</h2>
-              <button className="close-btn" onClick={() => setShowStockModal(null)}>×</button>
+              <button type="button" className="modal-close" onClick={() => setShowStockModal(null)} aria-label="Close">×</button>
             </div>
             <div className="modal-body">
               <p>Product: <strong>{showStockModal.name}</strong></p>
@@ -280,7 +287,7 @@ export default function ProductManagement() {
 
       {/* Add/Edit Form */}
       {showForm && (
-        <div className="card form-card">
+        <div className="card form-card" ref={formCardRef}>
           <h2>{editingProduct ? 'Edit Product' : 'Add New Product'}</h2>
 
           {formError && (
@@ -489,15 +496,15 @@ export default function ProductManagement() {
           </div>
         ) : (
           <div className="table-container">
-            <table className="data-table enhanced-table">
+            <table className="data-table enhanced-table inventory-list-table">
               <thead>
                 <tr>
                   <th>Product</th>
                   <th>SKU</th>
-                  <th>&nbsp;&nbsp;Category</th>
-                  <th>&nbsp;&nbsp;Store</th>
+                  <th>Category</th>
+                  <th>Store</th>
                   <th className="align-center">Price</th>
-                  <th className="align-center">&nbsp;&nbsp;Stock Status</th>
+                  <th className="align-center">Stock Status</th>
                   <th className="align-center">Actions</th>
                 </tr>
               </thead>
@@ -553,7 +560,7 @@ export default function ProductManagement() {
                           <span className="stock-quantity">({stock} units)</span>
                         </div>
                       </td>
-                      <td className="align-center">
+                      <td className="actions-cell">
                         <div className="action-buttons">
                           <button
                             className="btn-icon btn-icon-update"

@@ -119,7 +119,7 @@ export default function MemberSales() {
           </div>
         ) : (
           <div className="table-container">
-            <table className="data-table">
+            <table className="data-table inventory-list-table">
               <thead>
                 <tr>
                   <th>Date</th>

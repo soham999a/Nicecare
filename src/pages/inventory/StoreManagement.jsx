@@ -197,7 +197,7 @@ export default function StoreManagement() {
           </div>
         ) : (
           <div className="table-container">
-            <table className="data-table enhanced-table">
+            <table className="data-table enhanced-table inventory-list-table">
               <thead>
                 <tr>
                   <th>Store Name</th>
