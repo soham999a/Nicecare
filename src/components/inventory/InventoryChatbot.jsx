@@ -1,8 +1,15 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useInventoryAuth } from '../../context/InventoryAuthContext';
-import { askAboutInventory, generateInventorySummary, analyzeLowStock } from '../../services/inventoryRagService';
-import { askAboutCustomers, generateCustomerSummary } from '../../services/ragService';
-import { submitFeedback } from '../../services/feedbackService';
+import {
+  askAboutInventory,
+  generateInventorySummary,
+  analyzeLowStock,
+} from '../../backend/endpoints/inventoryEndpoints';
+import {
+  askAboutCustomers,
+  generateCustomerSummary,
+} from '../../backend/endpoints/crmEndpoints';
+import { submitFeedback } from '../../backend/endpoints/feedbackEndpoints';
 import { useLocation } from 'react-router-dom';
 
 const MASTER_SUGGESTED_QUESTIONS = [
