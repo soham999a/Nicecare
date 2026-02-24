@@ -18,6 +18,7 @@ import StoreManagement from './pages/inventory/StoreManagement';
 import EmployeeManagement from './pages/inventory/EmployeeManagement';
 import ProductManagement from './pages/inventory/ProductManagement';
 import SalesReports from './pages/inventory/SalesReports';
+import ApiDocsPage from './pages/inventory/ApiDocsPage';
 import MemberPOS from './pages/inventory/MemberPOS';
 import MemberSales from './pages/inventory/MemberSales';
 import CRMPage from './pages/inventory/CRMPage';
@@ -97,7 +98,6 @@ function App() {
                           </InventoryProtectedRoute>
                         }
                       />
-
                       {/* Member routes */}
                       <Route
                         path="/pos"
@@ -132,6 +132,16 @@ function App() {
                     </Routes>
                   </InventoryLayout>
                 } />
+
+                {/* Standalone route without navbar */}
+                <Route
+                  path="/api-docs"
+                  element={
+                    <InventoryProtectedRoute requireMaster={true}>
+                      <ApiDocsPage />
+                    </InventoryProtectedRoute>
+                  }
+                />
               </Routes>
             </InventoryAuthProvider>
           } />

@@ -1,0 +1,209 @@
+openapi: 3.0.3
+info:
+  title: Inventory & CRM Cloud Functions API
+  description: |
+    HTTP API for the Inventory Management POS app. All endpoints require Firebase Auth:
+    send `Authorization: Bearer <idToken>` in the request header.
+    Base URL is configured via `VITE_FUNCTIONS_URL` (e.g. your Cloud Functions URL or local backend).
+  version: 1.0.0
+
+servers:
+  - url: /
+    description: Base URL from VITE_FUNCTIONS_URL (no trailing slash)
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Firebase ID Token
+
+paths:
+  /askAboutInventory:
+    post:
+      summary: Ask about inventory (RAG, SSE)
+      description: Streams an AI-generated answer about products, stores, employees, and sales. Response is Server-Sent Events (SSE).
+      operationId: askAboutInventory
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [question, userRole]
+              properties:
+                question:
+                  type: string
+                  description: Natural language question
+                userRole:
+                  type: string
+                  enum: [master, member]
+                assignedStoreId:
+                  type: string
+                  nullable: true
+                ownerUidForMember:
+                  type: string
+                  nullable: true
+      responses:
+        '200':
+          description: SSE stream (data chunks then final event with dataUsed)
+        '400':
+          description: Bad request (e.g. question required)
+        '401':
+          description: Not authenticated
+        '429':
+          description: Rate limited
+
+  /inventorySummary:
+    post:
+      summary: Generate inventory summary (SSE)
+      description: Streams an AI-generated summary of inventory data.
+      operationId: inventorySummary
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userRole:
+                  type: string
+                  enum: [master, member]
+                assignedStoreId:
+                  type: string
+                  nullable: true
+                ownerUidForMember:
+                  type: string
+                  nullable: true
+      responses:
+        '200':
+          description: SSE stream
+        '401':
+          description: Not authenticated
+        '429':
+          description: Rate limited
+
+  /inventoryLowStock:
+    post:
+      summary: Analyze low stock items (SSE)
+      description: Streams an AI-generated analysis of low-stock and out-of-stock products.
+      operationId: inventoryLowStock
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userRole:
+                  type: string
+                  enum: [master, member]
+                assignedStoreId:
+                  type: string
+                  nullable: true
+                ownerUidForMember:
+                  type: string
+                  nullable: true
+      responses:
+        '200':
+          description: SSE stream
+        '401':
+          description: Not authenticated
+        '429':
+          description: Rate limited
+
+  /askAboutCustomers:
+    post:
+      summary: Ask about customers (RAG, SSE)
+      description: Streams an AI-generated answer about customer/CRM data.
+      operationId: askAboutCustomers
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [question]
+              properties:
+                question:
+                  type: string
+      responses:
+        '200':
+          description: SSE stream
+        '400':
+          description: question required
+        '401':
+          description: Not authenticated
+        '429':
+          description: Rate limited
+
+  /customerSummary:
+    post:
+      summary: Generate customer summary (SSE)
+      description: Streams an AI-generated summary of all customers.
+      operationId: customerSummary
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: SSE stream
+        '401':
+          description: Not authenticated
+        '429':
+          description: Rate limited
+
+  /submitFeedback:
+    post:
+      summary: Submit chatbot feedback
+      description: Submit thumbs up/down and optional comment for a chatbot response.
+      operationId: submitFeedback
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [messageId, rating, module]
+              properties:
+                messageId:
+                  type: string
+                question:
+                  type: string
+                answer:
+                  type: string
+                rating:
+                  type: string
+                  enum: [up, down]
+                comment:
+                  type: string
+                  nullable: true
+                module:
+                  type: string
+                  enum: [crm, inventory]
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        '400':
+          description: messageId, rating, module required; rating must be up/down; module must be crm or inventory
+        '401':
+          description: Not authenticated
