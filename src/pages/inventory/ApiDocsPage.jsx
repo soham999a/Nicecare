@@ -35,8 +35,8 @@ export default function ApiDocsPage() {
     <main className="dashboard-content" style={{ padding: 0, minHeight: '80vh' }}>
       <div className="page-header" style={{ marginBottom: 0 }}>
         <div>
-          <h1>API Documentation</h1>
-          <p>Frontend–backend mapping and Cloud Functions HTTP API</p>
+          <h1 style={{ paddingLeft: '1rem' }}>API Documentation</h1>
+          <p style={{ paddingLeft: '1rem' }}>Frontend–backend mapping and Cloud Functions HTTP API</p>
         </div>
       </div>
 

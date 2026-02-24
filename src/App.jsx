@@ -98,15 +98,6 @@ function App() {
                           </InventoryProtectedRoute>
                         }
                       />
-                      <Route
-                        path="/api-docs"
-                        element={
-                          <InventoryProtectedRoute requireMaster={true}>
-                            <ApiDocsPage />
-                          </InventoryProtectedRoute>
-                        }
-                      />
-
                       {/* Member routes */}
                       <Route
                         path="/pos"
@@ -141,6 +132,16 @@ function App() {
                     </Routes>
                   </InventoryLayout>
                 } />
+
+                {/* Standalone route without navbar */}
+                <Route
+                  path="/api-docs"
+                  element={
+                    <InventoryProtectedRoute requireMaster={true}>
+                      <ApiDocsPage />
+                    </InventoryProtectedRoute>
+                  }
+                />
               </Routes>
             </InventoryAuthProvider>
           } />
