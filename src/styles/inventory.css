@@ -4238,11 +4238,18 @@
 
 /* ===== Inventory Chatbot Styles ===== */
 .inventory-chatbot-wrapper {
+  --chatbot-gap: 12px;
+  --chatbot-toggle-size: 56px;
   position: fixed;
   bottom: 1.5rem;
   right: 1.5rem;
-  z-index: 1000;
+  z-index: 2500;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.inventory-chatbot-wrapper.chatbot-open {
+  bottom: 0;
+  right: 0;
 }
 
 .inventory-chatbot-toggle {
@@ -4250,7 +4257,8 @@
   height: 56px;
   border-radius: 50%;
   background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
-  border: none;
+  border: none !important;
+  outline: none !important;
   color: white;
   cursor: pointer;
   display: flex;
@@ -4258,6 +4266,8 @@
   justify-content: center;
   box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .inventory-chatbot-toggle:hover {
@@ -4269,14 +4279,16 @@
   background: var(--bg-card);
   color: var(--text-secondary);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  border: none !important;
+  outline: none !important;
 }
 
 .inventory-chatbot-container {
-  position: absolute;
-  bottom: 70px;
-  right: 0;
-  width: 380px;
-  max-height: 520px;
+  position: fixed;
+  bottom: 1.25rem;
+  right: 1.25rem;
+  width: 390px;
+  height: min(540px, calc(100dvh - 100px));
   background: var(--bg-card);
   border-radius: 16px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
@@ -4284,13 +4296,14 @@
   flex-direction: column;
   overflow: hidden;
   border: 1px solid var(--border-primary);
-  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: chatbotSlideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  isolation: isolate;
 }
 
-@keyframes slideUp {
+@keyframes chatbotSlideUp {
   from {
     opacity: 0;
-    transform: translateY(20px) scale(0.95);
+    transform: translateY(16px) scale(0.98);
   }
   to {
     opacity: 1;
@@ -4298,35 +4311,45 @@
   }
 }
 
+/* chatbotSlideUp keyframes defined above with .inventory-chatbot-container */
+
 .inventory-chatbot-header {
-  padding: 1rem 1.25rem;
+  padding: 0.75rem 0.75rem 0.75rem 1.125rem;
+  min-height: 56px;
+  box-sizing: border-box;
   background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
   color: white;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
 }
 
 .inventory-chatbot-header-info {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.625rem;
+  min-width: 0;
+  flex: 1;
 }
 
 .inventory-chatbot-avatar {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .inventory-chatbot-header h4 {
   font-size: 0.9375rem;
   font-weight: 600;
   margin: 0 0 0.125rem 0;
+  line-height: 1.25;
 }
 
 .inventory-chatbot-status {
@@ -4335,6 +4358,9 @@
   display: flex;
   align-items: center;
   gap: 0.375rem;
+  line-height: 1.2;
+  min-height: 1rem;
+  white-space: nowrap;
 }
 
 .inventory-chatbot-status .status-dot {
@@ -4352,15 +4378,18 @@
 
 .inventory-chatbot-header-actions {
   display: flex;
-  gap: 0.5rem;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+  margin-left: 0;
 }
 
 .inventory-chatbot-action-btn {
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   border-radius: 8px;
   border: none;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.15);
   color: white;
   cursor: pointer;
   display: flex;
@@ -4375,7 +4404,25 @@
 
 .inventory-chatbot-action-btn:disabled {
   opacity: 0.5;
-  cursor: not-allowed;
+}
+
+.inventory-chatbot-close-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: none;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  margin-left: 0.25rem;
+}
+
+.inventory-chatbot-close-btn:hover {
+  background: rgba(239, 68, 68, 0.7);
 }
 
 .inventory-chatbot-action-btn.warning {
@@ -4393,8 +4440,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  min-height: 250px;
-  max-height: 300px;
+  min-height: 0;
   background: var(--bg-secondary);
 }
 
@@ -4714,20 +4760,24 @@
 /* Responsive */
 @media (max-width: 480px) {
   .inventory-chatbot-wrapper {
+    --chatbot-gap: 10px;
+    --chatbot-toggle-size: 50px;
+  }
+
+  .inventory-chatbot-wrapper {
     bottom: 1rem;
     right: 1rem;
   }
 
   .inventory-chatbot-container {
-    width: calc(100vw - 2rem);
-    max-height: calc(100vh - 8rem);
-    bottom: 65px;
-    right: -0.5rem;
+    width: calc(100vw - 1.5rem);
+    height: calc(100dvh - 80px);
+    bottom: 0.75rem;
+    right: 0.75rem;
   }
 
   .inventory-chatbot-messages {
-    min-height: 200px;
-    max-height: calc(100vh - 20rem);
+    min-height: 0;
   }
 
   .inventory-chatbot-suggestions .suggestion-chip {
@@ -5955,9 +6005,7 @@ textarea:focus-visible,
   backface-visibility: hidden;
 }
 
-/* Hide any elements that might be causing the blue line */
-.chatbot-wrapper,
-.inventory-chatbot-wrapper,
+/* Hide any elements that might be causing the blue line (do not hide chatbot) */
 .confetti-container {
   display: none !important;
 }
@@ -6003,26 +6051,13 @@ html::after,
   outline: none !important;
 }
 
-/* CHATBOT FIX - Remove all borders and outlines from chatbot */
-.inventory-chatbot-wrapper,
+/* Chatbot button cleanup */
 .inventory-chatbot-toggle,
-.inventory-chatbot-container,
-.chatbot-wrapper {
-  border: none !important;
-  outline: none !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
-}
-
 .inventory-chatbot-toggle:focus,
-.inventory-chatbot-toggle:focus-visible {
+.inventory-chatbot-toggle:focus-visible,
+.inventory-chatbot-action-btn:focus,
+.inventory-chatbot-action-btn:focus-visible {
   outline: none !important;
-  border: none !important;
-}
-
-/* Remove any blue borders from chatbot elements */
-.inventory-chatbot-wrapper *,
-.chatbot-wrapper * {
-  border-color: transparent !important;
 }
 
 .inventory-chatbot-wrapper::before,
@@ -6030,45 +6065,6 @@ html::after,
 .inventory-chatbot-toggle::before,
 .inventory-chatbot-toggle::after {
   display: none !important;
-}
-
-/* NUCLEAR OPTION - Remove ALL possible borders everywhere */
-html * {
-  border: none !important;
-  outline: none !important;
-}
-
-/* Only add borders back where explicitly needed */
-.input,
-.select,
-.textarea,
-.card,
-.modal-content,
-.table-container,
-.form-card {
-  border: 1px solid var(--border-primary) !important;
-}
-
-.input:focus,
-.select:focus,
-.textarea:focus {
-  border: 2px solid var(--accent) !important;
-}
-
-/* Remove borders from buttons */
-button,
-.btn,
-.btn-primary,
-.btn-outline {
-  border: none !important;
-}
-
-.btn-outline {
-  border: 2px solid var(--border-primary) !important;
-}
-
-.btn-outline:hover {
-  border: 2px solid #3b82f6 !important;
 }
 
 /* ===== FORCE VERTICAL GRID LINES ON ALL TABLES ===== */

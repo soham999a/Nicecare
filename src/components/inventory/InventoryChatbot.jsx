@@ -384,28 +384,52 @@ export default function InventoryChatbot() {
     return parts.length > 0 ? `Analyzed: ${parts.join(', ')}` : null;
   };
 
+  // #region agent log
+  useEffect(() => {
+    const el = document.querySelector('.inventory-chatbot-wrapper');
+    if (el) {
+      const cs = getComputedStyle(el);
+      fetch('http://127.0.0.1:7710/ingest/0b56bff7-3ca1-489d-b185-0178fff3f432',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'44bb60'},body:JSON.stringify({sessionId:'44bb60',location:'InventoryChatbot.jsx:wrapper',message:'inventory-chatbot-wrapper computed styles',data:{position:cs.position,bottom:cs.bottom,right:cs.right,zIndex:cs.zIndex},timestamp:Date.now()})}).catch(()=>{});
+    }
+    if (isOpen) {
+      setTimeout(() => {
+        const container = document.querySelector('.inventory-chatbot-container');
+        if (container) {
+          const ccs = getComputedStyle(container);
+          fetch('http://127.0.0.1:7710/ingest/0b56bff7-3ca1-489d-b185-0178fff3f432',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'44bb60'},body:JSON.stringify({sessionId:'44bb60',location:'InventoryChatbot.jsx:container',message:'inventory-chatbot-container computed styles',data:{border:ccs.border,borderRadius:ccs.borderRadius,boxShadow:ccs.boxShadow,outline:ccs.outline,maxHeight:ccs.maxHeight,width:ccs.width},timestamp:Date.now()})}).catch(()=>{});
+        }
+        const header = document.querySelector('.inventory-chatbot-header');
+        if (header) {
+          const hcs = getComputedStyle(header);
+          fetch('http://127.0.0.1:7710/ingest/0b56bff7-3ca1-489d-b185-0178fff3f432',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'44bb60'},body:JSON.stringify({sessionId:'44bb60',location:'InventoryChatbot.jsx:header',message:'inventory-chatbot-header computed styles',data:{background:hcs.background,border:hcs.border,color:hcs.color},timestamp:Date.now()})}).catch(()=>{});
+        }
+        const input = document.querySelector('.inventory-chatbot-input');
+        if (input) {
+          const ics = getComputedStyle(input);
+          fetch('http://127.0.0.1:7710/ingest/0b56bff7-3ca1-489d-b185-0178fff3f432',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'44bb60'},body:JSON.stringify({sessionId:'44bb60',location:'InventoryChatbot.jsx:input',message:'inventory-chatbot-input computed styles',data:{border:ics.border,borderRadius:ics.borderRadius,outline:ics.outline},timestamp:Date.now()})}).catch(()=>{});
+        }
+      }, 500);
+    }
+  }, [isOpen]);
+  // #endregion
+
   return (
-    <div className="inventory-chatbot-wrapper">
+    <div className={`inventory-chatbot-wrapper${isOpen ? ' chatbot-open' : ''}`}>
       {/* Chat toggle button */}
-      <button
-        className={`inventory-chatbot-toggle ${isOpen ? 'open' : ''}`}
-        onClick={() => setIsOpen(!isOpen)}
-        aria-label={isOpen ? 'Close chat' : 'Open chat'}
-      >
-        {isOpen ? (
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        ) : (
+      {!isOpen && (
+        <button
+          className="inventory-chatbot-toggle"
+          onClick={() => setIsOpen(true)}
+          aria-label="Open chat"
+        >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
             <circle cx="12" cy="10" r="1" fill="currentColor"></circle>
             <circle cx="8" cy="10" r="1" fill="currentColor"></circle>
             <circle cx="16" cy="10" r="1" fill="currentColor"></circle>
           </svg>
-        )}
-      </button>
+        </button>
+      )}
 
       {/* Chat window */}
       {isOpen && (
@@ -415,14 +439,14 @@ export default function InventoryChatbot() {
             <div className="inventory-chatbot-header-info">
               <div className="inventory-chatbot-avatar">
                 {isCrmPage ? (
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M12 2a10 10 0 0 1 10 10c0 5.52-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2z"></path>
                     <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
                     <line x1="9" y1="9" x2="9.01" y2="9"></line>
                     <line x1="15" y1="9" x2="15.01" y2="9"></line>
                   </svg>
                 ) : (
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
                     <line x1="3" y1="6" x2="21" y2="6" />
                     <path d="M16 10a4 4 0 0 1-8 0" />
@@ -430,7 +454,7 @@ export default function InventoryChatbot() {
                 )}
               </div>
               <div>
-                <h4>{isCrmPage ? 'Customer Assistant' : 'Inventory Assistant'}</h4>
+                <h4>{isCrmPage ? 'CRM Assistant' : 'Inventory Assistant'}</h4>
                 <span className="inventory-chatbot-status">
                   <span className="status-dot"></span>
                   Powered by Gemini AI
@@ -444,7 +468,7 @@ export default function InventoryChatbot() {
                 disabled={isLoading || isStreaming}
                 title="Get business summary"
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                   <polyline points="14 2 14 8 20 8"></polyline>
                   <line x1="16" y1="13" x2="8" y2="13"></line>
@@ -458,7 +482,7 @@ export default function InventoryChatbot() {
                   disabled={isLoading || isStreaming}
                   title="Analyze low stock"
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
                     <line x1="12" y1="9" x2="12" y2="13"></line>
                     <line x1="12" y1="17" x2="12.01" y2="17"></line>
@@ -470,14 +494,24 @@ export default function InventoryChatbot() {
                 onClick={clearChat}
                 title="Clear chat"
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <polyline points="3 6 5 6 21 6"></polyline>
                   <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                 </svg>
               </button>
+              <button
+                className="inventory-chatbot-close-btn"
+                onClick={() => setIsOpen(false)}
+                title="Close chat"
+                aria-label="Close chat"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
             </div>
           </div>
-
           {/* Messages */}
           <div className="inventory-chatbot-messages">
             {messages.map((msg, index) => (

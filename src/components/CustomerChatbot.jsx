@@ -245,25 +245,40 @@ export default function CustomerChatbot() {
     setError(null);
   };
 
+  // #region agent log
+  useEffect(() => {
+    const el = document.querySelector('.chatbot-wrapper');
+    if (el) {
+      const cs = getComputedStyle(el);
+      fetch('http://127.0.0.1:7710/ingest/0b56bff7-3ca1-489d-b185-0178fff3f432',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'44bb60'},body:JSON.stringify({sessionId:'44bb60',location:'CustomerChatbot.jsx:wrapper',message:'chatbot-wrapper computed styles',data:{position:cs.position,bottom:cs.bottom,right:cs.right},timestamp:Date.now()})}).catch(()=>{});
+    }
+    if (isOpen) {
+      setTimeout(() => {
+        const container = document.querySelector('.chatbot-container');
+        if (container) {
+          const ccs = getComputedStyle(container);
+          const rect = container.getBoundingClientRect();
+          fetch('http://127.0.0.1:7710/ingest/0b56bff7-3ca1-489d-b185-0178fff3f432',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'44bb60'},body:JSON.stringify({sessionId:'44bb60',location:'CustomerChatbot.jsx:container',message:'chatbot-container computed styles and position',data:{bottom:ccs.bottom,maxHeight:ccs.maxHeight,rectTop:rect.top,rectBottom:rect.bottom,rectHeight:rect.height,viewportHeight:window.innerHeight},timestamp:Date.now()})}).catch(()=>{});
+        }
+      }, 500);
+    }
+  }, [isOpen]);
+  // #endregion
+
   return (
     <div className="chatbot-wrapper">
       {/* Chat toggle button */}
-      <button
-        className={`chatbot-toggle ${isOpen ? 'open' : ''}`}
-        onClick={() => setIsOpen(!isOpen)}
-        aria-label={isOpen ? 'Close chat' : 'Open chat'}
-      >
-        {isOpen ? (
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        ) : (
+      {!isOpen && (
+        <button
+          className="chatbot-toggle"
+          onClick={() => setIsOpen(true)}
+          aria-label="Open chat"
+        >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
           </svg>
-        )}
-      </button>
+        </button>
+      )}
 
       {/* Chat window */}
       {isOpen && (
@@ -309,6 +324,17 @@ export default function CustomerChatbot() {
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <polyline points="3 6 5 6 21 6"></polyline>
                   <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+              </button>
+              <button
+                className="chatbot-action-btn"
+                onClick={() => setIsOpen(false)}
+                title="Close chat"
+                aria-label="Close chat"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
                 </svg>
               </button>
             </div>
