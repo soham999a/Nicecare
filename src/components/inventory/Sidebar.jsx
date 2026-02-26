@@ -1,15 +1,57 @@
 // components/inventory/Sidebar.jsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useInventoryAuth } from '../../context/InventoryAuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 
 export default function Sidebar({ isExpanded, toggleSidebar }) {
   const [profileHover, setProfileHover] = useState(false);
+  const [showSecretOption, setShowSecretOption] = useState(false);
+  const [keyPressTimeout, setKeyPressTimeout] = useState(null);
   const { currentUser, userProfile, logout } = useInventoryAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Check for Shift + Plus (+) key combination
+      if (e.shiftKey && (e.key === '+' || e.key === '=')) {
+        // Clear any existing timeout
+        if (keyPressTimeout) {
+          clearTimeout(keyPressTimeout);
+        }
+        
+        // Set a new timeout to show the secret option
+        const timeout = setTimeout(() => {
+          setShowSecretOption(true);
+        }, 500); // Show after 500ms of holding Shift+Plus
+        
+        setKeyPressTimeout(timeout);
+      }
+    };
+
+    const handleKeyUp = (e) => {
+      if (e.key === 'Shift' || e.key === '+' || e.key === '=') {
+        // Clear timeout when keys are released
+        if (keyPressTimeout) {
+          clearTimeout(keyPressTimeout);
+          setKeyPressTimeout(null);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+      if (keyPressTimeout) {
+        clearTimeout(keyPressTimeout);
+      }
+    };
+  }, [keyPressTimeout]);
 
   async function handleLogout() {
     try {
@@ -68,16 +110,6 @@ export default function Sidebar({ isExpanded, toggleSidebar }) {
     ] : []),
 
     // Routes for everyone
-    // {
-    //   path: '/inventory/pos',
-    //   icon: (
-    //     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    //       <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
-    //       <line x1="1" y1="10" x2="23" y2="10" />
-    //     </svg>
-    //   ),
-    //   label: 'POS'
-    // },
     {
       path: '/inventory/products',
       icon: (
@@ -101,18 +133,6 @@ export default function Sidebar({ isExpanded, toggleSidebar }) {
       ),
       label: 'My Sales'
     },
-    {
-      path: '/inventory/crm',
-      icon: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-          <circle cx="12" cy="7" r="4" />
-          <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-        </svg>
-      ),
-      label: 'CRM'
-    },
 
     // Master-only reports
     ...(isMaster ? [
@@ -127,6 +147,18 @@ export default function Sidebar({ isExpanded, toggleSidebar }) {
           </svg>
         ),
         label: 'Sales Reports'
+      },
+      {
+        path: '/inventory/crm',
+        icon: (
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+            <circle cx="12" cy="7" r="4" />
+            <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+          </svg>
+        ),
+        label: 'CRM'
       }
     ] : [])
   ];
@@ -139,7 +171,6 @@ export default function Sidebar({ isExpanded, toggleSidebar }) {
           <div className="sidebar-brand-block">
             <div className="sidebar-brand-info">
               <span className="sidebar-brand-name">NiceCare</span>
-        
             </div>
           </div>
           <button
@@ -156,7 +187,6 @@ export default function Sidebar({ isExpanded, toggleSidebar }) {
             </svg>
           </button>
         </div>
-
 
         {/* Navigation */}
         <nav className="sidebar-nav">
@@ -235,7 +265,10 @@ export default function Sidebar({ isExpanded, toggleSidebar }) {
         <div
           className="sidebar-profile"
           onMouseEnter={() => setProfileHover(true)}
-          onMouseLeave={() => setProfileHover(false)}
+          onMouseLeave={() => {
+            setProfileHover(false);
+            setShowSecretOption(false); // Reset secret option when mouse leaves
+          }}
         >
           <div className="sidebar-profile-avatar">{userInitial}</div>
           <div className="sidebar-profile-info">
@@ -278,8 +311,8 @@ export default function Sidebar({ isExpanded, toggleSidebar }) {
                   </div>
                 )}
                 
-                {/* Documentation Button - Only visible for MASTER users */}
-                {isMaster && (
+                {/* Secret Documentation Button - Only visible for MASTER users and when Shift+Plus is pressed */}
+                {isMaster && showSecretOption && (
                   <div className="popup-doc-section">
                     <Link to="/inventory/api-docs" className="popup-doc-button">
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
