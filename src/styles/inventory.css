@@ -6136,3 +6136,396 @@ html::after,
 .inventory-list-table td:last-child {
   border-right: none !important;
 }
+@import url('https://t4.ftcdn.net/jpg/05/55/66/31/360_F_555663154_HI6kBQ2wyXXXIfi0jxm2zJDn7Ey62bnc.jpg');
+
+:root {
+  --primary: #4318ff;
+  --primary-hover: #3311cc;
+  --bg-main: #f4f7fe;
+  --text-main: #2b3674;
+  --text-muted: #a3aed0;
+  --white: #ffffff;
+  --shadow-sm: 0 10px 20px rgba(0, 0, 0, 0.03);
+  --shadow-lg: 0 30px 60px rgba(0, 0, 0, 0.12);
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dashboard-container {
+  background: var(--bg-primary);
+  min-height: 100vh;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+/* Hero Section */
+.dashboard-hero {
+  height: 240px;
+  background: linear-gradient(rgba(0,0,0,0.2), rgba(0,0,0,0.4)),
+              url('../assets/masterdash.jpg') center / cover no-repeat;
+
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.hero-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 40px;
+}
+
+.hero-content h1 {
+  color: var(--white);
+  font-size: 2.4rem;
+  font-weight: 800;
+  margin: 0;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.hero-content p {
+  color: rgba(255, 255, 255, 0.9);
+  margin-top: 10px;
+  font-size: 1.1rem;
+}
+
+/* Quick Action Button */
+.btn-quick-action {
+  background: var(--white);
+  color: var(--primary);
+  border: none;
+  padding: 14px 28px;
+  border-radius: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: var(--transition);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+.btn-quick-action:hover {
+  transform: translateY(-3px) scale(1.02);
+  background: var(--primary);
+  color: var(--white);
+}
+
+/* Modal UI */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55); /* dark glass */
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn 0.25s ease;
+}
+
+.modal-content {
+  width: 100%;
+  max-width: 560px;
+  background: var(--bg-secondary);
+  border-radius: 16px;
+  padding: 0;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slidePop { 
+  from { opacity: 0; transform: translateY(40px) scale(0.9); } 
+  to { opacity: 1; transform: translateY(0) scale(1); } 
+}
+
+/* Fixed Modal Typography */
+.modal-header {
+  padding: 1.4rem 1.6rem 1rem;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.3px;
+}
+
+.modal-header p {
+  margin-top: 0.35rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.modal-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  padding: 1.4rem 1.6rem;
+}
+
+
+.modal-action-card {
+  background: var(--bg-card);
+  padding: 24px;
+  border-radius: 24px;
+  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-primary);
+  font-weight: 600; /* Adjusted for better balance */
+  border: 2px solid transparent;
+  transition: var(--transition);
+}
+
+.modal-action-card .icon-wrap {
+  width: 56px;
+  height: 56px;
+  background: var(--bg-secondary);
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-sm);
+  color: var(--accent);
+  transition: var(--transition);
+}
+
+.modal-action-card:hover {
+  background: var(--bg-secondary);
+  border-color: var(--accent);
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-glow);
+}
+
+.modal-action-card:hover .icon-wrap {
+  background: var(--accent);
+  color: var(--white) !important;
+}
+
+/* Light Red Close Button */
+.btn-close-modal {
+  width: calc(100% - 3.2rem);
+  margin: 0 1.6rem 1.4rem;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+[data-theme="light"] .btn-close-modal {
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+[data-theme="light"] .btn-close-modal:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+}
+
+[data-theme="dark"] .btn-close-modal {
+  border: 1px solid #7f1d1d;
+  background: #7f1d1d;
+  color: #fecaca;
+}
+
+[data-theme="dark"] .btn-close-modal:hover {
+  background: #991b1b;
+  border-color: #b91c1c;
+}
+
+.btn-close-modal:active {
+  background: #fecaca;
+}
+/* Dashboard Body & Stats */
+.dashboard-body {
+  max-width: 1400px;
+  margin: -60px auto 0;
+  padding: 0 40px 60px;
+  position: relative;
+  z-index: 10;
+}
+
+.main-stats-overlap {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  margin-bottom: 40px;
+}
+
+.main-card {
+  background: var(--bg-secondary);
+  padding: 30px;
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition);
+}
+
+.main-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.06);
+}
+
+.card-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Overviews Layout */
+.overview-layout {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+  gap: 30px;
+}
+
+.overview-panel {
+  background: var(--bg-secondary);
+  border-radius: 24px;
+  padding: 32px;
+  box-shadow: var(--shadow-sm);
+  overflow: hidden; /* Contains the table neatly */
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.panel-header h3 { color: var(--text-primary); font-size: 1.3rem; margin: 0; }
+.panel-header a { color: var(--accent); font-weight: 700; text-decoration: none; font-size: 0.9rem; }
+
+/* Professional Tables */
+.dashboard-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.dashboard-table th {
+  text-align: left;
+  padding: 12px 16px;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  border-bottom: 2px solid var(--border-primary);
+}
+
+.dashboard-table td {
+  padding: 16px;
+  border-bottom: 1px solid var(--border-primary);
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  vertical-align: middle;
+}
+
+.dashboard-table tr:last-child td {
+  border-bottom: none;
+}
+
+.dashboard-table tr {
+  transition: background 0.2s;
+}
+
+.dashboard-table tr:hover {
+  background: var(--bg-card-hover);
+}
+
+.status-pill {
+  padding: 6px 16px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  display: inline-block;
+}
+
+[data-theme="light"] .status-pill.active { background: #e6fffa; color: #05cd99; }
+[data-theme="light"] .status-pill.inactive { background: #f4f7fe; color: #a3aed0; }
+
+[data-theme="dark"] .status-pill.active { background: #065f46; color: #34d399; }
+[data-theme="dark"] .status-pill.inactive { background: #1e293b; color: #94a3b8; }
+
+/* Mini Card - Secondary Stats */
+.mini-card {
+  background: var(--bg-secondary);
+  padding: 20px;
+  border-radius: 20px;
+  border: 1px solid var(--border-primary);
+  transition: var(--transition);
+}
+
+.mini-card-label {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+[data-theme="light"] .mini-card-value {
+  color: #2b3674;
+}
+
+[data-theme="dark"] .mini-card-value {
+  color: #f0f9ff;
+}
+
+.mini-card-value {
+  font-size: 1.4rem;
+  margin: 8px 0 0;
+}
+
+.mini-card-value.warning {
+  color: #ee5d50 !important;
+}
+
+[data-theme="dark"] .mini-card-value.warning {
+  color: #f87171 !important;
+}
+
+/* Card Info - Stat Card Info */
+.card-info h3 {
+  margin: 0;
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.card-info p {
+  margin: 0;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text-muted);
+}
+
+/* Table Cell Styles */
+.table-cell-bold {
+  font-weight: 700;
+}
+
+.table-cell-secondary {
+  color: var(--text-muted);
+}
+
+.table-cell-accent {
+  font-weight: 800;
+  color: var(--accent);
+}
