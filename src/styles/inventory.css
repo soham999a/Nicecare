@@ -4899,7 +4899,7 @@
   display: flex;
   align-items: flex-end;
   gap: 0.9rem;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   padding: 1rem;
   border-radius: 14px;
   border: 1px solid var(--border-primary);
@@ -4921,9 +4921,27 @@
   color: var(--text-secondary);
 }
 
+.filters-bar .select {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 180px;
+  max-width: 250px;
+  width: auto;
+  flex-shrink: 0;
+  height: auto;
+  line-height: 1.2;
+  padding: 10px 12px;
+}
+
+.filters-bar .select option {
+  white-space: nowrap;
+}
+
 .search-box {
   flex: 1;
   min-width: 260px;
+  max-width: 400px;
   display: flex;
   align-items: center;
   gap: 0.65rem;
@@ -4931,18 +4949,29 @@
   border: 1px solid var(--border-primary);
   border-radius: 10px;
   background: var(--bg-primary);
+  height: 42px;
 }
 
 .search-box svg {
   color: var(--text-muted);
   flex-shrink: 0;
+  width: 20px;
+  height: 20px;
 }
 
 .search-box .input {
   border: none;
   box-shadow: none;
-  padding: 0.2rem 0;
+  padding: 0;
   background: transparent;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+  height: auto;
+  line-height: 1.2;
+}
 }
 
 .search-box .input:focus {
