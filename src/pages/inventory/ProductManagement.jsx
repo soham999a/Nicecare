@@ -201,6 +201,19 @@ export default function ProductManagement() {
           <p>Manage your product catalog and inventory</p>
         </div>
 
+        {showForm && (
+          <button
+            className="btn btn-outline"
+            onClick={resetForm}
+            title="Close form"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        )}
+
         {stores.length === 0 && (
           <div className="alert alert-warning">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
