@@ -299,11 +299,11 @@ export default function EmployeeManagement() {
             </div>
 
             <div className="form-actions">
-              <button type="button" className="btn btn-outline" onClick={resetForm}>
-                Cancel
-              </button>
               <button type="submit" className="btn btn-primary" disabled={creating}>
                 {creating ? 'Creating...' : editingEmployee ? 'Update Employee' : 'Create Employee'}
+              </button>
+              <button type="button" className="btn btn-outline" onClick={resetForm}>
+                Cancel
               </button>
             </div>
           </form>

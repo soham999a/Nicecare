@@ -436,11 +436,11 @@ export default function ProductManagement() {
             </div>
 
             <div className="form-actions">
-              <button type="button" className="btn btn-outline" onClick={resetForm}>
-                Cancel
-              </button>
               <button type="submit" className="btn btn-primary" disabled={submitting}>
                 {submitting ? 'Saving...' : editingProduct ? 'Update Product' : 'Add Product'}
+              </button>
+              <button type="button" className="btn btn-outline" onClick={resetForm}>
+                Cancel
               </button>
             </div>
           </form>

@@ -87,6 +87,30 @@ export default function MemberPOS() {
 
     setError('');
 
+    // Validate payment method is selected
+    if (!checkoutForm.paymentMethod) {
+      setError('Please select a payment method');
+      return;
+    }
+
+    // Validate customer details are provided
+    if (!checkoutForm.customerName || !checkoutForm.customerName.trim()) {
+      setError('Please enter customer name');
+      return;
+    }
+
+    if (!checkoutForm.customerPhone || !checkoutForm.customerPhone.trim()) {
+      setError('Please enter customer phone number');
+      return;
+    }
+
+    // Validate phone number format (basic validation)
+    const phoneRegex = /^[0-9]{10,15}$/;
+    if (!phoneRegex.test(checkoutForm.customerPhone.replace(/[\s\-\(\)]/g, ''))) {
+      setError('Please enter a valid phone number (10-15 digits)');
+      return;
+    }
+
     try {
       await checkout(
         checkoutForm.paymentMethod,
@@ -427,7 +451,7 @@ export default function MemberPOS() {
               </div>
 
               <div className="form-section">
-                <label>Payment Method</label>
+                <label>Payment Method <span style={{ color: '#ef4444' }}>*</span></label>
                 <div className="payment-method-grid">
                   {[
                     { id: 'Cash', icon: '💵', label: 'Cash' },
@@ -448,19 +472,21 @@ export default function MemberPOS() {
               </div>
 
               <div className="form-section">
-                <label>Customer Details (Optional)</label>
+                <label>Customer Details <span style={{ color: '#ef4444' }}>*</span></label>
                 <div className="form-row">
                   <input
                     type="text"
-                    placeholder="Customer Name"
+                    placeholder="Customer Name *"
                     value={checkoutForm.customerName}
                     onChange={(e) => setCheckoutForm({ ...checkoutForm, customerName: e.target.value })}
+                    required
                   />
                   <input
                     type="tel"
-                    placeholder="Phone Number"
+                    placeholder="Phone Number *"
                     value={checkoutForm.customerPhone}
                     onChange={(e) => setCheckoutForm({ ...checkoutForm, customerPhone: e.target.value })}
+                    required
                   />
                 </div>
               </div>
@@ -483,7 +509,7 @@ export default function MemberPOS() {
               <button
                 className="btn-complete-sale"
                 onClick={handleCheckout}
-                disabled={processing}
+                disabled={processing || !checkoutForm.paymentMethod || !checkoutForm.customerName || !checkoutForm.customerPhone}
               >
                 {processing ? (
                   <>
