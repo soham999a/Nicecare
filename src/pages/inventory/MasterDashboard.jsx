@@ -4,7 +4,6 @@ import { useEmployees } from '../../hooks/useEmployees';
 import { useProducts } from '../../hooks/useProducts';
 import { useSales } from '../../hooks/useSales';
 import { useInventoryAuth } from '../../context/InventoryAuthContext';
-import LowStockAlert from '../../components/inventory/LowStockAlert';
 
 export default function MasterDashboard() {
   // quick actions are now rendered inline below the secondary stats
@@ -32,6 +31,28 @@ export default function MasterDashboard() {
             <h1>Welcome back, {userProfile?.displayName || 'Business Owner'}</h1>
             <p>Monitor your performance and manage operations in real-time.</p>
           </div>
+          {/* Low Stock Warning */}
+          {lowStockProducts.length > 0 && (
+            <div className="low-stock-warning-banner">
+              <div className="warning-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                  <line x1="12" y1="9" x2="12" y2="13"/>
+                  <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+              </div>
+              <div className="warning-content">
+                <strong>Low Stock Alert!</strong>
+                <div className="product-list-in-alert">
+                  {lowStockProducts.slice(0, 3).map((product, idx) => (
+                    <span key={idx} className="product-name">{product.name}</span>
+                  ))}
+                  {lowStockProducts.length > 3 && <span className="product-more">+{lowStockProducts.length - 3} more</span>}
+                  <a href="/inventory/products" className="view-all-btn">View All</a>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
@@ -43,13 +64,6 @@ export default function MasterDashboard() {
           <StatCard label="Total Employees" value={loading ? '...' : employees.length} icon={<EmployeeIcon />} type="employees" />
           <StatCard label="Total Revenue" value={loading ? '...' : formatCurrency(stats?.totalRevenue)} icon={<RevenueIcon />} type="revenue" />
         </div>
-
-        {/* ALERTS */}
-        {lowStockProducts.length > 0 && (
-          <div style={{marginBottom: '32px'}}>
-            <LowStockAlert products={lowStockProducts} />
-          </div>
-        )}
 
         {/* --- SECONDARY STATS --- */}
         <div className="secondary-stats-grid" style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '40px'}}>
