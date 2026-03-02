@@ -16,11 +16,24 @@ service cloud.firestore {
       allow read, update, delete: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Customers collection: each document must have ownerUid set to the user's UID
+    // Customers collection: master owns, employees can read their store's customers
     match /customers/{docId} {
-      allow create: if isSignedIn() && request.resource.data.ownerUid == request.auth.uid;
-      allow read: if isOwner(resource.data);
-      allow update, delete: if isOwner(resource.data);
+      allow create: if isSignedIn() &&
+        (request.resource.data.ownerUid == request.auth.uid ||
+         (exists(/databases/$(database)/documents/employees/$(request.auth.uid)) &&
+          request.resource.data.ownerUid == getEmployeeOwnerUid() &&
+          request.resource.data.storeId == getEmployeeStoreId()));
+      allow read: if isOwner(resource.data) ||
+        (isSignedIn() &&
+         exists(/databases/$(database)/documents/employees/$(request.auth.uid)) &&
+         resource.data.storeId == getEmployeeStoreId() &&
+         resource.data.ownerUid == getEmployeeOwnerUid());
+      allow update: if isOwner(resource.data) ||
+        (isSignedIn() &&
+         exists(/databases/$(database)/documents/employees/$(request.auth.uid)) &&
+         resource.data.storeId == getEmployeeStoreId() &&
+         resource.data.ownerUid == getEmployeeOwnerUid());
+      allow delete: if isOwner(resource.data);
     }
 
     // ===== INVENTORY MANAGEMENT RULES =====

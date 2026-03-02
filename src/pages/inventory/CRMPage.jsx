@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import CustomerForm from '../../components/CustomerForm';
 import CustomerTable from '../../components/CustomerTable';
 import { useCustomers } from '../../hooks/useCustomers';
@@ -6,6 +6,11 @@ import { useStores } from '../../hooks/useStores';
 import { useInventoryAuth } from '../../context/InventoryAuthContext';
 
 export default function CRMPage() {
+  useEffect(() => {
+    document.body.classList.add('edge-to-edge-page');
+    return () => document.body.classList.remove('edge-to-edge-page');
+  }, []);
+
   const { userProfile } = useInventoryAuth();
   const isMaster = userProfile?.role === 'master';
 

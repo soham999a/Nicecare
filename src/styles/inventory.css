@@ -2776,14 +2776,32 @@
 
 /* ===== Inventory Dashboard Specific ===== */
 .inventory-dashboard {
+  /* use flex so main content naturally fills remaining space and we can
+     avoid using 100% width which caused horizontal scroll when margin-left
+     was applied. also hide any accidental overflow. */
+  display: flex;
   min-height: 100vh;
   background: var(--bg-primary);
+  overflow-x: hidden;
 }
 
 .inventory-dashboard .dashboard-content {
   max-width: 1400px;
   margin: 0 auto;
   padding: 2rem;
+}
+
+/* allow certain inventory pages to stretch nearly edge‑to‑edge, but keep a slim gutter */
+body.edge-to-edge-page .inventory-dashboard .dashboard-content {
+  max-width: none;
+  margin: 0;
+  padding: 0 0.5rem; /* small horizontal gap */
+}
+
+/* override outer container padding when edge-to-edge class is on body */
+body.edge-to-edge-page .main-content {
+  padding-left: 0.5rem !important;
+  padding-right: 0.5rem !important;
 }
 
 .inventory-dashboard .dashboard-header {

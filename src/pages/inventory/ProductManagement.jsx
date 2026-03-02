@@ -3,6 +3,14 @@ import { useProducts } from '../../hooks/useProducts';
 import { useStores } from '../../hooks/useStores';
 
 export default function ProductManagement() {
+  // remove side gaps by adding class to body when this page is active
+  useEffect(() => {
+    document.body.classList.add('edge-to-edge-page');
+    return () => {
+      document.body.classList.remove('edge-to-edge-page');
+    };
+  }, []);
+
   const formCardRef = useRef(null);
   const [filterStore, setFilterStore] = useState('');
   const { products, loading, error, lowStockProducts, addProduct, updateProduct, updateStock, deleteProduct } = useProducts(filterStore || null);

@@ -105,7 +105,6 @@ export default function InventoryChatbot() {
         question: msg.question || '',
         answer: msg.content,
         rating,
-        rating,
         comment: null,
         module: isCrmPage ? 'crm' : 'inventory',
       });

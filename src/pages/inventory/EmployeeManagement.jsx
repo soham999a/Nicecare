@@ -1,8 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useEmployees } from '../../hooks/useEmployees';
 import { useStores } from '../../hooks/useStores';
 
 export default function EmployeeManagement() {
+  // add body class to eliminate padding/gaps for this page
+  useEffect(() => {
+    document.body.classList.add('edge-to-edge-page');
+    return () => {
+      document.body.classList.remove('edge-to-edge-page');
+    };
+  }, []);
+
   const { employees, loading, error, creating, createEmployee, updateEmployee, toggleEmployeeActive, deleteEmployee } = useEmployees();
   const { stores } = useStores();
   const [showForm, setShowForm] = useState(false);

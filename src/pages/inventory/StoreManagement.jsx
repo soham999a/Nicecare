@@ -1,8 +1,26 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useStores } from '../../hooks/useStores';
+import { useEmployees } from '../../hooks/useEmployees';
 
 export default function StoreManagement() {
+  // apply small side gutter by toggling body class
+  useEffect(() => {
+    document.body.classList.add('edge-to-edge-page');
+    return () => document.body.classList.remove('edge-to-edge-page');
+  }, []);
+
   const { stores, loading, error, addStore, updateStore, deleteStore } = useStores();
+  const { employees } = useEmployees();
+
+  const employeeCountByStore = useMemo(() => {
+    const counts = {};
+    for (const emp of employees) {
+      if (emp.assignedStoreId) {
+        counts[emp.assignedStoreId] = (counts[emp.assignedStoreId] || 0) + 1;
+      }
+    }
+    return counts;
+  }, [employees]);
   const [showForm, setShowForm] = useState(false);
   const [editingStore, setEditingStore] = useState(null);
   const [formData, setFormData] = useState({
@@ -234,7 +252,7 @@ export default function StoreManagement() {
                       <span className="manager-text">{store.manager || '-'}</span>
                     </td>
                     <td className="align-center">
-                      <span className="count-badge employees-badge">{store.employeeCount || 0}</span>
+                      <span className="count-badge employees-badge">{employeeCountByStore[store.id] || 0}</span>
                     </td>
                     <td className="align-center">
                       <span className="count-badge products-badge">{store.productCount || 0}</span>
