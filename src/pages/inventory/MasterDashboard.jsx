@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { useStores } from '../../hooks/useStores';
 import { useEmployees } from '../../hooks/useEmployees';
 import { useProducts } from '../../hooks/useProducts';
@@ -12,6 +12,16 @@ export default function MasterDashboard() {
   const { employees, loading: employeesLoading } = useEmployees();
   const { products, lowStockProducts, loading: productsLoading } = useProducts();
   const { stats, loading: salesLoading } = useSales();
+
+  const employeeCountByStore = useMemo(() => {
+    const counts = {};
+    for (const emp of employees) {
+      if (emp.assignedStoreId) {
+        counts[emp.assignedStoreId] = (counts[emp.assignedStoreId] || 0) + 1;
+      }
+    }
+    return counts;
+  }, [employees]);
 
   const loading = storesLoading || employeesLoading || productsLoading || salesLoading;
 
@@ -109,7 +119,7 @@ export default function MasterDashboard() {
                     <tr key={store.id}>
                       <td className="table-cell-bold">{store.name}</td>
                       <td className="table-cell-secondary">{store.address || 'Global Store'}</td>
-                      <td className="table-cell-accent">{store.employeeCount || 0}</td>
+                      <td className="table-cell-accent">{employeeCountByStore[store.id] || 0}</td>
                     </tr>
                   ))}
                 </tbody>
