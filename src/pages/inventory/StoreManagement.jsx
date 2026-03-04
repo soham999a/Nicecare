@@ -204,11 +204,11 @@ export default function StoreManagement() {
             </div>
 
             <div className="form-actions">
-              <button type="button" className="btn btn-outline" onClick={resetForm}>
-                Cancel
-              </button>
               <button type="submit" className="btn btn-primary" disabled={submitting}>
                 {submitting ? 'Saving...' : editingStore ? 'Update Store' : 'Add Store'}
+              </button>
+              <button type="button" className="btn btn-outline" onClick={resetForm}>
+                Cancel
               </button>
             </div>
           </form>

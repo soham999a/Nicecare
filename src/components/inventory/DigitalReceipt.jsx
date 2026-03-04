@@ -48,6 +48,26 @@ export default function DigitalReceipt({ sale, storeName, onClose }) {
   const receiptRef = useRef(null);
   const [showConfetti, setShowConfetti] = useState(true);
 
+  // Stop confetti after animation completes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowConfetti(false);
+    }, 4000); // Stop after 4 seconds
+    
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Handle Escape key to close
+  useEffect(() => {
+    function handleEscape(e) {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    }
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [onClose]);
+
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -185,10 +205,22 @@ Thank you for your purchase!
   }
 
   return (
-    <div className="modal-overlay sale-complete-overlay">
+    <div className="modal-overlay sale-complete-overlay" onClick={onClose}>
       {showConfetti && <Confetti />}
       
-      <div className="modal receipt-modal sale-complete-modal">
+      <div className="modal receipt-modal sale-complete-modal" onClick={(e) => e.stopPropagation()}>
+        {/* Close Button */}
+        <button 
+          className="receipt-close-btn" 
+          onClick={onClose}
+          aria-label="Close receipt"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+
         {/* Success Animation Header */}
         <div className="sale-complete-header">
           <div className="success-icon-wrapper">
