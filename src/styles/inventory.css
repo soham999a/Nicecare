@@ -3119,7 +3119,7 @@ body.edge-to-edge-page .main-content {
   color: var(--text-secondary);
   font-weight: 500;
   font-size: 0.9375rem;
-  transition: all 0.2s;
+  transition: background 0.2s, color 0.2s;
 }
 
 .inventory-navbar .nav-item:hover {
@@ -6596,6 +6596,57 @@ html::after,
 .inventory-list-table th:last-child,
 .inventory-list-table td:last-child {
   border-right: none !important;
+}
+
+
+/* Confirm Dialog */
+.confirm-dialog {
+  max-width: 450px;
+  width: 90%;
+}
+
+.confirm-dialog-header {
+  padding: 1.5rem 1.5rem 1rem;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.confirm-dialog-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.confirm-dialog-body {
+  padding: 1.5rem;
+}
+
+.confirm-dialog-body p {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.confirm-dialog-actions {
+  padding: 1rem 1.5rem 1.5rem;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.btn-danger {
+  background: #ef4444;
+  color: white;
+  border: none;
+}
+
+.btn-danger:hover {
+  background: #dc2626;
+}
+
+.btn-danger:active {
+  background: #b91c1c;
 }
 @import url('https://t4.ftcdn.net/jpg/05/55/66/31/360_F_555663154_HI6kBQ2wyXXXIfi0jxm2zJDn7Ey62bnc.jpg');
 

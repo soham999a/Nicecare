@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useEmployees } from '../../hooks/useEmployees';
 import { useStores } from '../../hooks/useStores';
+import ConfirmDialog from '../../components/ConfirmDialog';
 
 export default function EmployeeManagement() {
   // add body class to eliminate padding/gaps for this page
@@ -25,6 +26,7 @@ export default function EmployeeManagement() {
   });
   const [formError, setFormError] = useState('');
   const [filterStore, setFilterStore] = useState('');
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   function resetForm() {
     setFormData({
@@ -113,14 +115,18 @@ export default function EmployeeManagement() {
   }
 
   async function handleDelete(employeeId, employeeName) {
-    if (!window.confirm(`Are you sure you want to remove "${employeeName}"? This will deactivate their account.`)) {
-      return;
-    }
+    setDeleteConfirm({ id: employeeId, name: employeeName });
+  }
+
+  async function confirmDelete() {
+    if (!deleteConfirm) return;
 
     try {
-      await deleteEmployee(employeeId);
+      await deleteEmployee(deleteConfirm.id);
+      setDeleteConfirm(null);
     } catch (err) {
       alert('Failed to delete employee: ' + err.message);
+      setDeleteConfirm(null);
     }
   }
 
@@ -130,6 +136,17 @@ export default function EmployeeManagement() {
 
   return (
     <main className="dashboard-content">
+      <ConfirmDialog
+        isOpen={!!deleteConfirm}
+        title="Remove Employee"
+        message={`Are you sure you want to remove "${deleteConfirm?.name}"? This will deactivate their account.`}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteConfirm(null)}
+        confirmText="Remove"
+        cancelText="Cancel"
+        variant="danger"
+      />
+
       <div className="page-header">
         <div>
           <h1>Employee Management</h1>

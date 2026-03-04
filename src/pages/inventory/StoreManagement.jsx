@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useStores } from '../../hooks/useStores';
+import ConfirmDialog from '../../components/ConfirmDialog';
 import { useEmployees } from '../../hooks/useEmployees';
 
 export default function StoreManagement() {
@@ -32,6 +33,7 @@ export default function StoreManagement() {
   });
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   function resetForm() {
     setFormData({
@@ -84,19 +86,34 @@ export default function StoreManagement() {
   }
 
   async function handleDelete(storeId, storeName) {
-    if (!window.confirm(`Are you sure you want to delete "${storeName}"? This action cannot be undone.`)) {
-      return;
-    }
+    setDeleteConfirm({ id: storeId, name: storeName });
+  }
+
+  async function confirmDelete() {
+    if (!deleteConfirm) return;
 
     try {
-      await deleteStore(storeId);
+      await deleteStore(deleteConfirm.id);
+      setDeleteConfirm(null);
     } catch (err) {
       alert('Failed to delete store: ' + err.message);
+      setDeleteConfirm(null);
     }
   }
 
   return (
     <main className="dashboard-content">
+      <ConfirmDialog
+        isOpen={!!deleteConfirm}
+        title="Delete Store"
+        message={`Are you sure you want to delete "${deleteConfirm?.name}"? This action cannot be undone.`}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteConfirm(null)}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+      />
+
       <div className="page-header">
         <div>
           <h1>Store Management</h1>

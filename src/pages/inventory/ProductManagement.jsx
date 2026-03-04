@@ -1,6 +1,7 @@
 import { useState, useRef, useLayoutEffect, useEffect } from 'react';
 import { useProducts } from '../../hooks/useProducts';
 import { useStores } from '../../hooks/useStores';
+import ConfirmDialog from '../../components/ConfirmDialog';
 
 export default function ProductManagement() {
   // remove side gaps by adding class to body when this page is active
@@ -35,6 +36,7 @@ export default function ProductManagement() {
   });
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   // Prevent body scroll when modal is open
   useEffect(() => {
@@ -172,14 +174,18 @@ export default function ProductManagement() {
   }
 
   async function handleDelete(productId, productName) {
-    if (!window.confirm(`Are you sure you want to delete "${productName}"? This action cannot be undone.`)) {
-      return;
-    }
+    setDeleteConfirm({ id: productId, name: productName });
+  }
+
+  async function confirmDelete() {
+    if (!deleteConfirm) return;
 
     try {
-      await deleteProduct(productId);
+      await deleteProduct(deleteConfirm.id);
+      setDeleteConfirm(null);
     } catch (err) {
       alert('Failed to delete product: ' + err.message);
+      setDeleteConfirm(null);
     }
   }
 
@@ -203,6 +209,17 @@ export default function ProductManagement() {
 
   return (
     <main className="dashboard-content">
+      <ConfirmDialog
+        isOpen={!!deleteConfirm}
+        title="Delete Product"
+        message={`Are you sure you want to delete "${deleteConfirm?.name}"? This action cannot be undone.`}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteConfirm(null)}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+      />
+
       <div className="page-header">
         <div>
           <h1>Product Management</h1>
