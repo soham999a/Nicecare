@@ -159,82 +159,10 @@ export default function EmployeeManagement() {
       {/* New Employee Invitation Modal */}
       {newEmployeeCredentials && (
         <div className="modal-overlay">
-          <div className="modal credentials-modal">
-            <div className="modal-header success">
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                <polyline points="22 4 12 14.01 9 11.01" />
-              </svg>
-              <h2>Invitation Created!</h2>
-            </div>
-            <div className="modal-body">
-              <p>Share this invitation with the employee:</p>
-              <div className="credentials-box">
-                <div className="credential-item">
-                  <label>Employee:</label>
-                  <span>{newEmployeeCredentials.name}</span>
-                </div>
-                <div className="credential-item">
-                  <label>Email:</label>
-                  <span>{newEmployeeCredentials.email}</span>
-                </div>
-                <div className="credential-item">
-                  <label>Invitation Code:</label>
-                  <span className="invite-code">{newEmployeeCredentials.inviteCode}</span>
-                  <button
-                    className="btn btn-small btn-secondary"
-                    onClick={() => {
-                      navigator.clipboard.writeText(newEmployeeCredentials.inviteCode);
-                      alert('Code copied!');
-                    }}
-                  >
-                    Copy
-                  </button>
-                </div>
-                <div className="credential-item">
-                  <label>Signup Link:</label>
-                  <div className="invite-link-container">
-                    <input
-                      type="text"
-                      className="input invite-link-input"
-                      value={`${window.location.origin}/inventory/signup?type=employee&code=${newEmployeeCredentials.inviteCode}`}
-                      readOnly
-                    />
-                    <button
-                      className="btn btn-small btn-secondary"
-                      onClick={() => {
-                        navigator.clipboard.writeText(
-                          `${window.location.origin}/inventory/signup?type=employee&code=${newEmployeeCredentials.inviteCode}`
-                        );
-                        alert('Link copied!');
-                      }}
-                    >
-                      Copy Link
-                    </button>
-                  </div>
-                </div>
-              </div>
-              <p className="info-text">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="12" y1="16" x2="12" y2="12" />
-                  <line x1="12" y1="8" x2="12.01" y2="8" />
-                </svg>
-                The employee can use the signup link or enter the code manually. They can use an existing account or create a new one.
-              </p>
-              <p className="warning-text">
-                ⚠️ This invitation expires in 7 days.
-              </p>
-            </div>
-            <div className="modal-actions">
-              <button
-                className="btn btn-primary"
-                onClick={() => setNewEmployeeCredentials(null)}
-              >
-                Done
-              </button>
-            </div>
-          </div>
+          <ModalSuccessContent 
+            credentials={newEmployeeCredentials} 
+            onClose={() => setNewEmployeeCredentials(null)} 
+          />
         </div>
       )}
 
@@ -433,7 +361,7 @@ export default function EmployeeManagement() {
                         </button>
                         <button
                           className="btn-icon danger"
-                          onClick={() => handleDelete(employee.id, employee.displayName)}
+                          onClick={() => handleDelete(employeeId, employee.displayName)}
                           title="Delete"
                         >
                           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -451,5 +379,90 @@ export default function EmployeeManagement() {
         )}
       </div>
     </main>
+  );
+}
+
+// Sub-component for the Success Modal to handle copy feedback
+function ModalSuccessContent({ credentials, onClose }) {
+  const [copiedType, setCopiedType] = useState(null);
+
+  const handleCopy = (text, type) => {
+    navigator.clipboard.writeText(text);
+    setCopiedType(type);
+    setTimeout(() => setCopiedType(null), 2000);
+  };
+
+  const signupLink = `${window.location.origin}/inventory/signup?type=employee&code=${credentials.inviteCode}`;
+
+  return (
+    <div className="modal success-modal-container">
+      <div className="success-icon-wrapper">
+        <div className="success-circle-bg">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="success-svg">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </div>
+      </div>
+
+      <div className="modal-content-center">
+        <h2>Invitation Ready!</h2>
+        <p className="subtitle">Account created for <strong>{credentials.name}</strong>. Share the details below.</p>
+        
+        <div className="credentials-card">
+          <div className="credential-row">
+            <div className="cred-info">
+              <label>Email Address</label>
+              <span>{credentials.email}</span>
+            </div>
+          </div>
+
+          <div className="credential-row">
+            <div className="cred-info">
+              <label>Invitation Code</label>
+              <span className="code-text">{credentials.inviteCode}</span>
+            </div>
+            <button 
+              className={`copy-pill-btn ${copiedType === 'code' ? 'copied' : ''}`}
+              onClick={() => handleCopy(credentials.inviteCode, 'code')}
+            >
+              {copiedType === 'code' ? '✓ Copied!' : 'Copy'}
+            </button>
+          </div>
+
+          <div className="credential-row">
+            <div className="cred-info link-info">
+              <label>Direct Signup Link</label>
+              <input 
+                readOnly 
+                className="minimal-link-input"
+                value={signupLink}
+              />
+            </div>
+            <button 
+              className={`copy-pill-btn primary ${copiedType === 'link' ? 'copied' : ''}`}
+              onClick={() => handleCopy(signupLink, 'link')}
+            >
+              {copiedType === 'link' ? '✓ Copied!' : 'Copy Link'}
+            </button>
+          </div>
+        </div>
+
+        <div className="invitation-notice">
+          <div className="notice-item">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+            </svg>
+            <span>Expires in 7 days</span>
+          </div>
+          <p>The employee can sign up using an existing account or create a new one using this link.</p>
+        </div>
+      </div>
+
+      <div className="modal-footer-simple">
+        <button className="btn-done-full" onClick={onClose}>
+          Return to Dashboard
+        </button>
+      </div>
+    </div>
   );
 }
