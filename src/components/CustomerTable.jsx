@@ -46,8 +46,13 @@ const StatusBadge = ({ status }) => {
 export default function CustomerTable({ customers, onUpdateStatus, onUpdateCustomer, onDelete, updatingCustomer }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedRows, setExpandedRows] = useState(new Set());
-  const [editingCustomer, setEditingCustomer] = useState(null);
   const [editingStatusId, setEditingStatusId] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [modalCustomer, setModalCustomer] = useState(null);
+
+  // pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const filteredCustomers = useMemo(() => {
     if (!searchTerm) return customers;
@@ -63,6 +68,19 @@ export default function CustomerTable({ customers, onUpdateStatus, onUpdateCusto
       );
     });
   }, [customers, searchTerm]);
+
+  // adjust current page if filtered length changes
+  useEffect(() => {
+    const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage) || 1;
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [filteredCustomers, currentPage]);
+
+  const paginatedCustomers = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredCustomers.slice(start, start + itemsPerPage);
+  }, [filteredCustomers, currentPage]);
 
   function toggleExpand(id) {
     setExpandedRows((prev) => {
@@ -144,26 +162,23 @@ export default function CustomerTable({ customers, onUpdateStatus, onUpdateCusto
   }
 
   function handleEdit(customer) {
-    setEditingCustomer(customer);
-    // Expand the row when editing
-    setExpandedRows((prev) => {
-      const newSet = new Set(prev);
-      newSet.add(customer.id);
-      return newSet;
-    });
+    setModalCustomer(customer);
+    setShowEditModal(true);
   }
 
   async function handleSaveEdit(formData) {
     try {
-      await onUpdateCustomer(editingCustomer.id, formData);
-      setEditingCustomer(null);
+      await onUpdateCustomer(modalCustomer.id, formData);
+      setShowEditModal(false);
+      setModalCustomer(null);
     } catch (err) {
       console.error('Error saving customer:', err);
     }
   }
 
   function handleCancelEdit() {
-    setEditingCustomer(null);
+    setShowEditModal(false);
+    setModalCustomer(null);
   }
 
   if (customers.length === 0) {
@@ -176,6 +191,7 @@ export default function CustomerTable({ customers, onUpdateStatus, onUpdateCusto
   }
 
   return (
+    <>
     <section className="card">
       <h3>Submitted Customer Details</h3>
 
@@ -194,6 +210,7 @@ export default function CustomerTable({ customers, onUpdateStatus, onUpdateCusto
       {filteredCustomers.length === 0 ? (
         <div className="empty">No matching records found</div>
       ) : (
+        <>
         <div className="table-wrapper">
           <table className="table">
             <thead>
@@ -208,7 +225,7 @@ export default function CustomerTable({ customers, onUpdateStatus, onUpdateCusto
               </tr>
             </thead>
             <tbody>
-              {filteredCustomers.map((customer) => (
+              {paginatedCustomers.map((customer) => (
                 <React.Fragment key={customer.id}>
                   <tr>
                     <td>
@@ -290,17 +307,6 @@ export default function CustomerTable({ customers, onUpdateStatus, onUpdateCusto
                   {expandedRows.has(customer.id) && (
                     <tr className="expanded-details">
                       <td colSpan="7">
-                        {editingCustomer?.id === customer.id ? (
-                          <div className="inline-edit-form">
-                            <EditCustomerModal
-                              customer={editingCustomer}
-                              onSave={handleSaveEdit}
-                              onClose={handleCancelEdit}
-                              loading={updatingCustomer}
-                              inline={true}
-                            />
-                          </div>
-                        ) : (
                         <div className="details-grid">
                           {/* Customer Info */}
                           <div className="detail-group">
@@ -417,7 +423,6 @@ export default function CustomerTable({ customers, onUpdateStatus, onUpdateCusto
                             </div>
                           </div>
                         </div>
-                        )}
                       </td>
                     </tr>
                   )}
@@ -426,7 +431,42 @@ export default function CustomerTable({ customers, onUpdateStatus, onUpdateCusto
             </tbody>
           </table>
         </div>
+        {/* pagination controls */}
+        {filteredCustomers.length > itemsPerPage && (
+          <div className="pagination">
+            <button
+              className="btn"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((p) => p - 1)}
+            >
+              ◀ Prev
+            </button>
+            <span className="page-number">
+              Page {currentPage} of {Math.ceil(filteredCustomers.length / itemsPerPage)}
+            </span>
+            <button
+              className="btn"
+              disabled={currentPage >= Math.ceil(filteredCustomers.length / itemsPerPage)}
+              onClick={() => setCurrentPage((p) => p + 1)}
+            >
+              Next ▶
+            </button>
+          </div>
+        )}
+        </>
       )}
     </section>
-  );
+
+      {/* render the edit modal directly; the component already handles its own overlay
+          avoiding a brief "popup inside a popup" which was caused by the outer wrapper */}
+      {showEditModal && modalCustomer && (
+        <EditCustomerModal
+          customer={modalCustomer}
+          onSave={handleSaveEdit}
+          onClose={handleCancelEdit}
+          loading={updatingCustomer}
+        />
+      )}
+    </>
+    );
 }

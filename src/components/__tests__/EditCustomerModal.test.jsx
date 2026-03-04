@@ -363,7 +363,7 @@ describe('EditCustomerModal', () => {
   });
 
   describe('IMEI Validation', () => {
-    it('shows warning for invalid IMEI but allows save', async () => {
+    it('blocks save when IMEI is invalid and shows error', async () => {
       const user = userEvent.setup();
       const mockSave = vi.fn();
       render(
@@ -384,11 +384,11 @@ describe('EditCustomerModal', () => {
       const saveButton = screen.getByRole('button', { name: /save|update/i });
       await user.click(saveButton);
 
-      expect(screen.getByText(/imei should be 15 digits/i)).toBeInTheDocument();
-      expect(mockSave).toHaveBeenCalled();
+      expect(screen.getByText(/imei must be exactly 15 digits/i)).toBeInTheDocument();
+      expect(mockSave).not.toHaveBeenCalled();
     });
 
-    it('accepts valid 15-digit IMEI without warning', async () => {
+    it('accepts valid 15-digit IMEI and allows save', async () => {
       const user = userEvent.setup();
       const mockSave = vi.fn();
       render(
@@ -409,7 +409,7 @@ describe('EditCustomerModal', () => {
       const saveButton = screen.getByRole('button', { name: /save|update/i });
       await user.click(saveButton);
 
-      expect(screen.queryByText(/imei should be 15 digits/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/imei must be exactly 15 digits/i)).not.toBeInTheDocument();
       expect(mockSave).toHaveBeenCalled();
     });
   });
