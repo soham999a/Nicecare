@@ -209,7 +209,20 @@ export default function ProductManagement() {
           <p>Manage your product catalog and inventory</p>
         </div>
 
-        {stores.length === 0 && (
+        {showForm && (
+          <button
+            className="btn btn-outline"
+            onClick={resetForm}
+            title="Close form"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        )}
+
+        {stores?.length === 0 && (
           <div className="alert alert-warning">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
@@ -482,7 +495,7 @@ export default function ProductManagement() {
           ))}
         </select>
 
-        {stores.length > 0 && (
+        {stores?.length > 0 && (
           <button className="btn btn-primary" onClick={() => setShowForm(true)}>
             + Add Product
           </button>
@@ -509,7 +522,7 @@ export default function ProductManagement() {
             </svg>
             <h3>No products found</h3>
             <p>{searchTerm ? 'Try a different search term' : 'Add your first product to get started'}</p>
-            {!searchTerm && stores.length > 0 && (
+            {!searchTerm && stores?.length > 0 && (
               <button className="btn btn-primary" onClick={() => setShowForm(true)}>
                 + Add Product
               </button>
