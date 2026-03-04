@@ -1,8 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSales } from '../../hooks/useSales';
 import { useStores } from '../../hooks/useStores';
 
 export default function SalesReports() {
+  useEffect(() => {
+    document.body.classList.add('edge-to-edge-page');
+    return () => document.body.classList.remove('edge-to-edge-page');
+  }, []);
+
   const { stores } = useStores();
   const [filterStore, setFilterStore] = useState('');
   const [dateRange, setDateRange] = useState({

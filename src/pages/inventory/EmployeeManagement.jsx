@@ -1,9 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useEmployees } from '../../hooks/useEmployees';
 import { useStores } from '../../hooks/useStores';
 import ConfirmDialog from '../../components/ConfirmDialog';
 
 export default function EmployeeManagement() {
+  // add body class to eliminate padding/gaps for this page
+  useEffect(() => {
+    document.body.classList.add('edge-to-edge-page');
+    return () => {
+      document.body.classList.remove('edge-to-edge-page');
+    };
+  }, []);
+
   const { employees, loading, error, creating, createEmployee, updateEmployee, toggleEmployeeActive, deleteEmployee } = useEmployees();
   const { stores } = useStores();
   const [showForm, setShowForm] = useState(false);
@@ -145,11 +153,19 @@ export default function EmployeeManagement() {
           <p>Manage your store employees</p>
         </div>
         <button
-          className="btn btn-primary"
+          className="btn btn-outline"
           onClick={() => setShowForm(!showForm)}
           disabled={stores.length === 0}
+          title={showForm ? "Close form" : "Add new employee"}
         >
-          {showForm ? 'Cancel' : '+ Add Employee'}
+          {showForm ? (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          ) : (
+            '+ Add Employee'
+          )}
         </button>
       </div>
 

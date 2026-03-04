@@ -1,7 +1,14 @@
+import { useEffect } from 'react';
 import { useSales } from '../../hooks/useSales';
 import { useInventoryAuth } from '../../context/InventoryAuthContext';
 
 export default function MemberSales() {
+  // give this page a tiny horizontal gutter by toggling body class
+  useEffect(() => {
+    document.body.classList.add('edge-to-edge-page');
+    return () => document.body.classList.remove('edge-to-edge-page');
+  }, []);
+
   const { userProfile, currentUser } = useInventoryAuth();
   const storeId = userProfile?.assignedStoreId;
 

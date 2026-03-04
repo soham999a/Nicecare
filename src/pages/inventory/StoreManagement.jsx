@@ -1,9 +1,27 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useStores } from '../../hooks/useStores';
 import ConfirmDialog from '../../components/ConfirmDialog';
+import { useEmployees } from '../../hooks/useEmployees';
 
 export default function StoreManagement() {
+  // apply small side gutter by toggling body class
+  useEffect(() => {
+    document.body.classList.add('edge-to-edge-page');
+    return () => document.body.classList.remove('edge-to-edge-page');
+  }, []);
+
   const { stores, loading, error, addStore, updateStore, deleteStore } = useStores();
+  const { employees } = useEmployees();
+
+  const employeeCountByStore = useMemo(() => {
+    const counts = {};
+    for (const emp of employees) {
+      if (emp.assignedStoreId) {
+        counts[emp.assignedStoreId] = (counts[emp.assignedStoreId] || 0) + 1;
+      }
+    }
+    return counts;
+  }, [employees]);
   const [showForm, setShowForm] = useState(false);
   const [editingStore, setEditingStore] = useState(null);
   const [formData, setFormData] = useState({
@@ -102,10 +120,18 @@ export default function StoreManagement() {
           <p>Manage your store locations</p>
         </div>
         <button
-          className="btn btn-primary"
+          className="btn btn-outline"
           onClick={() => setShowForm(!showForm)}
+          title={showForm ? "Close form" : "Add new store"}
         >
-          {showForm ? 'Cancel' : '+ Add Store'}
+          {showForm ? (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          ) : (
+            '+ Add Store'
+          )}
         </button>
       </div>
 
@@ -251,7 +277,7 @@ export default function StoreManagement() {
                       <span className="manager-text">{store.manager || '-'}</span>
                     </td>
                     <td className="align-center">
-                      <span className="count-badge employees-badge">{store.employeeCount || 0}</span>
+                      <span className="count-badge employees-badge">{employeeCountByStore[store.id] || 0}</span>
                     </td>
                     <td className="align-center">
                       <span className="count-badge products-badge">{store.productCount || 0}</span>

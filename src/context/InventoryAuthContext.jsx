@@ -167,6 +167,19 @@ export function InventoryAuthProvider({ children }) {
       uid: user.uid,
     });
 
+    // Increment the assigned store's employeeCount
+    if (invitation.assignedStoreId) {
+      const storeRef = doc(db, 'stores', invitation.assignedStoreId);
+      const storeDoc = await getDoc(storeRef);
+      if (storeDoc.exists()) {
+        const currentCount = storeDoc.data().employeeCount || 0;
+        await updateDoc(storeRef, {
+          employeeCount: currentCount + 1,
+          updatedAt: serverTimestamp(),
+        });
+      }
+    }
+
     // Mark invitation as accepted
     await updateDoc(doc(db, 'employeeInvitations', inviteCode), {
       status: 'accepted',

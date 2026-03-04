@@ -557,7 +557,7 @@ a:hover {
 
 /* ===== Layout ===== */
 .main-content {
-  flex: 1;
+  flex: 1 1 0;
   padding: 24px 32px;
   max-width: 1800px;
   margin: 0 auto;
@@ -570,7 +570,7 @@ a:hover {
 
 .grid {
   display: grid;
-  gap: 24px;
+  gap: 16px;
   flex: 1;
   min-height: 0;
   overflow: hidden;
@@ -578,14 +578,15 @@ a:hover {
 
 @media (min-width: 1200px) {
   .grid {
-    grid-template-columns: 420px 1fr;
+    grid-template-columns: 380px 1fr;
+    grid-template-rows: 1fr;
     align-items: stretch;
   }
 }
 
 @media (min-width: 1500px) {
   .grid {
-    grid-template-columns: 460px 1fr;
+    grid-template-columns: 420px 1fr;
   }
 }
 
@@ -609,14 +610,14 @@ a:hover {
   background: var(--bg-card);
   border: 1px solid var(--border-primary);
   border-radius: var(--radius-xl);
-  padding: 24px;
+  padding: 20px;
   box-shadow: var(--shadow-card);
   transition: all var(--transition-slow);
   position: relative;
   display: flex;
   flex-direction: column;
   min-height: 0;
-  overflow: hidden;
+  overflow-y: auto;
 }
 
 [data-theme="light"] .card {

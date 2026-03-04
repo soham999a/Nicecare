@@ -414,7 +414,7 @@ describe('CustomerForm', () => {
         expect(imeiInput).toHaveValue('123456789012345');
       });
 
-      it('shows warning for invalid IMEI format but allows submission', async () => {
+      it('blocks submission when IMEI is invalid and shows error', async () => {
         const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
         const mockSubmit = vi.fn();
         render(<CustomerForm onSubmit={mockSubmit} loading={false} />);
@@ -431,9 +431,8 @@ describe('CustomerForm', () => {
         const submitButton = screen.getByRole('button', { name: /submit|add/i });
         await user.click(submitButton);
 
-        // Should show warning but still submit
-        expect(screen.getByText(/imei should be 15 digits/i)).toBeInTheDocument();
-        expect(mockSubmit).toHaveBeenCalled();
+        expect(screen.getByText(/imei must be exactly 15 digits/i)).toBeInTheDocument();
+        expect(mockSubmit).not.toHaveBeenCalled();
       });
     });
 
