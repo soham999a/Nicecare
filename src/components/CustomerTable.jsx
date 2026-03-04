@@ -457,21 +457,15 @@ export default function CustomerTable({ customers, onUpdateStatus, onUpdateCusto
       )}
     </section>
 
+      {/* render the edit modal directly; the component already handles its own overlay
+          avoiding a brief "popup inside a popup" which was caused by the outer wrapper */}
       {showEditModal && modalCustomer && (
-        <div className="modal-overlay" onClick={() => handleCancelEdit()}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
-            <div className="modal-header">
-              <h3>✏️ Edit Customer</h3>
-              <button className="modal-close" onClick={() => handleCancelEdit()} aria-label="Close">×</button>
-            </div>
-            <EditCustomerModal
-              customer={modalCustomer}
-              onSave={handleSaveEdit}
-              onClose={handleCancelEdit}
-              loading={updatingCustomer}
-            />
-          </div>
-        </div>
+        <EditCustomerModal
+          customer={modalCustomer}
+          onSave={handleSaveEdit}
+          onClose={handleCancelEdit}
+          loading={updatingCustomer}
+        />
       )}
     </>
     );

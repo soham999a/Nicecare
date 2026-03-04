@@ -150,9 +150,10 @@ export default function CustomerForm({ onSubmit, loading }) {
       return;
     }
 
-    // Soft validation for IMEI (warning, not blocking)
+    // IMEI validation: block submission if present but not 15 digits
     if (formData.imei && !validateIMEI(formData.imei)) {
-      setWarning('IMEI should be 15 digits. Proceeding anyway...');
+      setError('IMEI must be exactly 15 digits');
+      return;
     }
 
     onSubmit(formData);
@@ -369,6 +370,8 @@ export default function CustomerForm({ onSubmit, loading }) {
                       placeholder="15-digit IMEI"
                       value={formData.imei}
                       onChange={handleChange}
+                      maxLength={15}
+                      inputMode="numeric"
                     />
                   </div>
                   <div>

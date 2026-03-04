@@ -7799,6 +7799,8 @@ html::after,
   margin: 1rem 0;
   display: flex;
   justify-content: flex-end;
+  /* add a little vertical breathing room so the button isn’t clipped */
+  padding: 0.5rem 0;
 }
 .crm-controls .btn {
   font-weight: 600;
@@ -7808,6 +7810,26 @@ html::after,
 .crm-controls .btn:hover {
   box-shadow: var(--shadow-md);
 }
+
+/* hide scrollbars that show up on some browsers for the store selector (CRMPage)
+   and for the search bar input area; these are not helpful and differ from
+   the main branch experience */
+#crm-store-filter,
+.store-filter-card {
+  /* ensure the store-filter card itself never shows a secondary scrollbar */
+  scrollbar-width: none; /* firefox */
+  -ms-overflow-style: none; /* IE 10+ */
+}
+#crm-store-filter::-webkit-scrollbar,
+.store-filter-card::-webkit-scrollbar {
+  display: none;
+}
+.search-bar {
+  /* the search bar sits inside CRMPage; the scrollbar seen earlier was
+     caused by flex-wrap/overflow on narrow windows – simply hidden here */
+  overflow: hidden;
+}
+
 
 /* pagination controls at bottom of customer table */
 .pagination {

@@ -95,7 +95,7 @@ export default function CRMPage() {
       {error && <div className="error-banner">{error}</div>}
 
       {isMaster && stores?.length > 0 && (
-        <div className="card" style={{ marginBottom: '1rem' }}>
+        <div className="card store-filter-card" style={{ marginBottom: '1rem' }}>
           <label htmlFor="crm-store-filter" style={{ marginRight: '0.5rem' }}>Store:</label>
           <select
             id="crm-store-filter"
