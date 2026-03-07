@@ -321,6 +321,7 @@ export default function CustomerTable({ customers, onUpdateStatus, onUpdateCusto
                         <span className="text-slate-700 dark:text-gray-300">{customer.phone || '—'}</span>
                         <span className="text-slate-500 dark:text-gray-400 text-xs">{customer.email || '—'}</span>
                       </div>
+                      
                     </td>
                     <td className="px-4 py-3 border-b border-slate-100 dark:border-gray-700/50">
                       <div className="text-sm">
