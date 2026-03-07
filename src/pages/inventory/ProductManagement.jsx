@@ -46,7 +46,7 @@ function ProductManagementContent({ userProfile, isManager }) {
   const [showStockModal, setShowStockModal] = useState(null);
   const [stockChange, setStockChange] = useState({ quantity: 0, reason: '' });
   const [searchTerm, setSearchTerm] = useState('');
-  const [formData, setFormData] = useState({
+  const getDefaultFormData = () => ({
     name: '',
     sku: '',
     barcode: '',
@@ -56,9 +56,10 @@ function ProductManagementContent({ userProfile, isManager }) {
     cost: '',
     quantity: '',
     lowStockThreshold: '10',
-    storeId: '',
-    storeName: '',
+    storeId: isManager ? managerStoreId || '' : '',
+    storeName: isManager ? managerStoreName : '',
   });
+  const [formData, setFormData] = useState(() => getDefaultFormData());
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState(null);
@@ -85,22 +86,17 @@ function ProductManagementContent({ userProfile, isManager }) {
   ];
 
   function resetForm() {
-    setFormData({
-      name: '',
-      sku: '',
-      barcode: '',
-      category: '',
-      description: '',
-      price: '',
-      cost: '',
-      quantity: '',
-      lowStockThreshold: '10',
-      storeId: isManager ? managerStoreId || '' : '',
-      storeName: isManager ? managerStoreName : '',
-    });
+    setFormData(getDefaultFormData());
     setEditingProduct(null);
     setShowForm(false);
     setFormError('');
+  }
+
+  function openCreateForm() {
+    setFormData(getDefaultFormData());
+    setEditingProduct(null);
+    setFormError('');
+    setShowForm(true);
   }
 
   function handleStoreChange(storeId) {
@@ -556,7 +552,7 @@ function ProductManagementContent({ userProfile, isManager }) {
         )}
 
         {(isManager && managerStoreId) || (!isManager && stores?.length > 0) ? (
-          <button className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all bg-blue-600 hover:bg-blue-700 text-white" onClick={() => setShowForm(true)}>
+          <button className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all bg-blue-600 hover:bg-blue-700 text-white" onClick={openCreateForm}>
             + Add Product
           </button>
         ) : null}
@@ -583,7 +579,7 @@ function ProductManagementContent({ userProfile, isManager }) {
             <h3 className="text-lg font-semibold text-slate-700 dark:text-gray-300">No products found</h3>
             <p className="text-sm">{searchTerm ? 'Try a different search term' : 'Add your first product to get started'}</p>
             {!searchTerm && stores?.length > 0 && (
-              <button className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all bg-blue-600 hover:bg-blue-700 text-white mt-2" onClick={() => setShowForm(true)}>
+              <button className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all bg-blue-600 hover:bg-blue-700 text-white mt-2" onClick={openCreateForm}>
                 + Add Product
               </button>
             )}

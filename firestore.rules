@@ -67,11 +67,26 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/employees/$(request.auth.uid)).data.ownerUid;
     }
 
+    function getEmployeeRole() {
+      return get(/databases/$(database)/documents/employees/$(request.auth.uid)).data.role;
+    }
+
+    function isAssignedManager(ownerUid, storeId) {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/employees/$(request.auth.uid)) &&
+        getEmployeeRole() == 'manager' &&
+        getEmployeeStoreId() == storeId &&
+        getEmployeeOwnerUid() == ownerUid;
+    }
+
     // Stores collection - only master can CRUD their stores
     match /stores/{storeId} {
       allow create: if isSignedIn() && request.resource.data.ownerUid == request.auth.uid;
       allow read: if isMasterOwner(resource.data) || isStoreEmployee(storeId);
-      allow update, delete: if isMasterOwner(resource.data);
+      allow update: if isMasterOwner(resource.data) ||
+        (isAssignedManager(resource.data.ownerUid, storeId) &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['productCount', 'updatedAt']));
+      allow delete: if isMasterOwner(resource.data);
     }
 
     // Employees collection - master can CRUD, employee can read their own and create their profile
@@ -82,14 +97,18 @@ service cloud.firestore {
         (request.resource.data.ownerUid == request.auth.uid || 
          (employeeId == request.auth.uid && request.resource.data.uid == request.auth.uid));
       // Master can read all their employees, employee can read their own record
-      allow read: if (isSignedIn() && resource.data.ownerUid == request.auth.uid) || request.auth.uid == employeeId;
+      allow read: if (isSignedIn() && resource.data.ownerUid == request.auth.uid) ||
+        request.auth.uid == employeeId ||
+        isAssignedManager(resource.data.ownerUid, resource.data.assignedStoreId);
       // Only master can update/delete
       allow update, delete: if isSignedIn() && resource.data.ownerUid == request.auth.uid;
     }
 
     // Products collection - master can CRUD, employee can read products from their store
     match /products/{productId} {
-      allow create: if isSignedIn() && request.resource.data.ownerUid == request.auth.uid;
+      allow create: if isSignedIn() &&
+        (request.resource.data.ownerUid == request.auth.uid ||
+         isAssignedManager(request.resource.data.ownerUid, request.resource.data.storeId));
       // Master can read all their products
       // Employee can read products from their assigned store
       allow read: if isMasterOwner(resource.data) || 
@@ -100,12 +119,16 @@ service cloud.firestore {
       // Master can update/delete
       // Employee can update stock quantity only (for sales)
       allow update: if isMasterOwner(resource.data) || 
+        (isAssignedManager(resource.data.ownerUid, resource.data.storeId) &&
+         request.resource.data.ownerUid == resource.data.ownerUid &&
+         request.resource.data.storeId == resource.data.storeId) ||
         (isSignedIn() && 
          exists(/databases/$(database)/documents/employees/$(request.auth.uid)) && 
          resource.data.storeId == getEmployeeStoreId() &&
          resource.data.ownerUid == getEmployeeOwnerUid() &&
          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['quantity', 'updatedAt']));
-      allow delete: if isMasterOwner(resource.data);
+      allow delete: if isMasterOwner(resource.data) ||
+        isAssignedManager(resource.data.ownerUid, resource.data.storeId);
     }
 
     // Sales collection - master can read all, employee can create and read their store's sales
@@ -144,7 +167,10 @@ service cloud.firestore {
     // Employee Invitations collection - for invitation-based employee onboarding
     match /employeeInvitations/{invitationId} {
       // Master can create invitations with their ownerUid
-      allow create: if isSignedIn() && request.resource.data.ownerUid == request.auth.uid;
+      allow create: if isSignedIn() &&
+        (request.resource.data.ownerUid == request.auth.uid ||
+         (request.resource.data.role == 'member' &&
+          isAssignedManager(request.resource.data.ownerUid, request.resource.data.assignedStoreId)));
       // Anyone can read invitations (needed for signup flow to validate invite codes)
       allow read: if true;
       // Master can update/delete their invitations

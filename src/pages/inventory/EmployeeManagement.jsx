@@ -36,7 +36,7 @@ function EmployeeManagementContent({ userProfile, isMaster, isManager }) {
   const [showForm, setShowForm] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState(null);
   const [newEmployeeCredentials, setNewEmployeeCredentials] = useState(null);
-  const [formData, setFormData] = useState({
+  const getDefaultFormData = () => ({
     name: '',
     email: '',
     phone: '',
@@ -44,23 +44,24 @@ function EmployeeManagementContent({ userProfile, isMaster, isManager }) {
     storeId: isManager ? (userProfile?.assignedStoreId || '') : '',
     storeName: isManager ? (userProfile?.assignedStoreName || '') : '',
   });
+  const [formData, setFormData] = useState(() => getDefaultFormData());
   const [formError, setFormError] = useState('');
   const [filterStore, setFilterStore] = useState('');
   const [filterRole, setFilterRole] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   function resetForm() {
-    setFormData({
-      name: '',
-      email: '',
-      phone: '',
-      role: 'member',
-      storeId: isManager ? (userProfile?.assignedStoreId || '') : '',
-      storeName: isManager ? (userProfile?.assignedStoreName || '') : '',
-    });
+    setFormData(getDefaultFormData());
     setEditingEmployee(null);
     setShowForm(false);
     setFormError('');
+  }
+
+  function openCreateForm() {
+    setFormData(getDefaultFormData());
+    setEditingEmployee(null);
+    setFormError('');
+    setShowForm(true);
   }
 
   function handleStoreChange(storeId) {
@@ -184,7 +185,13 @@ function EmployeeManagementContent({ userProfile, isMaster, isManager }) {
         </div>
         <button
           className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-slate-600 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-gray-700 disabled:opacity-50"
-          onClick={() => setShowForm(!showForm)}
+          onClick={() => {
+            if (showForm) {
+              resetForm();
+              return;
+            }
+            openCreateForm();
+          }}
           disabled={!isManager && stores.length === 0}
           title={showForm ? "Close form" : "Add new employee"}
         >
@@ -390,7 +397,7 @@ function EmployeeManagementContent({ userProfile, isMaster, isManager }) {
             <h3 className="text-lg font-semibold text-slate-700 dark:text-gray-300">No employees yet</h3>
             <p className="text-sm">{filterStore ? 'No employees in this store' : 'Add employees to your store'}</p>
             {!filterStore && ((!isManager && stores.length > 0) || (isManager && !!userProfile?.assignedStoreId)) && (
-              <button className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all bg-blue-600 hover:bg-blue-700 text-white mt-2" onClick={() => setShowForm(true)}>
+              <button className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all bg-blue-600 hover:bg-blue-700 text-white mt-2" onClick={openCreateForm}>
                 + Add Employee
               </button>
             )}

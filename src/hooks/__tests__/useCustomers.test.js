@@ -110,6 +110,30 @@ describe('useCustomers Hook', () => {
       });
       expect(mockOnSnapshot).toHaveBeenCalled();
     });
+
+    it('should use assignedStoreId for manager', async () => {
+      mockUseInventoryAuth.mockReturnValue({
+        currentUser: { uid: 'manager-uid-789', email: 'manager@store.com' },
+        userProfile: {
+          uid: 'manager-uid-789',
+          role: 'manager',
+          ownerUid: mockMasterUser.uid,
+          assignedStoreId: 'store-123',
+          assignedStoreName: 'Main Store',
+        },
+      });
+      mockOnSnapshot.mockImplementation((q, onNext) => {
+        onNext({ docs: [] });
+        return mockUnsubscribe;
+      });
+
+      const { result } = renderHook(() => useCustomers());
+
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
+      expect(mockOnSnapshot).toHaveBeenCalled();
+    });
   });
 
   describe('addCustomer', () => {
@@ -175,6 +199,39 @@ describe('useCustomers Hook', () => {
       const call = mockAddDoc.mock.calls[0][1];
       expect(call.ownerUid).toBe(mockMemberProfile.ownerUid);
       expect(call.storeId).toBe(mockMemberProfile.assignedStoreId);
+    });
+
+    it('should use assignedStoreId for manager when adding', async () => {
+      mockUseInventoryAuth.mockReturnValue({
+        currentUser: { uid: 'manager-uid-789', email: 'manager@store.com' },
+        userProfile: {
+          uid: 'manager-uid-789',
+          role: 'manager',
+          ownerUid: mockMasterUser.uid,
+          assignedStoreId: 'store-123',
+          assignedStoreName: 'Main Store',
+        },
+      });
+      mockOnSnapshot.mockImplementation((q, onNext) => {
+        onNext({ docs: [] });
+        return mockUnsubscribe;
+      });
+      mockAddDoc.mockResolvedValue({ id: 'new-id' });
+
+      const { result } = renderHook(() => useCustomers());
+
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
+
+      await act(async () => {
+        await result.current.addCustomer({ name: 'Test', email: 't@t.com' });
+      });
+
+      expect(mockAddDoc).toHaveBeenCalled();
+      const call = mockAddDoc.mock.calls[0][1];
+      expect(call.ownerUid).toBe(mockMasterUser.uid);
+      expect(call.storeId).toBe('store-123');
     });
   });
 });
