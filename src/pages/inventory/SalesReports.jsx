@@ -102,8 +102,8 @@ export default function SalesReports() {
               <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
             </svg>
           </div>
-          <div>
-            <h3 className="text-[1.75rem] font-bold text-slate-900 dark:text-gray-50 mb-1 leading-tight">
+          <div className="flex-1 min-w-0">
+            <h3 className="text-[1.75rem] font-bold text-slate-900 dark:text-gray-50 mb-1 leading-tight break-words">
               {loading ? '...' : formatCurrency(stats.totalRevenue)}
             </h3>
             <p className="text-slate-600 dark:text-gray-400 text-sm">Total Revenue</p>
@@ -117,8 +117,8 @@ export default function SalesReports() {
               <line x1="1" y1="10" x2="23" y2="10" />
             </svg>
           </div>
-          <div>
-            <h3 className="text-[1.75rem] font-bold text-slate-900 dark:text-gray-50 mb-1 leading-tight">
+          <div className="flex-1 min-w-0">
+            <h3 className="text-[1.75rem] font-bold text-slate-900 dark:text-gray-50 mb-1 leading-tight break-words">
               {loading ? '...' : stats.totalSales}
             </h3>
             <p className="text-slate-600 dark:text-gray-400 text-sm">Total Transactions</p>
@@ -133,8 +133,8 @@ export default function SalesReports() {
               <line x1="6" y1="20" x2="6" y2="14" />
             </svg>
           </div>
-          <div>
-            <h3 className="text-[1.75rem] font-bold text-slate-900 dark:text-gray-50 mb-1 leading-tight">
+          <div className="flex-1 min-w-0">
+            <h3 className="text-[1.75rem] font-bold text-slate-900 dark:text-gray-50 mb-1 leading-tight break-words">
               {loading ? '...' : formatCurrency(stats.averageOrderValue)}
             </h3>
             <p className="text-slate-600 dark:text-gray-400 text-sm">Average Order Value</p>
@@ -148,8 +148,8 @@ export default function SalesReports() {
               <polyline points="12 6 12 12 16 14" />
             </svg>
           </div>
-          <div>
-            <h3 className="text-[1.75rem] font-bold text-slate-900 dark:text-gray-50 mb-1 leading-tight">
+          <div className="flex-1 min-w-0">
+            <h3 className="text-[1.75rem] font-bold text-slate-900 dark:text-gray-50 mb-1 leading-tight break-words">
               {loading ? '...' : formatCurrency(stats.todayRevenue)}
             </h3>
             <p className="text-slate-600 dark:text-gray-400 text-sm">
