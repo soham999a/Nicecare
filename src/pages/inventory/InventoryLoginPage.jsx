@@ -77,15 +77,62 @@ export default function InventoryLoginPage() {
   return (
     <div className="flex min-h-screen w-full bg-[#fcfcfc] dark:bg-[#0a0f1a] transition-colors duration-300 overflow-x-hidden">
       
-      {/* LEFT SIDE: 50% LOGIN PANEL */}
-      <div className="relative flex w-full flex-col items-center justify-center px-6 py-12 md:w-1/2 md:px-12 lg:px-16 xl:px-24">
+      {/* LEFT SIDE: 50% IMAGE PANEL (Now on the left for Desktop) */}
+      <div className="relative hidden w-1/2 overflow-hidden md:block">
+        {FEATURES.map((feature, index) => (
+          <div
+            key={index}
+            className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
+              activeFeature === index ? 'opacity-100 z-10' : 'opacity-0 z-0'
+            }`}
+          >
+            <img 
+              src={feature.image} 
+              alt="Preview"
+              className="h-full w-full object-cover transition-transform duration-[8000ms] ease-out"
+              style={{ transform: activeFeature === index ? 'scale(1)' : 'scale(1.1)' }}
+            />
+            <div className="absolute inset-0 bg-black/50" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
+          </div>
+        ))}
+
+        <div className="absolute bottom-0 left-0 z-20 w-full p-12 lg:p-16 text-white">
+          <div className="max-w-md">
+            <h2 className="mb-8 text-2xl font-medium leading-relaxed drop-shadow-lg lg:text-3xl">
+              "{FEATURES[activeFeature].title}"
+            </h2>
+            
+            <div className="flex items-center justify-start border-t border-white/20 pt-6">
+              <div className="flex gap-2">
+                <button 
+                  onClick={prevFeature}
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-white/30 backdrop-blur-md transition-all hover:bg-white hover:text-slate-900"
+                >
+                  <ChevronLeft size={20} />
+                </button>
+                <button 
+                  onClick={nextFeature}
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-white/30 backdrop-blur-md transition-all hover:bg-white hover:text-slate-900"
+                >
+                  <ChevronRight size={20} />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* RIGHT SIDE: 50% LOGIN PANEL (Now on the right for Desktop) */}
+      <div className="relative flex w-full flex-col items-center justify-center px-6 pt-2 pb-12 md:w-1/2 md:px-12 md:pt-8 md:pb-24 lg:px-16 xl:px-24">
         
         {/* TOP NAVIGATION */}
-        <div className="absolute left-6 top-6 flex items-center gap-4 md:left-8 md:top-8">
+        <div className="absolute inset-x-6 top-6 flex items-center justify-between md:inset-x-8 md:top-8">
           <Link 
             to="/" 
             className="flex h-10 items-center gap-2 rounded-full border border-slate-300 bg-white px-4 text-xs font-bold uppercase tracking-widest text-slate-600 shadow-sm transition-all hover:border-indigo-500 hover:text-indigo-600 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400 dark:hover:border-indigo-400"
           >
+            
             <ArrowLeft size={16} />
             <span className="hidden sm:inline">Home</span>
           </Link>
@@ -93,6 +140,7 @@ export default function InventoryLoginPage() {
           <button 
             onClick={toggleTheme}
             className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-600 shadow-sm transition-all hover:border-indigo-500 hover:text-indigo-600 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400 dark:hover:border-indigo-400"
+            aria-label="Toggle theme"
           >
             {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
           </button>
@@ -179,51 +227,6 @@ export default function InventoryLoginPage() {
         </div>
       </div>
 
-      {/* RIGHT SIDE: 50% IMAGE PANEL (Hidden on Mobile) */}
-      <div className="relative hidden w-1/2 overflow-hidden md:block">
-        {FEATURES.map((feature, index) => (
-          <div
-            key={index}
-            className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
-              activeFeature === index ? 'opacity-100 z-10' : 'opacity-0 z-0'
-            }`}
-          >
-            <img 
-              src={feature.image} 
-              alt="Preview"
-              className="h-full w-full object-cover transition-transform duration-[8000ms] ease-out"
-              style={{ transform: activeFeature === index ? 'scale(1)' : 'scale(1.1)' }}
-            />
-            <div className="absolute inset-0 bg-black/50" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
-          </div>
-        ))}
-
-        <div className="absolute bottom-0 left-0 z-20 w-full p-12 lg:p-16 text-white">
-          <div className="max-w-md">
-            <h2 className="mb-8 text-2xl font-medium leading-relaxed drop-shadow-lg lg:text-3xl">
-              "{FEATURES[activeFeature].title}"
-            </h2>
-            
-            <div className="flex items-center justify-end border-t border-white/20 pt-6">
-              <div className="flex gap-2">
-                <button 
-                  onClick={prevFeature}
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-white/30 backdrop-blur-md transition-all hover:bg-white hover:text-slate-900"
-                >
-                  <ChevronLeft size={20} />
-                </button>
-                <button 
-                  onClick={nextFeature}
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-white/30 backdrop-blur-md transition-all hover:bg-white hover:text-slate-900"
-                >
-                  <ChevronRight size={20} />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

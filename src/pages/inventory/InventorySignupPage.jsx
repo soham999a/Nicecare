@@ -309,7 +309,16 @@ export default function InventorySignupPage() {
       <div className="relative flex w-full flex-col md:w-1/2">
         
         {/* TOP NAVIGATION BAR - Fixed Position */}
-        <div className="absolute left-0 right-0 top-0 z-30 flex items-center justify-end gap-3 px-5 py-4 md:px-8 md:py-5">
+        <div className="absolute inset-x-0 top-0 z-30 flex items-center justify-between gap-3 px-5 py-4 md:px-8 md:py-5">
+          {/* Back Button - Left Side */}
+          <Link 
+            to="/" 
+            className="flex h-10 items-center gap-2 rounded-full border border-slate-300 bg-white px-4 text-xs font-bold uppercase tracking-widest text-slate-600 shadow-sm transition-all hover:border-indigo-500 hover:text-indigo-600 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400 dark:hover:border-indigo-400"
+          >
+            <ArrowLeft size={16} />
+            <span className="hidden sm:inline">Home</span>
+          </Link>
+
           {/* Theme Toggle - Right Side */}
           <button 
             onClick={toggleTheme}
@@ -318,19 +327,10 @@ export default function InventorySignupPage() {
           >
             {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
           </button>
-          
-          {/* Back Button - Right Side */}
-          <Link 
-            to="/" 
-            className="flex h-10 items-center gap-2 rounded-full border border-slate-300 bg-white px-4 text-xs font-bold uppercase tracking-widest text-slate-600 shadow-sm transition-all hover:border-indigo-500 hover:text-indigo-600 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400 dark:hover:border-indigo-400"
-          >
-            <ArrowLeft size={16} />
-            <span className="hidden sm:inline">Home</span>
-          </Link>
         </div>
 
         {/* Form Content Area - No Scrolling, Fits in Viewport */}
-        <div className="flex flex-1 items-center justify-center px-5 pt-20 pb-6 md:px-10 md:pt-24 md:pb-8">
+        <div className="flex flex-1 items-center justify-center px-5 pt-2 pb-6 md:px-10 md:pt-8 md:pb-8">
           <div className="w-full max-w-[400px]">
             
             {/* Tab Switcher */}
