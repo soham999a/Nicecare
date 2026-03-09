@@ -68,8 +68,10 @@ describe('InventorySignupPage', () => {
 
     await user.type(screen.getByPlaceholderText(/your business name/i), 'ABC Electronics');
     await user.type(screen.getByPlaceholderText(/name@company\.com/i), 'test@example.com');
-    await user.type(screen.getByPlaceholderText(/create a strong password/i), 'password123');
-    await user.type(screen.getByPlaceholderText(/confirm your password/i), 'password456');
+    const passwordInputs = screen.getAllByPlaceholderText(/•+/);
+
+    await user.type(passwordInputs[0], 'password123');
+    await user.type(passwordInputs[1], 'password456');
     await user.click(screen.getByRole('button', { name: /create master account/i }));
 
     expect(screen.getByText(/passwords do not match/i)).toBeInTheDocument();
@@ -83,8 +85,10 @@ describe('InventorySignupPage', () => {
 
     await user.type(screen.getByPlaceholderText(/your business name/i), 'ABC Electronics');
     await user.type(screen.getByPlaceholderText(/name@company\.com/i), 'test@example.com');
-    await user.type(screen.getByPlaceholderText(/create a strong password/i), 'password123');
-    await user.type(screen.getByPlaceholderText(/confirm your password/i), 'password123');
+    const passwordInputs = screen.getAllByPlaceholderText(/•+/);
+
+    await user.type(passwordInputs[0], 'password123');
+    await user.type(passwordInputs[1], 'password123');
     await user.click(screen.getByRole('button', { name: /create master account/i }));
 
     await waitFor(() => {
