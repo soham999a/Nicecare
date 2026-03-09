@@ -128,6 +128,7 @@ export default function InventoryLoginPage() {
                 required
               />
             </div>
+            
 
             <div className="relative">
               <label className="mb-2 block text-[11px] font-bold uppercase tracking-widest text-slate-500 dark:text-gray-400">
