@@ -62,6 +62,7 @@ export default function Sidebar({ isExpanded, toggleSidebar, isMobileMenuOpen })
   };
 
   const isMaster = userProfile?.role === 'master';
+  const isManager = userProfile?.role === 'manager';
   const userInitial = (() => {
     const name = userProfile?.displayName || currentUser?.email || 'NC';
     const parts = name.trim().split(/\s+/);
@@ -72,7 +73,7 @@ export default function Sidebar({ isExpanded, toggleSidebar, isMobileMenuOpen })
   })();
 
   const navItems = [
-    ...(isMaster ? [
+    ...(isMaster || isManager ? [
       {
         path: '/inventory/dashboard',
         icon: (
@@ -83,6 +84,7 @@ export default function Sidebar({ isExpanded, toggleSidebar, isMobileMenuOpen })
         ),
         label: 'Dashboard'
       },
+      ...(isMaster ? [
       {
         path: '/inventory/stores',
         icon: (
@@ -94,7 +96,7 @@ export default function Sidebar({ isExpanded, toggleSidebar, isMobileMenuOpen })
           </svg>
         ),
         label: 'Stores'
-      },
+      }] : []),
       {
         path: '/inventory/employees',
         icon: (
@@ -119,7 +121,7 @@ export default function Sidebar({ isExpanded, toggleSidebar, isMobileMenuOpen })
       ),
       label: 'Products'
     },
-    ...(!isMaster ? [{
+    ...(!isMaster && !isManager ? [{
       path: '/inventory/my-sales',
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -131,7 +133,7 @@ export default function Sidebar({ isExpanded, toggleSidebar, isMobileMenuOpen })
       ),
       label: 'My Sales'
     }] : []),
-    ...(isMaster ? [
+    ...(isMaster || isManager ? [
       {
         path: '/inventory/sales',
         icon: (
@@ -339,7 +341,7 @@ export default function Sidebar({ isExpanded, toggleSidebar, isMobileMenuOpen })
               {userProfile?.displayName || currentUser?.email?.split('@')[0] || 'User'}
             </span>
             <span className="text-[0.7rem] text-[#a09bb5] dark:text-[#6b6580] whitespace-nowrap">
-              {isMaster ? 'Business Owner' : 'Employee'}
+              {isMaster ? 'Business Owner' : isManager ? 'Store Manager' : 'Employee'}
             </span>
           </div>
 
@@ -363,7 +365,7 @@ export default function Sidebar({ isExpanded, toggleSidebar, isMobileMenuOpen })
                 <div className="flex justify-between items-center">
                   <span className="text-[0.8rem] font-medium text-[#a09bb5] dark:text-[#6b6580]">Role</span>
                   <span className="text-[0.8rem] font-medium text-[#2d2b3d] dark:text-gray-100 text-right max-w-[160px] truncate">
-                    {isMaster ? 'Business Owner' : 'Employee'}
+                    {isMaster ? 'Business Owner' : isManager ? 'Store Manager' : 'Employee'}
                   </span>
                 </div>
                 {userProfile?.assignedStoreName && (

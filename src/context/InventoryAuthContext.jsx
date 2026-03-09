@@ -57,8 +57,22 @@ export function InventoryAuthProvider({ children }) {
   // Create employee (Member) account - called by Master
   // This now creates an INVITATION instead of creating an auth account directly
   async function createEmployee(employeeData) {
-    if (!currentUser || userProfile?.role !== 'master') {
-      throw new Error('Only master accounts can create employees');
+    if (!currentUser || !userProfile || (userProfile.role !== 'master' && userProfile.role !== 'manager')) {
+      throw new Error('Only master and manager accounts can create employees');
+    }
+
+    const isMaster = userProfile.role === 'master';
+    const masterUid = isMaster ? currentUser.uid : (userProfile.ownerUid || userProfile.masterUid);
+
+    // Only masters can invite managers; managers can only invite members into their own store
+    const requestedRole = employeeData.role === 'manager' && isMaster ? 'manager' : 'member';
+
+    let assignedStoreId = employeeData.storeId;
+    let assignedStoreName = employeeData.storeName || '';
+
+    if (!isMaster) {
+      assignedStoreId = userProfile.assignedStoreId;
+      assignedStoreName = userProfile.assignedStoreName || assignedStoreName;
     }
 
     // Generate a unique invitation code
@@ -69,11 +83,12 @@ export function InventoryAuthProvider({ children }) {
       email: employeeData.email.toLowerCase().trim(),
       name: employeeData.name,
       phone: employeeData.phone || '',
-      assignedStoreId: employeeData.storeId,
-      assignedStoreName: employeeData.storeName || '',
-      ownerUid: currentUser.uid,
+      assignedStoreId,
+      assignedStoreName,
+      ownerUid: masterUid || currentUser.uid,
       ownerBusinessName: userProfile?.displayName || '',
       inviteCode: inviteCode,
+      role: requestedRole,
       status: 'pending', // pending, accepted, expired
       createdAt: serverTimestamp(),
       // eslint-disable-next-line react-hooks/purity -- called from event handler, not render
@@ -146,12 +161,15 @@ export function InventoryAuthProvider({ children }) {
       }
     }
 
-    // Create employee profile in Firestore
+    // Determine role from invitation (manager or member)
+    const role = invitation.role === 'manager' ? 'manager' : 'member';
+
+    // Create employee/manager profile in Firestore
     const employeeProfile = {
       email: user.email,
       displayName: invitation.name,
       phone: invitation.phone || '',
-      role: 'member',
+      role,
       accountType: 'inventory',
       assignedStoreId: invitation.assignedStoreId,
       assignedStoreName: invitation.assignedStoreName || '',
@@ -233,6 +251,7 @@ export function InventoryAuthProvider({ children }) {
         name: invitation.name,
         storeName: invitation.assignedStoreName,
         businessName: invitation.ownerBusinessName,
+        role: invitation.role || 'member',
       }
     };
   }
@@ -292,7 +311,8 @@ export function InventoryAuthProvider({ children }) {
       return { user, needsInventoryRegistration: true };
     }
 
-    if (profile.role === 'member' && !profile.isActive) {
+    // Block non-master users that have been deactivated
+    if (profile.role !== 'master' && !profile.isActive) {
       await signOut(auth);
       throw new Error('Your account has been deactivated. Please contact your administrator.');
     }
@@ -372,6 +392,11 @@ export function InventoryAuthProvider({ children }) {
     return userProfile?.role === 'master';
   }
 
+  // Check if user is manager
+  function isManager() {
+    return userProfile?.role === 'manager';
+  }
+
   // Check if user is member
   function isMember() {
     return userProfile?.role === 'member';
@@ -415,6 +440,7 @@ export function InventoryAuthProvider({ children }) {
     fetchUserProfile,
     getEmployees,
     isMaster,
+    isManager,
     isMember,
     getAssignedStoreId,
   };

@@ -43,6 +43,7 @@
  * @property {string} displayName - (Form field: name)
  * @property {string} [email]
  * @property {string} [phone]
+ * @property {string} [role] - 'manager' | 'member'
  * @property {string} [assignedStoreId] - (Form field: storeId)
  * @property {string} [assignedStoreName] - (Form field: storeName)
  * @property {boolean} [isActive]
@@ -82,9 +83,19 @@
 
 /** @typedef {Object} EmployeeInvitationDocument
  * @property {string} email
+ * @property {string} [name]
+ * @property {string} [phone]
+ * @property {string} [role] - 'manager' | 'member'
+ * @property {string} [assignedStoreId]
+ * @property {string} [assignedStoreName]
  * @property {string} inviteCode
  * @property {string} [ownerUid]
+ * @property {string} [ownerBusinessName]
+ * @property {string} [status] - 'pending' | 'accepted' | 'expired'
  * @property {import('firebase/firestore').FieldValue} [createdAt]
+ * @property {Date|import('firebase/firestore').FieldValue} [expiresAt]
+ * @property {import('firebase/firestore').FieldValue} [acceptedAt]
+ * @property {string} [acceptedByUid]
  */
 
 export const SCHEMAS = {

@@ -97,6 +97,18 @@ export default function CRMPage() {
   return (
     <main className="min-h-screen p-4 md:p-6 bg-slate-50 dark:bg-[#0a0f1a]">
       
+      {/* Page Header */}
+      <div className="flex items-start gap-4 mb-6">
+        <div>
+          <h1 className="text-xl sm:text-2xl md:text-[1.9rem] font-bold tracking-tight text-slate-900 dark:text-gray-50">
+            Customer Relationship Management
+          </h1>
+          <p className="text-sm text-slate-500 dark:text-gray-400 mt-1">
+            Manage customer details and track interactions
+          </p>
+        </div>
+      </div>
+      
       {error && (
         <div className="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-lg p-3 mb-4">
           {error}

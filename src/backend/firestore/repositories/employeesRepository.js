@@ -12,11 +12,41 @@ import {
 } from 'firebase/firestore';
 import { db } from '../../../config/firebase';
 
-export function subscribeEmployees(ownerUid, onData, onError) {
+/**
+ * Subscribe to employees.
+ * 
+ * Backwards-compatible signature:
+ * - subscribeEmployees(ownerUid, onData, onError)
+ * - subscribeEmployees({ ownerUid, storeId, onData, onError })
+ */
+export function subscribeEmployees(ownerUidOrOptions, onData, onError) {
+  let ownerUid;
+  let storeId = null;
+  let handleData = onData;
+  let handleError = onError;
+
+  if (typeof ownerUidOrOptions === 'object' && ownerUidOrOptions !== null) {
+    ownerUid = ownerUidOrOptions.ownerUid;
+    storeId = ownerUidOrOptions.storeId || null;
+    handleData = ownerUidOrOptions.onData;
+    handleError = ownerUidOrOptions.onError;
+  } else {
+    ownerUid = ownerUidOrOptions;
+  }
+
+  const constraints = [
+    where('ownerUid', '==', ownerUid),
+  ];
+
+  if (storeId) {
+    constraints.push(where('assignedStoreId', '==', storeId));
+  }
+
+  constraints.push(orderBy('createdAt', 'desc'));
+
   const q = query(
     collection(db, 'employees'),
-    where('ownerUid', '==', ownerUid),
-    orderBy('createdAt', 'desc')
+    ...constraints
   );
 
   return onSnapshot(
@@ -26,9 +56,9 @@ export function subscribeEmployees(ownerUid, onData, onError) {
         id: d.id,
         ...d.data(),
       }));
-      onData(employeeData);
+      handleData(employeeData);
     },
-    onError
+    handleError
   );
 }
 

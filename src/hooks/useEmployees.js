@@ -11,23 +11,40 @@ export function useEmployees() {
   const { currentUser, userProfile, createEmployee: createEmployeeInvitation } = useInventoryAuth();
 
   useEffect(() => {
-    if (!currentUser || userProfile?.role !== 'master') {
+    if (!currentUser || !userProfile || (userProfile.role !== 'master' && userProfile.role !== 'manager')) {
+      setEmployees([]);
+      setLoading(false);
+      return;
+    }
+
+    const isMaster = userProfile.role === 'master';
+    const ownerUidForTenant = isMaster
+      ? currentUser.uid
+      : (userProfile.ownerUid || userProfile.masterUid);
+
+    const storeIdForManager = isMaster ? null : userProfile.assignedStoreId || null;
+
+    // Managers need ownerUid and assignedStoreId; skip query if missing to avoid permission errors
+    if (!isMaster && (!ownerUidForTenant || !storeIdForManager)) {
       setEmployees([]);
       setLoading(false);
       return;
     }
 
     const unsubscribe = employeesRepo.subscribeEmployees(
-      currentUser.uid,
-      (employeeData) => {
-        setEmployees(employeeData);
-        setLoading(false);
-        setError(null);
-      },
-      (err) => {
-        console.error('Error fetching employees:', err);
-        setError('Failed to load employees');
-        setLoading(false);
+      {
+        ownerUid: ownerUidForTenant,
+        storeId: storeIdForManager,
+        onData: (employeeData) => {
+          setEmployees(employeeData);
+          setLoading(false);
+          setError(null);
+        },
+        onError: (err) => {
+          console.error('Error fetching employees:', err);
+          setError('Failed to load employees');
+          setLoading(false);
+        },
       }
     );
 
@@ -35,18 +52,31 @@ export function useEmployees() {
   }, [currentUser, userProfile]);
 
   async function createEmployee(employeeData) {
-    if (!currentUser || userProfile?.role !== 'master') {
-      throw new Error('Only master accounts can create employees');
+    if (!currentUser || !userProfile || (userProfile.role !== 'master' && userProfile.role !== 'manager')) {
+      throw new Error('Only master and manager accounts can create employees');
     }
     setCreating(true);
     try {
-      const result = await createEmployeeInvitation(employeeData);
+      let dataForInvite = { ...employeeData };
+
+      // Managers can only invite members into their own store
+      if (userProfile.role === 'manager') {
+        dataForInvite = {
+          ...dataForInvite,
+          role: 'member',
+          storeId: userProfile.assignedStoreId,
+          storeName: userProfile.assignedStoreName || employeeData.storeName || '',
+        };
+      }
+
+      const result = await createEmployeeInvitation(dataForInvite);
       return {
-        name: employeeData.name,
-        email: employeeData.email,
+        name: dataForInvite.name,
+        email: dataForInvite.email,
+        role: dataForInvite.role || 'member',
         inviteCode: result.inviteCode,
         invitationId: result.invitationId,
-        storeName: employeeData.storeName,
+        storeName: dataForInvite.storeName,
       };
     } finally {
       setCreating(false);

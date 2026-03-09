@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { Navigate } from 'react-router-dom';
 import { useStores } from '../../hooks/useStores';
 import { useEmployees } from '../../hooks/useEmployees';
 import { useProducts } from '../../hooks/useProducts';
@@ -7,6 +8,23 @@ import { useInventoryAuth } from '../../context/InventoryAuthContext';
 
 export default function MasterDashboard() {
   const { userProfile } = useInventoryAuth();
+  const isMaster = userProfile?.role === 'master';
+  const isManager = userProfile?.role === 'manager';
+
+  if (!isMaster && !isManager) {
+    return <Navigate to="/inventory/pos" replace />;
+  }
+
+  return (
+    <MasterDashboardContent
+      userProfile={userProfile}
+      isMaster={isMaster}
+      isManager={isManager}
+    />
+  );
+}
+
+function MasterDashboardContent({ userProfile, isMaster, isManager }) {
   const { stores, loading: storesLoading } = useStores();
   const { employees, loading: employeesLoading } = useEmployees();
   const { products, lowStockProducts, loading: productsLoading } = useProducts();
@@ -34,11 +52,27 @@ export default function MasterDashboard() {
     <main className="p-3 sm:p-4 md:p-6 lg:p-8 space-y-4 sm:space-y-6 animate-fade-in">
 
       {/* --- HERO SECTION --- */}
-      <section className="bg-gradient-to-br from-blue-600 to-blue-700 dark:from-blue-700 dark:to-blue-900 rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 text-white shadow-lg">
-        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 sm:gap-4">
-          <div className="space-y-1">
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight break-words">Welcome back, {userProfile?.displayName || 'Business Owner'}</h1>
-            <p className="text-blue-100 text-xs sm:text-sm md:text-base">Monitor your performance and manage operations in real-time.</p>
+      <section className="bg-gradient-to-br from-blue-600 to-blue-700 dark:from-blue-700 dark:to-blue-900 rounded-2xl p-6 md:p-8 text-white shadow-lg">
+        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+          <div className="space-y-2">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+              Welcome back, {userProfile?.displayName || (isMaster ? 'Business Owner' : 'Store Manager')}
+            </h1>
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-blue-100 text-sm md:text-base">
+                {isMaster
+                  ? 'Monitor your performance and manage operations in real-time.'
+                  : 'Monitor your assigned store performance and team operations in real-time.'}
+              </p>
+              {isManager && userProfile?.assignedStoreName && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 text-xs font-semibold tracking-wide">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                  </svg>
+                  Store: {userProfile.assignedStoreName}
+                </span>
+              )}
+            </div>
           </div>
           {lowStockProducts.length > 0 && (
             <div className="flex items-start gap-2 sm:gap-3 bg-amber-500/20 backdrop-blur-sm border border-amber-300/30 rounded-lg sm:rounded-xl px-3 sm:px-4 py-2 sm:py-3 max-w-md">
@@ -66,8 +100,8 @@ export default function MasterDashboard() {
 
       <div className="space-y-6 sm:space-y-8">
         {/* --- MAIN STATS --- */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 relative z-10">
-          <StatCard label="Total Stores" value={loading ? '...' : stores.length} icon={<StoreIcon />} type="stores" />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 relative z-10 px-2">
+          <StatCard label={isMaster ? 'Total Stores' : 'Assigned Store'} value={loading ? '...' : (isMaster ? stores.length : 1)} icon={<StoreIcon />} type="stores" />
           <StatCard label="Total Products" value={loading ? '...' : products.length} icon={<ProductIcon />} type="products" />
           <StatCard label="Total Employees" value={loading ? '...' : employees.length} icon={<EmployeeIcon />} type="employees" />
           <StatCard label="Total Revenue" value={loading ? '...' : formatCurrency(stats?.totalRevenue)} icon={<RevenueIcon />} type="revenue" />
@@ -82,10 +116,10 @@ export default function MasterDashboard() {
         </div>
 
         {/* --- QUICK ACTIONS SECTION --- */}
-        <div className="space-y-3 sm:space-y-4">
-          <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-gray-50">Quick Actions</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-            <QuickActionCard href="/inventory/stores" label="Add Store" icon={<AddIcon />} />
+        <div className="space-y-4">
+          <h2 className="text-lg font-bold text-slate-900 dark:text-gray-50">Quick Actions</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {isMaster && <QuickActionCard href="/inventory/stores" label="Add Store" icon={<AddIcon />} />}
             <QuickActionCard href="/inventory/employees" label="Add Employee" icon={<UserAddIcon />} />
             <QuickActionCard href="/inventory/products" label="Add Product" icon={<BoxAddIcon />} />
             <QuickActionCard href="/inventory/sales" label="View Reports" icon={<ReportIcon />} />
@@ -95,35 +129,37 @@ export default function MasterDashboard() {
         {/* --- TABLE OVERVIEWS --- */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           
-          {/* Stores Table Panel */}
-          <div className="bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-xl shadow-card overflow-hidden">
-            <div className="flex items-center justify-between px-4 sm:px-5 py-3 sm:py-4 border-b border-slate-200 dark:border-gray-700">
-              <h3 className="text-base font-bold text-slate-900 dark:text-gray-50">Stores Overview</h3>
-              <a href="/inventory/stores" className="text-xs font-bold text-blue-600 dark:text-blue-400 tracking-wide hover:underline">VIEW ALL</a>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-slate-100 dark:border-gray-700">
-                    <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 dark:text-gray-500 uppercase tracking-wider">Store Name</th>
-                    <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 dark:text-gray-500 uppercase tracking-wider">Location</th>
-                    <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 dark:text-gray-500 uppercase tracking-wider">Employees</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-gray-700">
-                  {loading ? (
-                    <tr><td colSpan="3" style={{textAlign: 'center', padding: '20px'}} className="text-slate-400 dark:text-gray-500">Loading data...</td></tr>
-                  ) : stores.slice(0, 5).map(store => (
-                    <tr key={store.id} className="hover:bg-slate-50 dark:hover:bg-gray-700/50 transition-colors">
-                      <td className="px-5 py-3 font-semibold text-slate-900 dark:text-gray-50">{store.name}</td>
-                      <td className="px-5 py-3 text-slate-500 dark:text-gray-400">{store.address || 'Global Store'}</td>
-                      <td className="px-5 py-3 font-semibold text-blue-600 dark:text-blue-400">{employeeCountByStore[store.id] || 0}</td>
+          {/* Stores Table Panel (master only) */}
+          {isMaster && (
+            <div className="bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-xl shadow-card overflow-hidden">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-gray-700">
+                <h3 className="text-base font-bold text-slate-900 dark:text-gray-50">Stores Overview</h3>
+                <a href="/inventory/stores" className="text-xs font-bold text-blue-600 dark:text-blue-400 tracking-wide hover:underline">VIEW ALL</a>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-100 dark:border-gray-700">
+                      <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 dark:text-gray-500 uppercase tracking-wider">Store Name</th>
+                      <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 dark:text-gray-500 uppercase tracking-wider">Location</th>
+                      <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 dark:text-gray-500 uppercase tracking-wider">Employees</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-gray-700">
+                    {loading ? (
+                      <tr><td colSpan="3" style={{ textAlign: 'center', padding: '20px' }} className="text-slate-400 dark:text-gray-500">Loading data...</td></tr>
+                    ) : stores.slice(0, 5).map(store => (
+                      <tr key={store.id} className="hover:bg-slate-50 dark:hover:bg-gray-700/50 transition-colors">
+                        <td className="px-5 py-3 font-semibold text-slate-900 dark:text-gray-50">{store.name}</td>
+                        <td className="px-5 py-3 text-slate-500 dark:text-gray-400">{store.address || 'Global Store'}</td>
+                        <td className="px-5 py-3 font-semibold text-blue-600 dark:text-blue-400">{employeeCountByStore[store.id] || 0}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Employees Table Panel */}
           <div className="bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-xl shadow-card overflow-hidden">

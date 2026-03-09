@@ -65,6 +65,7 @@ Employees are store staff. Creation is invitation-based (see `employeeInvitation
 | `displayName` | string | Full name. **Form field in UI is `name`.** |
 | `email` | string | Email (used in invitation). |
 | `phone` | string | Optional phone. |
+| `role` | string | `'manager'` or `'member'`. Defaults to `'member'` for regular employees. |
 | `assignedStoreId` | string | Store document ID. **Form field in UI is `storeId`.** |
 | `assignedStoreName` | string | Denormalized store name. **Form field in UI is `storeName`.** |
 | `isActive` | boolean | Whether the employee is active. |
@@ -126,14 +127,24 @@ Audit log for product quantity changes (manual adjustments or after a sale).
 
 ## employeeInvitations
 
-Invitation records for new employees. When master "creates" an employee, an invitation is written with a code; the employee signs up with that code and then an `employees` (and `inventoryUsers`) document is created.
+Invitation records for new employees and managers. When a master creates an invite, an invitation is written with a code; the user signs up with that code and then an `employees` (and `inventoryUsers`) document is created.
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `email` | string | Invitee email. |
-| `inviteCode` | string | Unique code for signup. |
+| `name` | string | Invitee display name. |
+| `phone` | string | Optional phone. |
+| `role` | string | `'manager'` or `'member'`. Determines the role created on signup. |
+| `assignedStoreId` | string | Store document ID the user will be assigned to. |
+| `assignedStoreName` | string | Denormalized store name. |
 | `ownerUid` | string | Master UID. |
-| `createdAt` | timestamp | Server timestamp. |
+| `ownerBusinessName` | string | Denormalized business name of the master. |
+| `inviteCode` | string | Unique code for signup. Used as the document ID. |
+| `status` | string | Invitation status: `'pending'`, `'accepted'`, or `'expired'`. |
+| `expiresAt` | timestamp | When the invitation expires. |
+| `createdAt` | timestamp | Server timestamp when the invitation was created. |
+| `acceptedAt` | timestamp | Set when the invitation is accepted. |
+| `acceptedByUid` | string | UID of the user who accepted the invitation. |
 
 **Written by:** `InventoryAuthContext.createEmployee` (and related auth flow).
 
@@ -146,10 +157,12 @@ Per-user profile for inventory app (role, assigned store, etc.). Synced when an 
 | Field | Type | Description |
 |-------|------|-------------|
 | `displayName` | string | Full name. |
-| `role` | string | `'master'` or `'member'`. |
-| `assignedStoreId` | string | For members, their store. |
+| `role` | string | `'master'`, `'manager'`, or `'member'`. |
+| `assignedStoreId` | string | For managers and members, their store. |
 | `assignedStoreName` | string | Denormalized store name. |
-| `ownerUid` / `masterUid` | string | For members, the master UID. |
+| `ownerUid` / `masterUid` | string | For managers and members, the master UID. |
+| `accountType` | string | Always `'inventory'` for inventory users. |
+| `isActive` | boolean | For managers and members, whether the account is active. |
 | `updatedAt` | timestamp | Server timestamp. |
 
 **Written by:** Auth/signup flow and `employeesRepository.updateEmployee` when syncing from `employees`.

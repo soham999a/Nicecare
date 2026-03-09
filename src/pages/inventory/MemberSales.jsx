@@ -72,13 +72,23 @@ export default function MemberSales() {
   return (
     <main className="flex flex-col gap-5 flex-1 min-h-0">
       <div className="flex items-start gap-4 mb-2">
-        <div>
-          <h1 className="text-[1.9rem] font-bold tracking-tight text-slate-900 dark:text-gray-50">
+        <div className="flex flex-col gap-1.5">
+          <h1 className="text-xl sm:text-2xl md:text-[1.9rem] font-bold tracking-tight text-slate-900 dark:text-gray-50">
             My Sales
           </h1>
-          <p className="mt-1.5 text-[0.95rem] text-slate-600 dark:text-gray-400">
-            View your sales history at {userProfile?.assignedStoreName || 'your store'}
-          </p>
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="text-[0.95rem] text-slate-600 dark:text-gray-400">
+              View your sales history at {userProfile?.assignedStoreName || 'your store'}
+            </p>
+            {userProfile?.assignedStoreName && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-600/10 text-blue-600 dark:text-blue-400 text-xs font-semibold">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                </svg>
+                Store: {userProfile.assignedStoreName}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 

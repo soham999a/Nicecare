@@ -22,8 +22,8 @@ export default function InventoryProtectedRoute({ children, requireMaster = fals
     return <Navigate to="/inventory/pos" replace />;
   }
 
-  // Check if member account is active
-  if (userProfile?.role === 'member' && !userProfile?.isActive) {
+  // Check if non-master account is active (members and managers)
+  if (userProfile?.role !== 'master' && !userProfile?.isActive) {
     return <Navigate to="/inventory/login" replace />;
   }
 

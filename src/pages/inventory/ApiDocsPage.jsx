@@ -31,7 +31,7 @@ export default function ApiDocsPage() {
     <main className="flex flex-col gap-5 flex-1 min-h-0 p-0 min-h-[80vh]">
       <div className="flex items-start gap-4 mb-0">
         <div>
-          <h1 className="text-[1.9rem] font-bold tracking-tight text-slate-900 dark:text-gray-50 pl-4">
+          <h1 className="text-xl sm:text-2xl md:text-[1.9rem] font-bold tracking-tight text-slate-900 dark:text-gray-50 pl-4">
             API Documentation
           </h1>
           <p className="mt-1.5 text-[0.95rem] text-slate-600 dark:text-gray-400 pl-4">

@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { Navigate } from 'react-router-dom';
+import { useInventoryAuth } from '../../context/InventoryAuthContext';
 import { useSales } from '../../hooks/useSales';
 import { useStores } from '../../hooks/useStores';
 
@@ -30,6 +32,24 @@ export default function SalesReports() {
     return () => document.body.classList.remove('edge-to-edge-page');
   }, []);
 
+  const { userProfile } = useInventoryAuth();
+  const isMaster = userProfile?.role === 'master';
+  const isManager = userProfile?.role === 'manager';
+
+  if (!isMaster && !isManager) {
+    return <Navigate to="/inventory/pos" replace />;
+  }
+
+  return (
+    <SalesReportsContent
+      userProfile={userProfile}
+      isMaster={isMaster}
+      isManager={isManager}
+    />
+  );
+}
+
+function SalesReportsContent({ userProfile, isMaster, isManager }) {
   const { stores } = useStores();
   const [filterStore, setFilterStore] = useState('');
   const [dateRange, setDateRange] = useState({
@@ -37,8 +57,14 @@ export default function SalesReports() {
     end: new Date(),
   });
 
+  const managerStoreId = isManager ? userProfile?.assignedStoreId || null : null;
+  const managerStoreName = isManager ? (userProfile?.assignedStoreName || 'My Store') : '';
+  const effectiveStores = isManager && managerStoreId
+    ? [{ id: managerStoreId, name: managerStoreName }]
+    : stores;
+
   const { sales, stats, loading, error, getSalesReport } = useSales(
-    filterStore || null,
+    managerStoreId || filterStore || null,
     dateRange
   );
 
@@ -88,7 +114,7 @@ export default function SalesReports() {
             Sales Reports
           </h1>
           <p className="mt-1.5 text-[0.95rem] text-slate-600 dark:text-gray-400">
-            View and analyze your sales data
+            {isMaster ? 'View and analyze sales across all stores' : 'View and analyze sales for your store'}
           </p>
         </div>
       </div>
@@ -165,18 +191,27 @@ export default function SalesReports() {
           <label className="text-[0.73rem] font-bold tracking-wider uppercase text-slate-600 dark:text-gray-400">
             Store:
           </label>
-          <select
-            className="px-3 py-2.5 rounded-lg border border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-[#0a0f1a] text-slate-900 dark:text-gray-50 text-sm truncate min-w-[180px] max-w-[250px]"
-            value={filterStore}
-            onChange={(e) => setFilterStore(e.target.value)}
-          >
-            <option value="">All Stores</option>
-            {stores.map((store) => (
-              <option key={store.id} value={store.id}>
-                {store.name}
-              </option>
-            ))}
-          </select>
+          {!isManager ? (
+            <select
+              className="px-3 py-2.5 rounded-lg border border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-[#0a0f1a] text-slate-900 dark:text-gray-50 text-sm truncate min-w-[180px] max-w-[250px]"
+              value={filterStore}
+              onChange={(e) => setFilterStore(e.target.value)}
+            >
+              <option value="">All Stores</option>
+              {effectiveStores.map((store) => (
+                <option key={store.id} value={store.id}>
+                  {store.name}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <input
+              type="text"
+              className="px-3 py-2.5 rounded-lg border border-slate-200 dark:border-gray-700 bg-slate-50 dark:bg-[#0a0f1a] text-slate-900 dark:text-gray-50 text-sm truncate min-w-[180px] max-w-[250px]"
+              value={managerStoreName || 'Unassigned'}
+              readOnly
+            />
+          )}
         </div>
 
         <div className="flex flex-col gap-1 min-w-[180px] max-md:min-w-full">
@@ -359,7 +394,7 @@ export default function SalesReports() {
                     <td className={tdCls}>{sale.employeeName || '-'}</td>
                     <td className={tdCls}>
                       <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-blue-600/10 text-blue-600 dark:text-blue-400 text-xs font-semibold">
-                        {stores.find(s => s.id === sale.storeId)?.name || 'Unknown'}
+                        {effectiveStores.find(s => s.id === sale.storeId)?.name || 'Unknown'}
                       </span>
                     </td>
                   </tr>
