@@ -16,7 +16,7 @@ import { useInventoryAuth } from '../context/InventoryAuthContext';
 
 /**
  * Store-scoped CRM customers. Pass storeId to filter by store (master only).
- * Members always see only their assigned store.
+ * Members and managers always see only their assigned store.
  */
 export function useCustomers(storeId = null) {
   const [customers, setCustomers] = useState([]);
@@ -33,14 +33,17 @@ export function useCustomers(storeId = null) {
       return;
     }
 
-    const ownerUid = userProfile.role === 'master' ? currentUser.uid : (userProfile.ownerUid || currentUser.uid);
+    const ownerUid = userProfile.role === 'master'
+      ? currentUser.uid
+      : (userProfile.ownerUid || userProfile.masterUid || currentUser.uid);
     const customersRef = collection(db, 'customers');
+    const isStoreScopedUser = userProfile.role === 'member' || userProfile.role === 'manager';
 
     let q;
 
-    if (userProfile.role === 'member') {
-      const memberStoreId = userProfile.assignedStoreId;
-      if (!memberStoreId || !ownerUid) {
+    if (isStoreScopedUser) {
+      const assignedStoreId = userProfile.assignedStoreId;
+      if (!assignedStoreId || !ownerUid) {
         setCustomers([]);
         setLoading(false);
         return;
@@ -48,7 +51,7 @@ export function useCustomers(storeId = null) {
       q = query(
         customersRef,
         where('ownerUid', '==', ownerUid),
-        where('storeId', '==', memberStoreId),
+        where('storeId', '==', assignedStoreId),
         orderBy('createdAt', 'desc')
       );
     } else {
@@ -93,8 +96,14 @@ export function useCustomers(storeId = null) {
   async function addCustomer(customerData) {
     if (!currentUser || !userProfile) throw new Error('Not authenticated');
 
-    const ownerUid = userProfile.role === 'master' ? currentUser.uid : (userProfile.ownerUid || currentUser.uid);
-    const resolvedStoreId = customerData.storeId ?? (userProfile.role === 'member' ? userProfile.assignedStoreId : null);
+    const ownerUid = userProfile.role === 'master'
+      ? currentUser.uid
+      : (userProfile.ownerUid || userProfile.masterUid || currentUser.uid);
+    const resolvedStoreId = customerData.storeId ?? (
+      userProfile.role === 'member' || userProfile.role === 'manager'
+        ? userProfile.assignedStoreId
+        : null
+    );
 
     if (!resolvedStoreId) {
       throw new Error('Store is required to add a customer. Please select a store.');

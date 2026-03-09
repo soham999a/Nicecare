@@ -154,7 +154,7 @@ export default function InventorySignupPage() {
         navigate('/inventory/verify-email');
       } else if (result.isExistingUser) {
         setSuccess('Your account has been linked to the inventory system! Redirecting...');
-        setTimeout(() => navigate('/inventory/member/pos'), 2000);
+        setTimeout(() => navigate('/inventory/pos'), 2000);
       } else {
         navigate('/inventory/verify-email');
       }
@@ -231,7 +231,7 @@ export default function InventorySignupPage() {
           </div>
           <h1 className="mb-2 text-3xl font-bold">Inventory Management</h1>
           <p className="mb-12 text-lg text-white/80">
-            {activeTab === 'master' ? 'Create Your Master Account' : 'Join as an Employee'}
+            {activeTab === 'master' ? 'Create Your Master Account' : 'Join with an Invitation'}
           </p>
 
           <div className="mt-auto rounded-2xl bg-white/10 p-6 backdrop-blur-sm">
@@ -353,7 +353,7 @@ export default function InventorySignupPage() {
                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
                 <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
               </svg>
-              Employee (Invite)
+              Staff (Invite)
             </button>
           </div>
 
@@ -521,7 +521,9 @@ export default function InventorySignupPage() {
           {activeTab === 'employee' && (
             <>
               <div className="mb-8 text-center">
-                <h2 className="mb-2 text-[1.75rem] font-bold text-slate-900 dark:text-gray-50">Join as Employee</h2>
+                <h2 className="mb-2 text-[1.75rem] font-bold text-slate-900 dark:text-gray-50">
+                  {invitationDetails?.role === 'manager' ? 'Join as Store Manager' : 'Join as Staff'}
+                </h2>
                 <p className="m-0 text-[0.9375rem] text-slate-600 dark:text-gray-400">Enter your invitation code to get started</p>
               </div>
 
@@ -566,6 +568,7 @@ export default function InventorySignupPage() {
                     <div className="flex flex-col gap-1.5">
                       <p className="m-0 text-sm text-slate-600 dark:text-gray-400"><strong className="text-slate-900 dark:text-gray-50">Business:</strong> {invitationDetails.businessName}</p>
                       <p className="m-0 text-sm text-slate-600 dark:text-gray-400"><strong className="text-slate-900 dark:text-gray-50">Store:</strong> {invitationDetails.storeName}</p>
+                      <p className="m-0 text-sm text-slate-600 dark:text-gray-400"><strong className="text-slate-900 dark:text-gray-50">Role:</strong> {invitationDetails.role === 'manager' ? 'Store Manager' : 'Member'}</p>
                       <p className="m-0 text-sm text-slate-600 dark:text-gray-400"><strong className="text-slate-900 dark:text-gray-50">Your Name:</strong> {invitationDetails.name}</p>
                     </div>
                   </div>

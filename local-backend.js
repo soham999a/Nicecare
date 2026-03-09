@@ -158,7 +158,8 @@ function saleToText(s, storeName = '') {
 
 async function getAllInventoryData(ownerUid, userRole, assignedStoreId, ownerUidForMember) {
     const data = { products: [], stores: [], employees: [], sales: [], storeMap: {} };
-    const effectiveOwnerUid = userRole === 'member' ? ownerUidForMember : ownerUid;
+    const isStoreScopedRole = userRole === 'member' || userRole === 'manager';
+    const effectiveOwnerUid = isStoreScopedRole ? ownerUidForMember : ownerUid;
     if (!effectiveOwnerUid) return data;
 
     try {
@@ -171,7 +172,7 @@ async function getAllInventoryData(ownerUid, userRole, assignedStoreId, ownerUid
         }
 
         let productsRef = db.collection('products').where('ownerUid', '==', effectiveOwnerUid);
-        if (userRole === 'member' && assignedStoreId)
+        if (isStoreScopedRole && assignedStoreId)
             productsRef = productsRef.where('storeId', '==', assignedStoreId);
         const productsSnap = await productsRef.orderBy('createdAt', 'desc').get();
         data.products = productsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -245,7 +246,9 @@ function buildInventoryContext(data) {
 function buildInventoryAskPrompt(question, context, userRole) {
     const roleCtx = userRole === 'master'
         ? 'You are helping a business owner manage their inventory across multiple stores.'
-        : "You are helping a store employee manage their store's inventory.";
+        : userRole === 'manager'
+            ? "You are helping a store manager manage inventory, team operations, and sales for their assigned store."
+            : "You are helping a store employee manage their store's inventory.";
     return `You are a helpful assistant for an inventory management system. ${roleCtx}
 
 Based on the following inventory data, answer the user's question accurately and helpfully.
@@ -276,7 +279,15 @@ function buildInventorySummaryPrompt(context, userRole) {
 5. Sales trends and top-performing products
 6. Employee distribution
 7. Actionable recommendations`
-        : `Analyze the following store inventory data and provide a summary including:
+        : userRole === 'manager'
+            ? `Analyze the following store inventory data for a store manager and provide a summary including:
+1. Current stock levels
+2. Low stock alerts
+3. Store sales performance
+4. Team performance signals from sales and activity
+5. Items that need restocking
+6. Actionable recommendations for the assigned store`
+            : `Analyze the following store inventory data and provide a summary including:
 1. Current stock levels
 2. Low stock alerts
 3. Recent sales performance

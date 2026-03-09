@@ -20,7 +20,8 @@ export function useProducts(storeId = null) {
 
     let ownerUid = currentUser.uid;
     let effectiveStoreId = storeId;
-    if (userProfile?.role === 'member') {
+
+    if (userProfile?.role === 'member' || userProfile?.role === 'manager') {
       ownerUid = userProfile.ownerUid || userProfile.masterUid;
       effectiveStoreId = userProfile.assignedStoreId;
       if (!effectiveStoreId || !ownerUid) {
@@ -59,10 +60,23 @@ export function useProducts(storeId = null) {
   async function addProduct(productData) {
     if (!currentUser) throw new Error('Not authenticated');
     let ownerUid = currentUser.uid;
+    let data = { ...productData };
+
     if (userProfile?.role === 'member') {
       ownerUid = userProfile.masterUid;
+    } else if (userProfile?.role === 'manager') {
+      ownerUid = userProfile.ownerUid || userProfile.masterUid;
+      if (!userProfile.assignedStoreId) {
+        throw new Error('No store assigned to manager. Please contact the business owner.');
+      }
+      data = {
+        ...data,
+        storeId: userProfile.assignedStoreId,
+        storeName: userProfile.assignedStoreName || data.storeName || '',
+      };
     }
-    return productsRepo.addProduct(ownerUid, productData);
+
+    return productsRepo.addProduct(ownerUid, data);
   }
 
   async function updateProduct(productId, updates) {
@@ -73,8 +87,8 @@ export function useProducts(storeId = null) {
   async function updateStock(productId, quantityChange, reason = '') {
     if (!currentUser) throw new Error('Not authenticated');
     let ownerUid = currentUser.uid;
-    if (userProfile?.role === 'member') {
-      ownerUid = userProfile.ownerUid;
+    if (userProfile?.role === 'member' || userProfile?.role === 'manager') {
+      ownerUid = userProfile.ownerUid || userProfile.masterUid;
     }
     return productsRepo.updateStock(
       productId,

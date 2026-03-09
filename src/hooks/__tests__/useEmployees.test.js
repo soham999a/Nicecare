@@ -167,7 +167,7 @@ describe('useEmployees Hook', () => {
       expect(mockCreateEmployee).toHaveBeenCalledWith(newEmployee);
     });
 
-    it('should throw error when non-master tries to create employee', async () => {
+    it('should throw error when non-master or manager tries to create employee', async () => {
       mockUseInventoryAuth.mockReturnValue({
         currentUser: { uid: 'member-uid' },
         userProfile: { role: 'member' },
@@ -178,7 +178,7 @@ describe('useEmployees Hook', () => {
 
       await expect(
         result.current.createEmployee({ name: 'Test' })
-      ).rejects.toThrow('Only master accounts can create employees');
+      ).rejects.toThrow('Only master and manager accounts can create employees');
     });
 
     it('should track creating state during employee creation', async () => {

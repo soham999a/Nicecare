@@ -122,8 +122,6 @@ export default function CustomerForm({ onSubmit, loading }) {
     costParts: true,
   });
   const [showSuccess, setShowSuccess] = useState(false);
-  // preserve the data that was just submitted so we can show it in the popup
-  const [lastData, setLastData] = useState(null);
 
   useEffect(() => {
     localStorage.setItem(FORM_MODE_KEY, formMode);

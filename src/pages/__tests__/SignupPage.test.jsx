@@ -57,8 +57,8 @@ describe('InventorySignupPage', () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.click(screen.getByRole('button', { name: /employee \(invite\)/i }));
-    expect(screen.getByRole('heading', { name: /join as employee/i })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /staff \(invite\)/i }));
+    expect(screen.getByRole('heading', { name: /join as staff/i })).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/enter 8-character code/i)).toBeInTheDocument();
   });
 

@@ -1,4 +1,6 @@
 import { useState, useRef, useLayoutEffect, useEffect } from 'react';
+import { Navigate } from 'react-router-dom';
+import { useInventoryAuth } from '../../context/InventoryAuthContext';
 import { useProducts } from '../../hooks/useProducts';
 import { useStores } from '../../hooks/useStores';
 import ConfirmDialog from '../../components/ConfirmDialog';
@@ -11,16 +13,40 @@ export default function ProductManagement() {
     };
   }, []);
 
+  const { userProfile } = useInventoryAuth();
+  const isMaster = userProfile?.role === 'master';
+  const isManager = userProfile?.role === 'manager';
+
+  if (!isMaster && !isManager) {
+    return <Navigate to="/inventory/pos" replace />;
+  }
+
+  return (
+    <ProductManagementContent
+      userProfile={userProfile}
+      isManager={isManager}
+    />
+  );
+}
+
+function ProductManagementContent({ userProfile, isManager }) {
   const formCardRef = useRef(null);
+
   const [filterStore, setFilterStore] = useState('');
-  const { products, loading, error, lowStockProducts, addProduct, updateProduct, updateStock, deleteProduct } = useProducts(filterStore || null);
+  const managerStoreId = isManager ? userProfile?.assignedStoreId || null : null;
+  const managerStoreName = isManager ? (userProfile?.assignedStoreName || 'My Store') : '';
   const { stores } = useStores();
+  const availableStores = isManager && managerStoreId
+    ? [{ id: managerStoreId, name: managerStoreName }]
+    : stores;
+  const effectiveStoreFilter = isManager ? managerStoreId : (filterStore || null);
+  const { products, loading, error, lowStockProducts, addProduct, updateProduct, updateStock, deleteProduct } = useProducts(effectiveStoreFilter);
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [showStockModal, setShowStockModal] = useState(null);
   const [stockChange, setStockChange] = useState({ quantity: 0, reason: '' });
   const [searchTerm, setSearchTerm] = useState('');
-  const [formData, setFormData] = useState({
+  const getDefaultFormData = () => ({
     name: '',
     sku: '',
     barcode: '',
@@ -30,9 +56,10 @@ export default function ProductManagement() {
     cost: '',
     quantity: '',
     lowStockThreshold: '10',
-    storeId: '',
-    storeName: '',
+    storeId: isManager ? managerStoreId || '' : '',
+    storeName: isManager ? managerStoreName : '',
   });
+  const [formData, setFormData] = useState(() => getDefaultFormData());
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState(null);
@@ -59,26 +86,21 @@ export default function ProductManagement() {
   ];
 
   function resetForm() {
-    setFormData({
-      name: '',
-      sku: '',
-      barcode: '',
-      category: '',
-      description: '',
-      price: '',
-      cost: '',
-      quantity: '',
-      lowStockThreshold: '10',
-      storeId: '',
-      storeName: '',
-    });
+    setFormData(getDefaultFormData());
     setEditingProduct(null);
     setShowForm(false);
     setFormError('');
   }
 
+  function openCreateForm() {
+    setFormData(getDefaultFormData());
+    setEditingProduct(null);
+    setFormError('');
+    setShowForm(true);
+  }
+
   function handleStoreChange(storeId) {
-    const store = stores.find(s => s.id === storeId);
+    const store = availableStores.find(s => s.id === storeId);
     setFormData({
       ...formData,
       storeId,
@@ -237,7 +259,7 @@ export default function ProductManagement() {
           </button>
         )}
 
-        {stores?.length === 0 && (
+        {!isManager && stores?.length === 0 && (
           <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-100 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 text-sm w-full">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
@@ -395,20 +417,35 @@ export default function ProductManagement() {
                 </select>
               </div>
 
-              <div className="space-y-1">
-                <label className="block text-sm font-medium text-slate-700 dark:text-gray-300">Store *</label>
-                <select
-                  className="w-full px-3 py-2.5 border border-slate-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-sm text-slate-900 dark:text-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600"
-                  value={formData.storeId}
-                  onChange={(e) => handleStoreChange(e.target.value)}
-                  required
-                >
-                  <option value="">Select store</option>
-                  {stores.map((store) => (
-                    <option key={store.id} value={store.id}>{store.name}</option>
-                  ))}
-                </select>
-              </div>
+              {!isManager ? (
+                <div className="space-y-1">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-gray-300">Store *</label>
+                  <select
+                    className="w-full px-3 py-2.5 border border-slate-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-sm text-slate-900 dark:text-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600"
+                    value={formData.storeId}
+                    onChange={(e) => handleStoreChange(e.target.value)}
+                    required
+                  >
+                    <option value="">Select store</option>
+                    {availableStores.map((store) => (
+                      <option key={store.id} value={store.id}>{store.name}</option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-gray-300">Store *</label>
+                  <input
+                    type="text"
+                    className="w-full px-3 py-2.5 border border-slate-200 dark:border-gray-700 rounded-lg bg-slate-50 dark:bg-gray-900 text-sm text-slate-900 dark:text-gray-50"
+                    value={managerStoreName || 'Unassigned'}
+                    readOnly
+                  />
+                  <p className="text-xs text-slate-400 dark:text-gray-500">
+                    Managers can only manage products in their assigned store.
+                  </p>
+                </div>
+              )}
 
               <div className="space-y-1">
                 <label className="block text-sm font-medium text-slate-700 dark:text-gray-300">Selling Price *</label>
@@ -501,22 +538,24 @@ export default function ProductManagement() {
           />
         </div>
 
-        <select
-          className="px-3 py-2.5 border border-slate-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-sm text-slate-900 dark:text-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600"
-          value={filterStore}
-          onChange={(e) => setFilterStore(e.target.value)}
-        >
-          <option value="">All Stores</option>
-          {stores.map((store) => (
-            <option key={store.id} value={store.id}>{store.name}</option>
-          ))}
-        </select>
+        {!isManager && (
+          <select
+            className="px-3 py-2.5 border border-slate-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-sm text-slate-900 dark:text-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600"
+            value={filterStore}
+            onChange={(e) => setFilterStore(e.target.value)}
+          >
+            <option value="">All Stores</option>
+            {availableStores.map((store) => (
+              <option key={store.id} value={store.id}>{store.name}</option>
+            ))}
+          </select>
+        )}
 
-        {stores?.length > 0 && (
-          <button className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all bg-blue-600 hover:bg-blue-700 text-white" onClick={() => setShowForm(true)}>
+        {(isManager && managerStoreId) || (!isManager && stores?.length > 0) ? (
+          <button className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all bg-blue-600 hover:bg-blue-700 text-white" onClick={openCreateForm}>
             + Add Product
           </button>
-        )}
+        ) : null}
       </div>
 
       {/* Products List */}
@@ -540,7 +579,7 @@ export default function ProductManagement() {
             <h3 className="text-lg font-semibold text-slate-700 dark:text-gray-300">No products found</h3>
             <p className="text-sm">{searchTerm ? 'Try a different search term' : 'Add your first product to get started'}</p>
             {!searchTerm && stores?.length > 0 && (
-              <button className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all bg-blue-600 hover:bg-blue-700 text-white mt-2" onClick={() => setShowForm(true)}>
+              <button className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all bg-blue-600 hover:bg-blue-700 text-white mt-2" onClick={openCreateForm}>
                 + Add Product
               </button>
             )}

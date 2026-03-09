@@ -16,9 +16,6 @@ export function useSales(storeId = null, dateRange = null) {
 
   const { currentUser, userProfile } = useInventoryAuth();
 
-  const startTime = dateRange && dateRange.start ? dateRange.start.getTime() : null;
-  const endTime = dateRange && dateRange.end ? dateRange.end.getTime() : null;
-
   useEffect(() => {
     if (!currentUser) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- guard clause reset
@@ -29,7 +26,7 @@ export function useSales(storeId = null, dateRange = null) {
 
     let ownerUid = currentUser.uid;
     let effectiveStoreId = storeId;
-    if (userProfile?.role === 'member') {
+    if (userProfile?.role === 'member' || userProfile?.role === 'manager') {
       ownerUid = userProfile.ownerUid || userProfile.masterUid;
       effectiveStoreId = userProfile.assignedStoreId;
       if (!effectiveStoreId || !ownerUid) {
@@ -73,13 +70,13 @@ export function useSales(storeId = null, dateRange = null) {
     });
 
     return () => unsubscribe();
-  }, [currentUser, userProfile, storeId, startTime, endTime]);
+  }, [currentUser, userProfile, storeId, dateRange]);
 
   async function createSale(saleData) {
     if (!currentUser) throw new Error('Not authenticated');
 
     let ownerUid = currentUser.uid;
-    if (userProfile?.role === 'member') {
+    if (userProfile?.role === 'member' || userProfile?.role === 'manager') {
       ownerUid = userProfile.ownerUid || userProfile.masterUid;
     }
     if (!ownerUid) {
@@ -97,7 +94,8 @@ export function useSales(storeId = null, dateRange = null) {
 
     let ownerUid = currentUser.uid;
     let effectiveStoreId = filterStoreId;
-    if (userProfile?.role === 'member') {
+    if (userProfile?.role === 'member' || userProfile?.role === 'manager') {
+      ownerUid = userProfile.ownerUid || userProfile.masterUid || currentUser.uid;
       effectiveStoreId = userProfile.assignedStoreId;
     }
 

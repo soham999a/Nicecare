@@ -39,7 +39,7 @@ paths:
                   description: Natural language question
                 userRole:
                   type: string
-                  enum: [master, member]
+                  enum: [master, manager, member]
                 assignedStoreId:
                   type: string
                   nullable: true
@@ -71,7 +71,7 @@ paths:
               properties:
                 userRole:
                   type: string
-                  enum: [master, member]
+                  enum: [master, manager, member]
                 assignedStoreId:
                   type: string
                   nullable: true
@@ -101,7 +101,7 @@ paths:
               properties:
                 userRole:
                   type: string
-                  enum: [master, member]
+                  enum: [master, manager, member]
                 assignedStoreId:
                   type: string
                   nullable: true
