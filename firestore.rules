@@ -5,9 +5,28 @@ service cloud.firestore {
     function isSignedIn() {
       return request.auth != null;
     }
+
+    // Owner access that supports both direct master accounts and legacy owner profile shapes
+    function isInventoryOwnerFor(ownerUid) {
+      return isSignedIn() &&
+        (
+          request.auth.uid == ownerUid ||
+          (
+            exists(/databases/$(database)/documents/inventoryInternalUserProfiles/$(request.auth.uid)) &&
+            (
+              get(/databases/$(database)/documents/inventoryInternalUserProfiles/$(request.auth.uid)).data.role == 'master' ||
+              get(/databases/$(database)/documents/inventoryInternalUserProfiles/$(request.auth.uid)).data.role == 'business owner'
+            ) &&
+            (
+              get(/databases/$(database)/documents/inventoryInternalUserProfiles/$(request.auth.uid)).data.ownerUid == ownerUid ||
+              get(/databases/$(database)/documents/inventoryInternalUserProfiles/$(request.auth.uid)).data.masterUid == ownerUid
+            )
+          )
+        );
+    }
     
     function isOwner(resourceData) {
-      return isSignedIn() && resourceData.ownerUid == request.auth.uid;
+      return isInventoryOwnerFor(resourceData.ownerUid);
     }
 
     // CRM internal user profile document - only owner can read/write
@@ -50,7 +69,7 @@ service cloud.firestore {
 
     // Helper function to check if user is master owner
     function isMasterOwner(resourceData) {
-      return isSignedIn() && resourceData.ownerUid == request.auth.uid;
+      return isInventoryOwnerFor(resourceData.ownerUid);
     }
 
     // Helper function to check if user is employee of the store
@@ -99,7 +118,7 @@ service cloud.firestore {
 
     // Business store locations - only master can CRUD their stores
     match /businessStoreLocations/{storeId} {
-      allow create: if isSignedIn() && request.resource.data.ownerUid == request.auth.uid;
+      allow create: if isInventoryOwnerFor(request.resource.data.ownerUid);
       allow read: if isMasterOwner(resource.data) || isStoreEmployee(storeId);
       allow update: if isMasterOwner(resource.data) ||
         (isAssignedManagerForStore(resource.data.ownerUid, storeId) &&
@@ -112,21 +131,21 @@ service cloud.firestore {
       // Master can create staff assignments with their ownerUid
       // Employee can create their own record during signup (employeeId must match their uid)
       allow create: if isSignedIn() && 
-        (request.resource.data.ownerUid == request.auth.uid || 
+        (isInventoryOwnerFor(request.resource.data.ownerUid) || 
          (employeeId == request.auth.uid && request.resource.data.uid == request.auth.uid));
       // Master can read all their staff assignments, employee can read their own record
       // Manager can read staff in their store (from storeStaffAssignments or inventoryInternalUserProfiles)
-      allow read: if (isSignedIn() && resource.data.ownerUid == request.auth.uid) ||
+      allow read: if isInventoryOwnerFor(resource.data.ownerUid) ||
         request.auth.uid == employeeId ||
         isAssignedManagerForStore(resource.data.ownerUid, resource.data.assignedStoreId);
       // Only master can update/delete
-      allow update, delete: if isSignedIn() && resource.data.ownerUid == request.auth.uid;
+      allow update, delete: if isInventoryOwnerFor(resource.data.ownerUid);
     }
 
     // Inventory product catalog - master can CRUD, employee can read products from their store
     match /inventoryProductCatalog/{productId} {
       allow create: if isSignedIn() &&
-        (request.resource.data.ownerUid == request.auth.uid ||
+        (isInventoryOwnerFor(request.resource.data.ownerUid) ||
          isAssignedManagerForStore(request.resource.data.ownerUid, request.resource.data.storeId));
       // Master can read all their products
       // Employee can read products from their assigned store
@@ -155,7 +174,7 @@ service cloud.firestore {
     match /salesTransactionRecords/{saleId} {
       // Master or employee can create sales with proper ownership
       allow create: if isSignedIn() && 
-        (request.resource.data.ownerUid == request.auth.uid ||
+        (isInventoryOwnerFor(request.resource.data.ownerUid) ||
          isAssignedManagerForStore(request.resource.data.ownerUid, request.resource.data.storeId) ||
          (exists(/databases/$(database)/documents/storeStaffAssignments/$(request.auth.uid)) &&
           request.resource.data.ownerUid == getEmployeeOwnerUid() &&
@@ -175,7 +194,7 @@ service cloud.firestore {
     // Inventory stock movement logs - tracks inventory changes
     match /inventoryStockMovementLogs/{movementId} {
       allow create: if isSignedIn() && 
-        (request.resource.data.ownerUid == request.auth.uid ||
+        (isInventoryOwnerFor(request.resource.data.ownerUid) ||
          isAssignedManagerForStore(request.resource.data.ownerUid, request.resource.data.storeId) ||
          (exists(/databases/$(database)/documents/storeStaffAssignments/$(request.auth.uid)) &&
           request.resource.data.ownerUid == getEmployeeOwnerUid()));
@@ -192,7 +211,7 @@ service cloud.firestore {
     match /staffOnboardingInvitations/{invitationId} {
       // Master can create invitations with their ownerUid
       allow create: if isSignedIn() &&
-        (request.resource.data.ownerUid == request.auth.uid ||
+        (isInventoryOwnerFor(request.resource.data.ownerUid) ||
          (request.resource.data.role == 'member' &&
           isAssignedManagerForStore(request.resource.data.ownerUid, request.resource.data.assignedStoreId)));
       // Anyone can read invitations (needed for signup flow to validate invite codes)
@@ -200,9 +219,15 @@ service cloud.firestore {
       // Master can update/delete their invitations
       // Employee can update invitation to mark it as accepted (only status and acceptedAt/acceptedByUid fields)
       allow update: if isSignedIn() && 
-        (resource.data.ownerUid == request.auth.uid || 
+        (isInventoryOwnerFor(resource.data.ownerUid) || 
          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'acceptedAt', 'acceptedByUid']));
-      allow delete: if isSignedIn() && resource.data.ownerUid == request.auth.uid;
+      allow delete: if isInventoryOwnerFor(resource.data.ownerUid);
+    }
+
+    // Migration history - owner accounts can read/write their own tenant history
+    match /migrationHistory/{docId} {
+      allow create: if isInventoryOwnerFor(request.resource.data.ownerUid);
+      allow read, update, delete: if isInventoryOwnerFor(resource.data.ownerUid);
     }
 
     // ===== CHATBOT FEEDBACK RULES =====
