@@ -13,6 +13,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { useInventoryAuth } from '../context/InventoryAuthContext';
+import { COLLECTIONS } from '../backend/firestore/collections';
 
 /**
  * Store-scoped CRM customers. Pass storeId to filter by store (master only).
@@ -36,7 +37,7 @@ export function useCustomers(storeId = null) {
     const ownerUid = userProfile.role === 'master'
       ? currentUser.uid
       : (userProfile.ownerUid || userProfile.masterUid || currentUser.uid);
-    const customersRef = collection(db, 'customers');
+    const customersRef = collection(db, COLLECTIONS.EXTERNAL_CUSTOMER_RECORDS);
     const isStoreScopedUser = userProfile.role === 'member' || userProfile.role === 'manager';
 
     let q;
@@ -119,7 +120,7 @@ export function useCustomers(storeId = null) {
     setAddingCustomer(true);
     try {
       const { storeId: _sd, ...rest } = customerData;
-      await addDoc(collection(db, 'customers'), {
+      await addDoc(collection(db, COLLECTIONS.EXTERNAL_CUSTOMER_RECORDS), {
         ...rest,
         ownerUid,
         storeId: resolvedStoreId,
@@ -137,7 +138,7 @@ export function useCustomers(storeId = null) {
     if (!currentUser) throw new Error('Not authenticated');
 
     try {
-      const customerRef = doc(db, 'customers', customerId);
+      const customerRef = doc(db, COLLECTIONS.EXTERNAL_CUSTOMER_RECORDS, customerId);
       await updateDoc(customerRef, { status: newStatus });
     } catch (err) {
       console.error('Error updating customer:', err);
@@ -149,7 +150,7 @@ export function useCustomers(storeId = null) {
     if (!currentUser) throw new Error('Not authenticated');
 
     try {
-      const customerRef = doc(db, 'customers', customerId);
+      const customerRef = doc(db, COLLECTIONS.EXTERNAL_CUSTOMER_RECORDS, customerId);
       const { storeId: _sd, ...rest } = customerData;
       await updateDoc(customerRef, {
         ...rest,
@@ -165,7 +166,7 @@ export function useCustomers(storeId = null) {
     if (!currentUser) throw new Error('Not authenticated');
 
     try {
-      const customerRef = doc(db, 'customers', customerId);
+      const customerRef = doc(db, COLLECTIONS.EXTERNAL_CUSTOMER_RECORDS, customerId);
       await deleteDoc(customerRef);
     } catch (err) {
       console.error('Error deleting customer:', err);

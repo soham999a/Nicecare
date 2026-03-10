@@ -3,6 +3,7 @@ import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { onRequest } from 'firebase-functions/v2/https';
 import { defineSecret } from 'firebase-functions/params';
 
+import { COLLECTIONS } from './firestoreCollections.js';
 import { verifyAuth, checkRateLimit, initSSE } from './utils.js';
 import {
   getAllInventoryData,
@@ -285,7 +286,7 @@ export const submitFeedback = onRequest(
       }
 
       const db = getFirestore();
-      const feedbackRef = db.collection('chatFeedback').doc(messageId);
+      const feedbackRef = db.collection(COLLECTIONS.CHATBOT_FEEDBACK_SUBMISSIONS).doc(messageId);
       const existing = await feedbackRef.get();
 
       if (existing.exists) {

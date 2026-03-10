@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getFirestore } from 'firebase-admin/firestore';
+import { COLLECTIONS } from './firestoreCollections.js';
 
 // ─── Text Representation Helpers ─────────────────────────────────────────────
 
@@ -67,7 +68,7 @@ export async function getAllInventoryData(ownerUid, userRole, assignedStoreId = 
   try {
     // Fetch stores (master only)
     if (userRole === 'master') {
-      const storesSnap = await db.collection('stores')
+      const storesSnap = await db.collection(COLLECTIONS.BUSINESS_STORE_LOCATIONS)
         .where('ownerUid', '==', effectiveOwnerUid)
         .orderBy('createdAt', 'desc')
         .get();
@@ -76,7 +77,7 @@ export async function getAllInventoryData(ownerUid, userRole, assignedStoreId = 
     }
 
     // Fetch products
-    let productsRef = db.collection('products').where('ownerUid', '==', effectiveOwnerUid);
+    let productsRef = db.collection(COLLECTIONS.INVENTORY_PRODUCT_CATALOG).where('ownerUid', '==', effectiveOwnerUid);
     if (isStoreScopedRole && assignedStoreId) {
       productsRef = productsRef.where('storeId', '==', assignedStoreId);
     }
@@ -85,7 +86,7 @@ export async function getAllInventoryData(ownerUid, userRole, assignedStoreId = 
 
     // Fetch employees (master only)
     if (userRole === 'master') {
-      const employeesSnap = await db.collection('inventoryUsers')
+      const employeesSnap = await db.collection(COLLECTIONS.INVENTORY_INTERNAL_USER_PROFILES)
         .where('ownerUid', '==', effectiveOwnerUid)
         .where('role', '==', 'member')
         .get();
@@ -95,9 +96,9 @@ export async function getAllInventoryData(ownerUid, userRole, assignedStoreId = 
     // Fetch sales
     let salesRef;
     if (userRole === 'master') {
-      salesRef = db.collection('sales').where('ownerUid', '==', effectiveOwnerUid);
+      salesRef = db.collection(COLLECTIONS.SALES_TRANSACTION_RECORDS).where('ownerUid', '==', effectiveOwnerUid);
     } else if (assignedStoreId) {
-      salesRef = db.collection('sales').where('storeId', '==', assignedStoreId);
+      salesRef = db.collection(COLLECTIONS.SALES_TRANSACTION_RECORDS).where('storeId', '==', assignedStoreId);
     }
     if (salesRef) {
       const salesSnap = await salesRef.orderBy('createdAt', 'desc').get();

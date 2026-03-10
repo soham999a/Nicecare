@@ -11,10 +11,11 @@ import {
   serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '../../../config/firebase';
+import { COLLECTIONS } from '../collections';
 
 export function subscribeStores(ownerUid, onData, onError) {
   const q = query(
-    collection(db, 'stores'),
+    collection(db, COLLECTIONS.BUSINESS_STORE_LOCATIONS),
     where('ownerUid', '==', ownerUid),
     orderBy('createdAt', 'desc')
   );
@@ -42,12 +43,12 @@ export async function addStore(ownerUid, storeData) {
     updatedAt: serverTimestamp(),
   };
 
-  const docRef = await addDoc(collection(db, 'stores'), newStore);
+  const docRef = await addDoc(collection(db, COLLECTIONS.BUSINESS_STORE_LOCATIONS), newStore);
   return docRef.id;
 }
 
 export async function updateStore(storeId, updates) {
-  const storeRef = doc(db, 'stores', storeId);
+  const storeRef = doc(db, COLLECTIONS.BUSINESS_STORE_LOCATIONS, storeId);
   await updateDoc(storeRef, {
     ...updates,
     updatedAt: serverTimestamp(),
@@ -55,6 +56,6 @@ export async function updateStore(storeId, updates) {
 }
 
 export async function deleteStore(storeId) {
-  const storeRef = doc(db, 'stores', storeId);
+  const storeRef = doc(db, COLLECTIONS.BUSINESS_STORE_LOCATIONS, storeId);
   await deleteDoc(storeRef);
 }

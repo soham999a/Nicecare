@@ -11,6 +11,7 @@ import {
   getDoc,
 } from 'firebase/firestore';
 import { db } from '../../../config/firebase';
+import { COLLECTIONS } from '../collections';
 
 /**
  * Subscribe to employees.
@@ -45,7 +46,7 @@ export function subscribeEmployees(ownerUidOrOptions, onData, onError) {
   constraints.push(orderBy('createdAt', 'desc'));
 
   const q = query(
-    collection(db, 'employees'),
+    collection(db, COLLECTIONS.STORE_STAFF_ASSIGNMENTS),
     ...constraints
   );
 
@@ -63,7 +64,7 @@ export function subscribeEmployees(ownerUidOrOptions, onData, onError) {
 }
 
 export async function updateEmployee(employeeId, updates, { syncInventoryUsers = false, inventoryUserUid = null } = {}) {
-  const employeeRef = doc(db, 'employees', employeeId);
+  const employeeRef = doc(db, COLLECTIONS.STORE_STAFF_ASSIGNMENTS, employeeId);
 
   if (updates.assignedStoreId !== undefined) {
     const employeeDoc = await getDoc(employeeRef);
@@ -72,7 +73,7 @@ export async function updateEmployee(employeeId, updates, { syncInventoryUsers =
       const newStoreId = updates.assignedStoreId;
 
       if (oldStoreId) {
-        const oldStoreRef = doc(db, 'stores', oldStoreId);
+        const oldStoreRef = doc(db, COLLECTIONS.BUSINESS_STORE_LOCATIONS, oldStoreId);
         const oldStoreDoc = await getDoc(oldStoreRef);
         if (oldStoreDoc.exists()) {
           const currentCount = oldStoreDoc.data().employeeCount || 0;
@@ -83,7 +84,7 @@ export async function updateEmployee(employeeId, updates, { syncInventoryUsers =
         }
       }
       if (newStoreId) {
-        const newStoreRef = doc(db, 'stores', newStoreId);
+        const newStoreRef = doc(db, COLLECTIONS.BUSINESS_STORE_LOCATIONS, newStoreId);
         const newStoreDoc = await getDoc(newStoreRef);
         if (newStoreDoc.exists()) {
           const currentCount = newStoreDoc.data().employeeCount || 0;
@@ -102,7 +103,7 @@ export async function updateEmployee(employeeId, updates, { syncInventoryUsers =
   });
 
   if (syncInventoryUsers && inventoryUserUid) {
-    const userRef = doc(db, 'inventoryUsers', inventoryUserUid);
+    const userRef = doc(db, COLLECTIONS.INVENTORY_INTERNAL_USER_PROFILES, inventoryUserUid);
     const userDoc = await getDoc(userRef);
     if (userDoc.exists()) {
       await updateDoc(userRef, {
@@ -114,13 +115,13 @@ export async function updateEmployee(employeeId, updates, { syncInventoryUsers =
 }
 
 export async function deleteEmployee(employeeId) {
-  const employeeRef = doc(db, 'employees', employeeId);
+  const employeeRef = doc(db, COLLECTIONS.STORE_STAFF_ASSIGNMENTS, employeeId);
   const employeeDoc = await getDoc(employeeRef);
 
   if (employeeDoc.exists()) {
     const storeId = employeeDoc.data().assignedStoreId;
     if (storeId) {
-      const storeRef = doc(db, 'stores', storeId);
+      const storeRef = doc(db, COLLECTIONS.BUSINESS_STORE_LOCATIONS, storeId);
       const storeDoc = await getDoc(storeRef);
       if (storeDoc.exists()) {
         const currentCount = storeDoc.data().employeeCount || 0;

@@ -10,6 +10,8 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "migrate:firestore-collections": "node functions/scripts/migrateFirestoreCollectionNames.js",
+    "migrate:firestore-collections:write": "node functions/scripts/migrateFirestoreCollectionNames.js --write",
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage"

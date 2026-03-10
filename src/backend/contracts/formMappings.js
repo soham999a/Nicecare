@@ -4,6 +4,8 @@
  * See docs/form-field-mapping.md for full documentation.
  */
 
+import { COLLECTIONS } from '../firestore/collections';
+
 /**
  * EmployeeManagement form: form field names -> Firestore fields.
  * Create: employeeInvitations (email, inviteCode) + employees record created on signup.
@@ -11,14 +13,14 @@
  */
 export const EMPLOYEE_FORM_TO_FIRESTORE = {
   formPage: 'EmployeeManagement',
-  collection: 'employees',
-  createVia: 'InventoryAuthContext.createEmployee (writes employeeInvitations then employees)',
+  collection: COLLECTIONS.STORE_STAFF_ASSIGNMENTS,
+  createVia: 'InventoryAuthContext.createEmployee (writes staffOnboardingInvitations then storeStaffAssignments)',
   mappings: [
-    { formField: 'name', firestoreField: 'displayName', collection: 'employees', notes: 'UI uses "name"' },
-    { formField: 'email', firestoreField: 'email', collection: 'employees', notes: 'Also used in employeeInvitations' },
-    { formField: 'phone', firestoreField: 'phone', collection: 'employees' },
-    { formField: 'storeId', firestoreField: 'assignedStoreId', collection: 'employees', notes: 'UI uses "storeId"' },
-    { formField: 'storeName', firestoreField: 'assignedStoreName', collection: 'employees', notes: 'UI uses "storeName"' },
+    { formField: 'name', firestoreField: 'displayName', collection: COLLECTIONS.STORE_STAFF_ASSIGNMENTS, notes: 'UI uses "name"' },
+    { formField: 'email', firestoreField: 'email', collection: COLLECTIONS.STORE_STAFF_ASSIGNMENTS, notes: 'Also used in staffOnboardingInvitations' },
+    { formField: 'phone', firestoreField: 'phone', collection: COLLECTIONS.STORE_STAFF_ASSIGNMENTS },
+    { formField: 'storeId', firestoreField: 'assignedStoreId', collection: COLLECTIONS.STORE_STAFF_ASSIGNMENTS, notes: 'UI uses "storeId"' },
+    { formField: 'storeName', firestoreField: 'assignedStoreName', collection: COLLECTIONS.STORE_STAFF_ASSIGNMENTS, notes: 'UI uses "storeName"' },
   ],
 };
 
@@ -27,19 +29,19 @@ export const EMPLOYEE_FORM_TO_FIRESTORE = {
  */
 export const PRODUCT_FORM_TO_FIRESTORE = {
   formPage: 'ProductManagement',
-  collection: 'products',
+  collection: COLLECTIONS.INVENTORY_PRODUCT_CATALOG,
   mappings: [
-    { formField: 'name', firestoreField: 'name', collection: 'products' },
-    { formField: 'sku', firestoreField: 'sku', collection: 'products' },
-    { formField: 'barcode', firestoreField: 'barcode', collection: 'products' },
-    { formField: 'category', firestoreField: 'category', collection: 'products' },
-    { formField: 'description', firestoreField: 'description', collection: 'products' },
-    { formField: 'price', firestoreField: 'price', collection: 'products', notes: 'parseFloat' },
-    { formField: 'cost', firestoreField: 'cost', collection: 'products', notes: 'parseFloat' },
-    { formField: 'quantity', firestoreField: 'quantity', collection: 'products', notes: 'parseInt, default 0' },
-    { formField: 'lowStockThreshold', firestoreField: 'lowStockThreshold', collection: 'products', notes: 'default 10' },
-    { formField: 'storeId', firestoreField: 'storeId', collection: 'products' },
-    { formField: 'storeName', firestoreField: 'storeName', collection: 'products' },
+    { formField: 'name', firestoreField: 'name', collection: COLLECTIONS.INVENTORY_PRODUCT_CATALOG },
+    { formField: 'sku', firestoreField: 'sku', collection: COLLECTIONS.INVENTORY_PRODUCT_CATALOG },
+    { formField: 'barcode', firestoreField: 'barcode', collection: COLLECTIONS.INVENTORY_PRODUCT_CATALOG },
+    { formField: 'category', firestoreField: 'category', collection: COLLECTIONS.INVENTORY_PRODUCT_CATALOG },
+    { formField: 'description', firestoreField: 'description', collection: COLLECTIONS.INVENTORY_PRODUCT_CATALOG },
+    { formField: 'price', firestoreField: 'price', collection: COLLECTIONS.INVENTORY_PRODUCT_CATALOG, notes: 'parseFloat' },
+    { formField: 'cost', firestoreField: 'cost', collection: COLLECTIONS.INVENTORY_PRODUCT_CATALOG, notes: 'parseFloat' },
+    { formField: 'quantity', firestoreField: 'quantity', collection: COLLECTIONS.INVENTORY_PRODUCT_CATALOG, notes: 'parseInt, default 0' },
+    { formField: 'lowStockThreshold', firestoreField: 'lowStockThreshold', collection: COLLECTIONS.INVENTORY_PRODUCT_CATALOG, notes: 'default 10' },
+    { formField: 'storeId', firestoreField: 'storeId', collection: COLLECTIONS.INVENTORY_PRODUCT_CATALOG },
+    { formField: 'storeName', firestoreField: 'storeName', collection: COLLECTIONS.INVENTORY_PRODUCT_CATALOG },
   ],
 };
 
@@ -48,13 +50,13 @@ export const PRODUCT_FORM_TO_FIRESTORE = {
  */
 export const STORE_FORM_TO_FIRESTORE = {
   formPage: 'StoreManagement',
-  collection: 'stores',
+  collection: COLLECTIONS.BUSINESS_STORE_LOCATIONS,
   mappings: [
-    { formField: 'name', firestoreField: 'name', collection: 'stores' },
-    { formField: 'address', firestoreField: 'address', collection: 'stores' },
-    { formField: 'phone', firestoreField: 'phone', collection: 'stores' },
-    { formField: 'email', firestoreField: 'email', collection: 'stores' },
-    { formField: 'manager', firestoreField: 'manager', collection: 'stores' },
+    { formField: 'name', firestoreField: 'name', collection: COLLECTIONS.BUSINESS_STORE_LOCATIONS },
+    { formField: 'address', firestoreField: 'address', collection: COLLECTIONS.BUSINESS_STORE_LOCATIONS },
+    { formField: 'phone', firestoreField: 'phone', collection: COLLECTIONS.BUSINESS_STORE_LOCATIONS },
+    { formField: 'email', firestoreField: 'email', collection: COLLECTIONS.BUSINESS_STORE_LOCATIONS },
+    { formField: 'manager', firestoreField: 'manager', collection: COLLECTIONS.BUSINESS_STORE_LOCATIONS },
   ],
   computedFields: ['ownerUid', 'employeeCount', 'productCount', 'createdAt', 'updatedAt'],
 };
@@ -64,11 +66,11 @@ export const STORE_FORM_TO_FIRESTORE = {
  */
 export const SALES_REPORT_FILTERS = {
   formPage: 'SalesReports',
-  collection: 'sales',
+  collection: COLLECTIONS.SALES_TRANSACTION_RECORDS,
   filterMappings: [
-    { formField: 'filterStore', queryField: 'storeId', collection: 'sales' },
-    { formField: 'dateRange.start', queryField: 'createdAt', comparison: '>=', collection: 'sales' },
-    { formField: 'dateRange.end', queryField: 'createdAt', comparison: '<=', collection: 'sales' },
+    { formField: 'filterStore', queryField: 'storeId', collection: COLLECTIONS.SALES_TRANSACTION_RECORDS },
+    { formField: 'dateRange.start', queryField: 'createdAt', comparison: '>=', collection: COLLECTIONS.SALES_TRANSACTION_RECORDS },
+    { formField: 'dateRange.end', queryField: 'createdAt', comparison: '<=', collection: COLLECTIONS.SALES_TRANSACTION_RECORDS },
   ],
 };
 

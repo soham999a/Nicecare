@@ -11,6 +11,7 @@ import {
 /* eslint-disable react-refresh/only-export-components */
 import { doc, setDoc, getDoc, serverTimestamp, collection, query, where, getDocs, updateDoc } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
+import { COLLECTIONS } from '../backend/firestore/collections';
 
 const InventoryAuthContext = createContext();
 
@@ -45,7 +46,7 @@ export function InventoryAuthProvider({ children }) {
       updatedAt: serverTimestamp(),
     };
 
-    await setDoc(doc(db, 'inventoryUsers', user.uid), profileData);
+    await setDoc(doc(db, COLLECTIONS.INVENTORY_INTERNAL_USER_PROFILES, user.uid), profileData);
 
     // Send email verification
     await sendEmailVerification(user);
@@ -96,7 +97,7 @@ export function InventoryAuthProvider({ children }) {
     };
 
     // Store invitation by invite code for easy lookup
-    await setDoc(doc(db, 'employeeInvitations', inviteCode), invitationData);
+    await setDoc(doc(db, COLLECTIONS.STAFF_ONBOARDING_INVITATIONS, inviteCode), invitationData);
     
     // Return the invitation data with invite code for master to share
     return {
@@ -109,7 +110,7 @@ export function InventoryAuthProvider({ children }) {
   // Signup for Employee using invitation code
   async function signupEmployee(email, password, inviteCode) {
     // First, verify the invitation
-    const inviteDoc = await getDoc(doc(db, 'employeeInvitations', inviteCode));
+    const inviteDoc = await getDoc(doc(db, COLLECTIONS.STAFF_ONBOARDING_INVITATIONS, inviteCode));
     
     if (!inviteDoc.exists()) {
       throw new Error('Invalid invitation code. Please check and try again.');
@@ -179,17 +180,17 @@ export function InventoryAuthProvider({ children }) {
       isActive: true,
     };
 
-    await setDoc(doc(db, 'inventoryUsers', user.uid), employeeProfile);
+    await setDoc(doc(db, COLLECTIONS.INVENTORY_INTERNAL_USER_PROFILES, user.uid), employeeProfile);
 
     // Also add to employees collection for easier querying
-    await setDoc(doc(db, 'employees', user.uid), {
+    await setDoc(doc(db, COLLECTIONS.STORE_STAFF_ASSIGNMENTS, user.uid), {
       ...employeeProfile,
       uid: user.uid,
     });
 
     // Increment the assigned store's employeeCount
     if (invitation.assignedStoreId) {
-      const storeRef = doc(db, 'stores', invitation.assignedStoreId);
+      const storeRef = doc(db, COLLECTIONS.BUSINESS_STORE_LOCATIONS, invitation.assignedStoreId);
       const storeDoc = await getDoc(storeRef);
       if (storeDoc.exists()) {
         const currentCount = storeDoc.data().employeeCount || 0;
@@ -201,7 +202,7 @@ export function InventoryAuthProvider({ children }) {
     }
 
     // Mark invitation as accepted
-    await updateDoc(doc(db, 'employeeInvitations', inviteCode), {
+    await updateDoc(doc(db, COLLECTIONS.STAFF_ONBOARDING_INVITATIONS, inviteCode), {
       status: 'accepted',
       acceptedAt: serverTimestamp(),
       acceptedByUid: user.uid,
@@ -228,7 +229,7 @@ export function InventoryAuthProvider({ children }) {
 
   // Check invitation validity (for pre-signup validation)
   async function checkInvitation(inviteCode) {
-    const inviteDoc = await getDoc(doc(db, 'employeeInvitations', inviteCode));
+    const inviteDoc = await getDoc(doc(db, COLLECTIONS.STAFF_ONBOARDING_INVITATIONS, inviteCode));
     
     if (!inviteDoc.exists()) {
       return { valid: false, error: 'Invalid invitation code' };
@@ -262,7 +263,7 @@ export function InventoryAuthProvider({ children }) {
       throw new Error('Only master accounts can resend invitations');
     }
     
-    const oldInviteDoc = await getDoc(doc(db, 'employeeInvitations', oldInviteCode));
+    const oldInviteDoc = await getDoc(doc(db, COLLECTIONS.STAFF_ONBOARDING_INVITATIONS, oldInviteCode));
     if (!oldInviteDoc.exists()) {
       throw new Error('Original invitation not found');
     }
@@ -281,10 +282,10 @@ export function InventoryAuthProvider({ children }) {
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     };
     
-    await setDoc(doc(db, 'employeeInvitations', newInviteCode), newInvitationData);
+    await setDoc(doc(db, COLLECTIONS.STAFF_ONBOARDING_INVITATIONS, newInviteCode), newInvitationData);
     
     // Mark old invitation as expired
-    await updateDoc(doc(db, 'employeeInvitations', oldInviteCode), {
+    await updateDoc(doc(db, COLLECTIONS.STAFF_ONBOARDING_INVITATIONS, oldInviteCode), {
       status: 'expired',
     });
     
@@ -297,7 +298,7 @@ export function InventoryAuthProvider({ children }) {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
 
-    const profileDoc = await getDoc(doc(db, 'inventoryUsers', user.uid));
+    const profileDoc = await getDoc(doc(db, COLLECTIONS.INVENTORY_INTERNAL_USER_PROFILES, user.uid));
 
     if (!profileDoc.exists()) {
       setUserProfile(null);
@@ -337,7 +338,7 @@ export function InventoryAuthProvider({ children }) {
       updatedAt: serverTimestamp(),
     };
 
-    await setDoc(doc(db, 'inventoryUsers', user.uid), profileData);
+    await setDoc(doc(db, COLLECTIONS.INVENTORY_INTERNAL_USER_PROFILES, user.uid), profileData);
     setUserProfile(profileData);
     return user;
   }
@@ -363,7 +364,7 @@ export function InventoryAuthProvider({ children }) {
 
   // Fetch user profile
   async function fetchUserProfile(uid) {
-    const profileDoc = await getDoc(doc(db, 'inventoryUsers', uid));
+    const profileDoc = await getDoc(doc(db, COLLECTIONS.INVENTORY_INTERNAL_USER_PROFILES, uid));
     if (profileDoc.exists()) {
       const profile = profileDoc.data();
       // #region agent log
@@ -382,7 +383,7 @@ export function InventoryAuthProvider({ children }) {
     }
 
     const q = query(
-      collection(db, 'employees'),
+      collection(db, COLLECTIONS.STORE_STAFF_ASSIGNMENTS),
       where('ownerUid', '==', currentUser.uid)
     );
     

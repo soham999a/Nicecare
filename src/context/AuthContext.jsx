@@ -11,6 +11,7 @@ import {
 } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
+import { COLLECTIONS } from '../backend/firestore/collections';
 
 const AuthContext = createContext();
 
@@ -37,7 +38,7 @@ export function AuthProvider({ children }) {
     
     // Create user profile document in Firestore
     try {
-      await setDoc(doc(db, 'users', user.uid), {
+      await setDoc(doc(db, COLLECTIONS.CRM_INTERNAL_USER_PROFILES, user.uid), {
         email: user.email,
         displayName: displayName || '',
         createdAt: serverTimestamp(),

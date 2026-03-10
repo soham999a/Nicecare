@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getFirestore } from 'firebase-admin/firestore';
+import { COLLECTIONS } from './firestoreCollections.js';
 
 // ─── Text Representation ─────────────────────────────────────────────────────
 
@@ -29,7 +30,7 @@ function customerToText(customer) {
 
 export async function getAllCustomers(ownerUid) {
   const db = getFirestore();
-  const snapshot = await db.collection('customers')
+  const snapshot = await db.collection(COLLECTIONS.EXTERNAL_CUSTOMER_RECORDS)
     .where('ownerUid', '==', ownerUid)
     .orderBy('createdAt', 'desc')
     .get();

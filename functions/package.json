@@ -7,15 +7,17 @@
     "shell": "firebase functions:shell",
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
-    "logs": "firebase functions:log"
+    "logs": "firebase functions:log",
+    "migrate:collections": "node scripts/migrateFirestoreCollectionNames.js",
+    "migrate:collections:write": "node scripts/migrateFirestoreCollectionNames.js --write"
   },
   "engines": {
-    "node": "20"
+    "node": "22"
   },
   "main": "index.js",
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
-    "firebase-admin": "^13.0.0",
-    "firebase-functions": "^6.3.0"
+    "firebase-admin": "^13.7.0",
+    "firebase-functions": "^7.1.1"
   }
 }
