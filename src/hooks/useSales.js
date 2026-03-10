@@ -16,9 +16,6 @@ export function useSales(storeId = null, dateRange = null) {
 
   const { currentUser, userProfile } = useInventoryAuth();
 
-  const startTime = dateRange && dateRange.start ? dateRange.start.getTime() : null;
-  const endTime = dateRange && dateRange.end ? dateRange.end.getTime() : null;
-
   useEffect(() => {
     if (!currentUser) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- guard clause reset
@@ -73,7 +70,7 @@ export function useSales(storeId = null, dateRange = null) {
     });
 
     return () => unsubscribe();
-  }, [currentUser, userProfile, storeId, startTime, endTime, dateRange]);
+  }, [currentUser, userProfile, storeId, dateRange]);
 
   async function createSale(saleData) {
     if (!currentUser) throw new Error('Not authenticated');
