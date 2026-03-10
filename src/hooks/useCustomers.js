@@ -13,10 +13,11 @@ import {
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { useInventoryAuth } from '../context/InventoryAuthContext';
+import { COLLECTIONS } from '../backend/firestore/collections';
 
 /**
  * Store-scoped CRM customers. Pass storeId to filter by store (master only).
- * Members always see only their assigned store.
+ * Members and managers always see only their assigned store.
  */
 export function useCustomers(storeId = null) {
   const [customers, setCustomers] = useState([]);
@@ -33,14 +34,17 @@ export function useCustomers(storeId = null) {
       return;
     }
 
-    const ownerUid = userProfile.role === 'master' ? currentUser.uid : (userProfile.ownerUid || currentUser.uid);
-    const customersRef = collection(db, 'customers');
+    const ownerUid = userProfile.role === 'master'
+      ? currentUser.uid
+      : (userProfile.ownerUid || userProfile.masterUid || currentUser.uid);
+    const customersRef = collection(db, COLLECTIONS.EXTERNAL_CUSTOMER_RECORDS);
+    const isStoreScopedUser = userProfile.role === 'member' || userProfile.role === 'manager';
 
     let q;
 
-    if (userProfile.role === 'member') {
-      const memberStoreId = userProfile.assignedStoreId;
-      if (!memberStoreId || !ownerUid) {
+    if (isStoreScopedUser) {
+      const assignedStoreId = userProfile.assignedStoreId;
+      if (!assignedStoreId || !ownerUid) {
         setCustomers([]);
         setLoading(false);
         return;
@@ -48,7 +52,7 @@ export function useCustomers(storeId = null) {
       q = query(
         customersRef,
         where('ownerUid', '==', ownerUid),
-        where('storeId', '==', memberStoreId),
+        where('storeId', '==', assignedStoreId),
         orderBy('createdAt', 'desc')
       );
     } else {
@@ -69,6 +73,10 @@ export function useCustomers(storeId = null) {
       }
     }
 
+    // #region agent log
+    fetch('http://127.0.0.1:7555/ingest/14177494-399b-47b1-a251-61383150f196',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b7d8d0'},body:JSON.stringify({sessionId:'b7d8d0',runId:'initial',hypothesisId:'H2',location:'src/hooks/useCustomers.js',message:'Customers query resolved',data:{role:userProfile?.role||null,isStoreScopedUser,hasOwnerUid:!!ownerUid,assignedStoreId:userProfile?.assignedStoreId||null,requestedStoreId:storeId||null},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
+
     const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
@@ -81,6 +89,9 @@ export function useCustomers(storeId = null) {
         setError(null);
       },
       (err) => {
+        // #region agent log
+        fetch('http://127.0.0.1:7555/ingest/14177494-399b-47b1-a251-61383150f196',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b7d8d0'},body:JSON.stringify({sessionId:'b7d8d0',runId:'initial',hypothesisId:'H4',location:'src/hooks/useCustomers.js',message:'Customers query failed',data:{role:userProfile?.role||null,errorCode:err?.code||null,errorMessage:err?.message||String(err)},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
         console.error('Error fetching customers:', err);
         setError('Failed to load customers');
         setLoading(false);
@@ -93,8 +104,14 @@ export function useCustomers(storeId = null) {
   async function addCustomer(customerData) {
     if (!currentUser || !userProfile) throw new Error('Not authenticated');
 
-    const ownerUid = userProfile.role === 'master' ? currentUser.uid : (userProfile.ownerUid || currentUser.uid);
-    const resolvedStoreId = customerData.storeId ?? (userProfile.role === 'member' ? userProfile.assignedStoreId : null);
+    const ownerUid = userProfile.role === 'master'
+      ? currentUser.uid
+      : (userProfile.ownerUid || userProfile.masterUid || currentUser.uid);
+    const resolvedStoreId = customerData.storeId ?? (
+      userProfile.role === 'member' || userProfile.role === 'manager'
+        ? userProfile.assignedStoreId
+        : null
+    );
 
     if (!resolvedStoreId) {
       throw new Error('Store is required to add a customer. Please select a store.');
@@ -103,7 +120,7 @@ export function useCustomers(storeId = null) {
     setAddingCustomer(true);
     try {
       const { storeId: _sd, ...rest } = customerData;
-      await addDoc(collection(db, 'customers'), {
+      await addDoc(collection(db, COLLECTIONS.EXTERNAL_CUSTOMER_RECORDS), {
         ...rest,
         ownerUid,
         storeId: resolvedStoreId,
@@ -121,7 +138,7 @@ export function useCustomers(storeId = null) {
     if (!currentUser) throw new Error('Not authenticated');
 
     try {
-      const customerRef = doc(db, 'customers', customerId);
+      const customerRef = doc(db, COLLECTIONS.EXTERNAL_CUSTOMER_RECORDS, customerId);
       await updateDoc(customerRef, { status: newStatus });
     } catch (err) {
       console.error('Error updating customer:', err);
@@ -133,7 +150,7 @@ export function useCustomers(storeId = null) {
     if (!currentUser) throw new Error('Not authenticated');
 
     try {
-      const customerRef = doc(db, 'customers', customerId);
+      const customerRef = doc(db, COLLECTIONS.EXTERNAL_CUSTOMER_RECORDS, customerId);
       const { storeId: _sd, ...rest } = customerData;
       await updateDoc(customerRef, {
         ...rest,
@@ -149,7 +166,7 @@ export function useCustomers(storeId = null) {
     if (!currentUser) throw new Error('Not authenticated');
 
     try {
-      const customerRef = doc(db, 'customers', customerId);
+      const customerRef = doc(db, COLLECTIONS.EXTERNAL_CUSTOMER_RECORDS, customerId);
       await deleteDoc(customerRef);
     } catch (err) {
       console.error('Error deleting customer:', err);

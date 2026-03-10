@@ -10,6 +10,7 @@ import {
   getDocs,
 } from 'firebase/firestore';
 import { db } from '../../../config/firebase';
+import { COLLECTIONS } from '../collections';
 
 /**
  * Build query constraints for sales list/report.
@@ -33,7 +34,7 @@ function buildSalesConstraints({ ownerUid, storeId, dateRange }) {
 export function subscribeSales({ ownerUid, storeId, dateRange, onData, onError }) {
   const constraints = buildSalesConstraints({ ownerUid, storeId, dateRange });
   const q = query(
-    collection(db, 'sales'),
+    collection(db, COLLECTIONS.SALES_TRANSACTION_RECORDS),
     ...constraints,
     orderBy('createdAt', 'desc')
   );
@@ -61,7 +62,7 @@ export async function createSale(ownerUid, saleData, { employeeId, employeeName 
     createdAt: serverTimestamp(),
   };
 
-  const docRef = await addDoc(collection(db, 'sales'), newSale);
+  const docRef = await addDoc(collection(db, COLLECTIONS.SALES_TRANSACTION_RECORDS), newSale);
   return docRef.id;
 }
 
@@ -73,7 +74,7 @@ export async function getSalesReport(startDate, endDate, { ownerUid, storeId }) 
   });
 
   const q = query(
-    collection(db, 'sales'),
+    collection(db, COLLECTIONS.SALES_TRANSACTION_RECORDS),
     ...constraints,
     orderBy('createdAt', 'desc')
   );

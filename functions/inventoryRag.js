@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getFirestore } from 'firebase-admin/firestore';
+import { COLLECTIONS } from './firestoreCollections.js';
 
 // ─── Text Representation Helpers ─────────────────────────────────────────────
 
@@ -59,14 +60,15 @@ function saleToText(sale, storeName = '') {
 export async function getAllInventoryData(ownerUid, userRole, assignedStoreId = null, ownerUidForMember = null) {
   const db = getFirestore();
   const data = { products: [], stores: [], employees: [], sales: [], storeMap: {} };
-  const effectiveOwnerUid = userRole === 'member' ? ownerUidForMember : ownerUid;
+  const isStoreScopedRole = userRole === 'member' || userRole === 'manager';
+  const effectiveOwnerUid = isStoreScopedRole ? ownerUidForMember : ownerUid;
 
   if (!effectiveOwnerUid) return data;
 
   try {
     // Fetch stores (master only)
     if (userRole === 'master') {
-      const storesSnap = await db.collection('stores')
+      const storesSnap = await db.collection(COLLECTIONS.BUSINESS_STORE_LOCATIONS)
         .where('ownerUid', '==', effectiveOwnerUid)
         .orderBy('createdAt', 'desc')
         .get();
@@ -75,8 +77,8 @@ export async function getAllInventoryData(ownerUid, userRole, assignedStoreId = 
     }
 
     // Fetch products
-    let productsRef = db.collection('products').where('ownerUid', '==', effectiveOwnerUid);
-    if (userRole === 'member' && assignedStoreId) {
+    let productsRef = db.collection(COLLECTIONS.INVENTORY_PRODUCT_CATALOG).where('ownerUid', '==', effectiveOwnerUid);
+    if (isStoreScopedRole && assignedStoreId) {
       productsRef = productsRef.where('storeId', '==', assignedStoreId);
     }
     const productsSnap = await productsRef.orderBy('createdAt', 'desc').get();
@@ -84,7 +86,7 @@ export async function getAllInventoryData(ownerUid, userRole, assignedStoreId = 
 
     // Fetch employees (master only)
     if (userRole === 'master') {
-      const employeesSnap = await db.collection('inventoryUsers')
+      const employeesSnap = await db.collection(COLLECTIONS.INVENTORY_INTERNAL_USER_PROFILES)
         .where('ownerUid', '==', effectiveOwnerUid)
         .where('role', '==', 'member')
         .get();
@@ -94,9 +96,9 @@ export async function getAllInventoryData(ownerUid, userRole, assignedStoreId = 
     // Fetch sales
     let salesRef;
     if (userRole === 'master') {
-      salesRef = db.collection('sales').where('ownerUid', '==', effectiveOwnerUid);
+      salesRef = db.collection(COLLECTIONS.SALES_TRANSACTION_RECORDS).where('ownerUid', '==', effectiveOwnerUid);
     } else if (assignedStoreId) {
-      salesRef = db.collection('sales').where('storeId', '==', assignedStoreId);
+      salesRef = db.collection(COLLECTIONS.SALES_TRANSACTION_RECORDS).where('storeId', '==', assignedStoreId);
     }
     if (salesRef) {
       const salesSnap = await salesRef.orderBy('createdAt', 'desc').get();
@@ -175,7 +177,9 @@ export function buildInventoryContext(data) {
 export function buildAskPrompt(question, context, userRole) {
   const roleContext = userRole === 'master'
     ? 'You are helping a business owner manage their inventory across multiple stores.'
-    : "You are helping a store employee manage their store's inventory.";
+    : userRole === 'manager'
+      ? "You are helping a store manager manage inventory, team operations, and sales for their assigned store."
+      : "You are helping a store employee manage their store's inventory.";
 
   return `You are a helpful assistant for an inventory management system. ${roleContext}
 
@@ -207,7 +211,15 @@ export function buildSummaryPrompt(context, userRole) {
 5. Sales trends and top-performing products
 6. Employee distribution
 7. Actionable recommendations`
-    : `Analyze the following store inventory data and provide a summary including:
+    : userRole === 'manager'
+      ? `Analyze the following store inventory data for a store manager and provide a summary including:
+1. Current stock levels
+2. Low stock alerts
+3. Store sales performance
+4. Team performance signals from sales and activity
+5. Items that need restocking
+6. Actionable recommendations for the assigned store`
+      : `Analyze the following store inventory data and provide a summary including:
 1. Current stock levels
 2. Low stock alerts
 3. Recent sales performance

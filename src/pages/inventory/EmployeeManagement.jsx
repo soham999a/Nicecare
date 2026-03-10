@@ -1,7 +1,12 @@
 import { useState, useEffect } from 'react';
+import { Navigate } from 'react-router-dom';
+import { useInventoryAuth } from '../../context/InventoryAuthContext';
 import { useEmployees } from '../../hooks/useEmployees';
 import { useStores } from '../../hooks/useStores';
-import ConfirmDialog from '../../components/ConfirmDialog';
+
+const IconAlert = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+);
 
 export default function EmployeeManagement() {
   useEffect(() => {
@@ -11,33 +16,55 @@ export default function EmployeeManagement() {
     };
   }, []);
 
+  const { userProfile } = useInventoryAuth();
+  const isMaster = userProfile?.role === 'master';
+  const isManager = userProfile?.role === 'manager';
+
+  if (!isMaster && !isManager) {
+    return <Navigate to="/inventory/pos" replace />;
+  }
+
+  return (
+    <EmployeeManagementContent
+      userProfile={userProfile}
+      isMaster={isMaster}
+      isManager={isManager}
+    />
+  );
+}
+
+function EmployeeManagementContent({ userProfile, isMaster, isManager }) {
   const { employees, loading, error, creating, createEmployee, updateEmployee, toggleEmployeeActive, deleteEmployee } = useEmployees();
   const { stores } = useStores();
   const [showForm, setShowForm] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState(null);
   const [newEmployeeCredentials, setNewEmployeeCredentials] = useState(null);
-  const [formData, setFormData] = useState({
+  const getDefaultFormData = () => ({
     name: '',
     email: '',
     phone: '',
-    storeId: '',
-    storeName: '',
+    role: 'member',
+    storeId: isManager ? (userProfile?.assignedStoreId || '') : '',
+    storeName: isManager ? (userProfile?.assignedStoreName || '') : '',
   });
+  const [formData, setFormData] = useState(() => getDefaultFormData());
   const [formError, setFormError] = useState('');
   const [filterStore, setFilterStore] = useState('');
+  const [filterRole, setFilterRole] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   function resetForm() {
-    setFormData({
-      name: '',
-      email: '',
-      phone: '',
-      storeId: '',
-      storeName: '',
-    });
+    setFormData(getDefaultFormData());
     setEditingEmployee(null);
     setShowForm(false);
     setFormError('');
+  }
+
+  function openCreateForm() {
+    setFormData(getDefaultFormData());
+    setEditingEmployee(null);
+    setFormError('');
+    setShowForm(true);
   }
 
   function handleStoreChange(storeId) {
@@ -54,6 +81,7 @@ export default function EmployeeManagement() {
       name: employee.displayName || '',
       email: employee.email || '',
       phone: employee.phone || '',
+      role: employee.role || 'member',
       storeId: employee.assignedStoreId || '',
       storeName: employee.assignedStoreName || '',
     });
@@ -94,6 +122,7 @@ export default function EmployeeManagement() {
           name: formData.name,
           email: formData.email,
           phone: formData.phone,
+          role: isMaster ? formData.role : 'member',
           storeId: formData.storeId,
           storeName: formData.storeName,
         });
@@ -119,42 +148,77 @@ export default function EmployeeManagement() {
 
   async function confirmDelete() {
     if (!deleteConfirm) return;
-
     try {
       await deleteEmployee(deleteConfirm.id);
-      setDeleteConfirm(null);
     } catch (err) {
-      alert('Failed to delete employee: ' + err.message);
+      // If permission denied, or employee does not exist, do nothing (no popup)
+      if (!(err && (err.code === 'permission-denied' || /insufficient permissions|not found|does not exist/i.test(err.message)))) {
+        // Only show alert for unexpected errors
+        alert('Failed to delete employee: ' + (err.message || err));
+      }
+    } finally {
       setDeleteConfirm(null);
     }
   }
 
-  const filteredEmployees = filterStore
-    ? employees.filter(e => e.assignedStoreId === filterStore)
-    : employees;
+  const filteredEmployees = employees
+    .filter((e) => (filterStore ? e.assignedStoreId === filterStore : true))
+    .filter((e) => (filterRole ? (e.role || 'member') === filterRole : true));
+
+  const visibleEmployees = isManager
+    ? filteredEmployees.filter(e => e.role !== 'manager')
+    : filteredEmployees;
 
   return (
     <main className="p-4 md:p-6 lg:p-8 space-y-6 animate-fade-in">
-      <ConfirmDialog
-        isOpen={!!deleteConfirm}
-        title="Remove Employee"
-        message={`Are you sure you want to remove "${deleteConfirm?.name}"? This will deactivate their account.`}
-        onConfirm={confirmDelete}
-        onCancel={() => setDeleteConfirm(null)}
-        confirmText="Remove"
-        cancelText="Cancel"
-        variant="danger"
-      />
+      {/* Custom Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md p-6 border border-slate-200 dark:border-gray-700 transform transition-all scale-100">
+            <div className="flex flex-col items-center text-center">
+              <div className="mb-4 bg-red-50 dark:bg-red-900/20 p-3 rounded-full">
+                <IconAlert />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Remove Employee?</h3>
+              <p className="text-slate-500 dark:text-gray-400 mb-6">
+                Are you sure you want to remove "{deleteConfirm?.name}"? This will deactivate their account.
+              </p>
+              <div className="flex w-full gap-3">
+                <button
+                  onClick={() => setDeleteConfirm(null)}
+                  className="flex-1 px-4 py-2 bg-slate-100 dark:bg-gray-700 text-slate-700 dark:text-gray-300 rounded-lg hover:bg-slate-200 dark:hover:bg-gray-600 font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors shadow-lg shadow-red-500/30"
+                >
+                  Remove
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-gray-50">Employee Management</h1>
-          <p className="text-sm text-slate-500 dark:text-gray-400 mt-1">Manage your store employees</p>
+          <h1 className="text-xl sm:text-2xl md:text-[1.9rem] font-bold tracking-tight text-slate-900 dark:text-gray-50">Employee Management</h1>
+          <p className="text-sm text-slate-500 dark:text-gray-400 mt-1">
+            {isMaster ? 'Manage employees across all stores' : 'Manage employees for your assigned store'}
+          </p>
         </div>
         <button
           className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-slate-600 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-gray-700 disabled:opacity-50"
-          onClick={() => setShowForm(!showForm)}
-          disabled={stores.length === 0}
+          onClick={() => {
+            if (showForm) {
+              resetForm();
+              return;
+            }
+            openCreateForm();
+          }}
+          disabled={!isManager && stores.length === 0}
           title={showForm ? "Close form" : "Add new employee"}
         >
           {showForm ? (
@@ -168,7 +232,7 @@ export default function EmployeeManagement() {
         </button>
       </div>
 
-      {stores.length === 0 && (
+      {!isManager && stores.length === 0 && (
         <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-100 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 text-sm">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
@@ -240,22 +304,52 @@ export default function EmployeeManagement() {
                 />
               </div>
 
-              <div className="space-y-1">
-                <label className="block text-sm font-medium text-slate-700 dark:text-gray-300">Assigned Store *</label>
-                <select
-                  className="w-full px-3 py-2.5 border border-slate-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-sm text-slate-900 dark:text-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600"
-                  value={formData.storeId}
-                  onChange={(e) => handleStoreChange(e.target.value)}
-                  required
-                >
-                  <option value="">Select a store</option>
-                  {stores.map((store) => (
-                    <option key={store.id} value={store.id}>
-                      {store.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {isMaster && !editingEmployee && (
+                <div className="space-y-1">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-gray-300">Role *</label>
+                  <select
+                    className="w-full px-3 py-2.5 border border-slate-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-sm text-slate-900 dark:text-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600"
+                    value={formData.role}
+                    onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                    required
+                  >
+                    <option value="member">Member</option>
+                    <option value="manager">Manager</option>
+                  </select>
+                </div>
+              )}
+
+              {!isManager ? (
+                <div className="space-y-1">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-gray-300">Assigned Store *</label>
+                  <select
+                    className="w-full px-3 py-2.5 border border-slate-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-sm text-slate-900 dark:text-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600"
+                    value={formData.storeId}
+                    onChange={(e) => handleStoreChange(e.target.value)}
+                    required
+                  >
+                    <option value="">Select a store</option>
+                    {stores.map((store) => (
+                      <option key={store.id} value={store.id}>
+                        {store.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-gray-300">Assigned Store *</label>
+                  <input
+                    type="text"
+                    className="w-full px-3 py-2.5 border border-slate-200 dark:border-gray-700 rounded-lg bg-slate-50 dark:bg-gray-900 text-sm text-slate-900 dark:text-gray-50"
+                    value={userProfile?.assignedStoreName || 'Unassigned'}
+                    readOnly
+                  />
+                  <p className="text-xs text-slate-400 dark:text-gray-500">
+                    Managers can only assign employees to their own store.
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-3 pt-4">
@@ -271,7 +365,7 @@ export default function EmployeeManagement() {
       )}
 
       {/* Filter */}
-      {stores.length > 0 && (
+      {!isManager && stores.length > 0 && (
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-2">
             <label className="text-sm font-medium text-slate-600 dark:text-gray-400">Filter by Store:</label>
@@ -288,6 +382,20 @@ export default function EmployeeManagement() {
               ))}
             </select>
           </div>
+          {isMaster && (
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-slate-600 dark:text-gray-400">Filter by Role:</label>
+              <select
+                className="px-3 py-2.5 border border-slate-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-sm text-slate-900 dark:text-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600"
+                value={filterRole}
+                onChange={(e) => setFilterRole(e.target.value)}
+              >
+                <option value="">All Roles</option>
+                <option value="manager">Managers</option>
+                <option value="member">Members</option>
+              </select>
+            </div>
+          )}
         </div>
       )}
 
@@ -295,14 +403,16 @@ export default function EmployeeManagement() {
       <div className="bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-xl shadow-card overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-gray-700">
           <h2 className="text-lg font-bold text-slate-900 dark:text-gray-50">Your Employees</h2>
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">{filteredEmployees.length} employees</span>
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
+            {visibleEmployees.length} employees
+          </span>
         </div>
 
         {loading ? (
           <div className="flex items-center justify-center p-12 text-slate-400 dark:text-gray-500">Loading employees...</div>
         ) : error ? (
           <div className="flex items-center justify-center p-12 text-red-600 dark:text-red-400">{error}</div>
-        ) : filteredEmployees.length === 0 ? (
+        ) : visibleEmployees.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-12 text-center text-slate-400 dark:text-gray-500 space-y-3">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -311,9 +421,9 @@ export default function EmployeeManagement() {
               <path d="M16 3.13a4 4 0 0 1 0 7.75" />
             </svg>
             <h3 className="text-lg font-semibold text-slate-700 dark:text-gray-300">No employees yet</h3>
-            <p className="text-sm">{filterStore ? 'No employees in this store' : 'Add employees to your stores'}</p>
-            {!filterStore && stores.length > 0 && (
-              <button className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all bg-blue-600 hover:bg-blue-700 text-white mt-2" onClick={() => setShowForm(true)}>
+            <p className="text-sm">{filterStore ? 'No employees in this store' : 'Add employees to your store'}</p>
+            {!filterStore && ((!isManager && stores.length > 0) || (isManager && !!userProfile?.assignedStoreId)) && (
+              <button className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all bg-blue-600 hover:bg-blue-700 text-white mt-2" onClick={openCreateForm}>
                 + Add Employee
               </button>
             )}
@@ -324,6 +434,7 @@ export default function EmployeeManagement() {
               <thead>
                 <tr className="border-b border-slate-100 dark:border-gray-700 bg-slate-50/50 dark:bg-gray-800/50">
                   <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 dark:text-gray-500 uppercase tracking-wider">Employee</th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 dark:text-gray-500 uppercase tracking-wider">Role</th>
                   <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 dark:text-gray-500 uppercase tracking-wider">Email</th>
                   <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 dark:text-gray-500 uppercase tracking-wider">Phone</th>
                   <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 dark:text-gray-500 uppercase tracking-wider">Assigned Store</th>
@@ -332,7 +443,7 @@ export default function EmployeeManagement() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-gray-700">
-                {filteredEmployees.map((employee) => (
+                {visibleEmployees.map((employee) => (
                   <tr key={employee.id} className={`hover:bg-slate-50 dark:hover:bg-gray-700/50 transition-colors ${!employee.isActive ? 'opacity-60' : ''}`}>
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-3">
@@ -341,6 +452,15 @@ export default function EmployeeManagement() {
                         </div>
                         <strong className="text-slate-900 dark:text-gray-50">{employee.displayName}</strong>
                       </div>
+                    </td>
+                    <td className="px-5 py-3">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                        (employee.role || 'member') === 'manager'
+                          ? 'bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400'
+                          : 'bg-slate-100 dark:bg-gray-700 text-slate-600 dark:text-gray-300'
+                      }`}>
+                        {(employee.role || 'member') === 'manager' ? 'Manager' : 'Member'}
+                      </span>
                     </td>
                     <td className="px-5 py-3 text-slate-600 dark:text-gray-300">{employee.email}</td>
                     <td className="px-5 py-3 text-slate-500 dark:text-gray-400">{employee.phone || '-'}</td>
@@ -361,7 +481,7 @@ export default function EmployeeManagement() {
                     <td className="text-center px-5 py-3">
                       <div className="flex items-center gap-1 justify-center">
                         <button
-                          className="p-2 rounded-lg text-slate-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                          className="p-1.5 text-slate-600 dark:text-gray-300 rounded-lg hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors"
                           onClick={() => handleEdit(employee)}
                           title="Edit"
                         >
@@ -371,7 +491,7 @@ export default function EmployeeManagement() {
                           </svg>
                         </button>
                         <button
-                          className={`p-2 rounded-lg transition-colors ${
+                          className={`p-1.5 rounded-lg transition-colors ${
                             employee.isActive
                               ? 'text-slate-400 dark:text-gray-500 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20'
                               : 'text-slate-400 dark:text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20'
@@ -392,7 +512,7 @@ export default function EmployeeManagement() {
                           )}
                         </button>
                         <button
-                          className="p-2 rounded-lg text-slate-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                          className="p-1.5 text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                           onClick={() => handleDelete(employee.id, employee.displayName)}
                           title="Delete"
                         >
@@ -424,6 +544,7 @@ function ModalSuccessContent({ credentials, onClose }) {
   };
 
   const signupLink = `${window.location.origin}/inventory/signup?type=employee&code=${credentials.inviteCode}`;
+  const invitedRoleLabel = credentials.role === 'manager' ? 'manager' : 'employee';
 
   return (
     <div className="bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-xl max-w-lg w-full shadow-xl animate-fade-in-scale overflow-hidden">
@@ -437,7 +558,9 @@ function ModalSuccessContent({ credentials, onClose }) {
 
       <div className="text-center px-6 pb-4 space-y-2">
         <h2 className="text-xl font-bold text-slate-900 dark:text-gray-50">Invitation Ready!</h2>
-        <p className="text-sm text-slate-500 dark:text-gray-400">Account created for <strong className="text-slate-900 dark:text-gray-50">{credentials.name}</strong>. Share the details below.</p>
+        <p className="text-sm text-slate-500 dark:text-gray-400">
+          Invitation created for <strong className="text-slate-900 dark:text-gray-50">{credentials.name}</strong> ({invitedRoleLabel}). Share the details below.
+        </p>
         
         <div className="bg-slate-50 dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-xl p-4 mt-4 space-y-3 text-left">
           <div className="flex items-center justify-between">
@@ -493,7 +616,7 @@ function ModalSuccessContent({ credentials, onClose }) {
             </svg>
             <span>Expires in 7 days</span>
           </div>
-          <p>The employee can sign up using an existing account or create a new one using this link.</p>
+          <p>The invited staff member can sign up using an existing account or create a new one using this link.</p>
         </div>
       </div>
 

@@ -23,6 +23,7 @@ import cors from 'cors';
 import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { COLLECTIONS } from './src/backend/firestore/collections.js';
 
 // ── Firebase Admin init ───────────────────────────────────────────────────────
 // We explicitly load the service account JSON (if a path is set) so that
@@ -158,26 +159,27 @@ function saleToText(s, storeName = '') {
 
 async function getAllInventoryData(ownerUid, userRole, assignedStoreId, ownerUidForMember) {
     const data = { products: [], stores: [], employees: [], sales: [], storeMap: {} };
-    const effectiveOwnerUid = userRole === 'member' ? ownerUidForMember : ownerUid;
+    const isStoreScopedRole = userRole === 'member' || userRole === 'manager';
+    const effectiveOwnerUid = isStoreScopedRole ? ownerUidForMember : ownerUid;
     if (!effectiveOwnerUid) return data;
 
     try {
         if (userRole === 'master') {
-            const storesSnap = await db.collection('stores')
+            const storesSnap = await db.collection(COLLECTIONS.BUSINESS_STORE_LOCATIONS)
                 .where('ownerUid', '==', effectiveOwnerUid)
                 .orderBy('createdAt', 'desc').get();
             data.stores = storesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
             data.stores.forEach(s => { data.storeMap[s.id] = s.name; });
         }
 
-        let productsRef = db.collection('products').where('ownerUid', '==', effectiveOwnerUid);
-        if (userRole === 'member' && assignedStoreId)
+        let productsRef = db.collection(COLLECTIONS.INVENTORY_PRODUCT_CATALOG).where('ownerUid', '==', effectiveOwnerUid);
+        if (isStoreScopedRole && assignedStoreId)
             productsRef = productsRef.where('storeId', '==', assignedStoreId);
         const productsSnap = await productsRef.orderBy('createdAt', 'desc').get();
         data.products = productsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
         if (userRole === 'master') {
-            const empSnap = await db.collection('inventoryUsers')
+            const empSnap = await db.collection(COLLECTIONS.INVENTORY_INTERNAL_USER_PROFILES)
                 .where('ownerUid', '==', effectiveOwnerUid)
                 .where('role', '==', 'member').get();
             data.employees = empSnap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -185,9 +187,9 @@ async function getAllInventoryData(ownerUid, userRole, assignedStoreId, ownerUid
 
         let salesRef;
         if (userRole === 'master')
-            salesRef = db.collection('sales').where('ownerUid', '==', effectiveOwnerUid);
+            salesRef = db.collection(COLLECTIONS.SALES_TRANSACTION_RECORDS).where('ownerUid', '==', effectiveOwnerUid);
         else if (assignedStoreId)
-            salesRef = db.collection('sales').where('storeId', '==', assignedStoreId);
+            salesRef = db.collection(COLLECTIONS.SALES_TRANSACTION_RECORDS).where('storeId', '==', assignedStoreId);
         if (salesRef) {
             const salesSnap = await salesRef.orderBy('createdAt', 'desc').get();
             data.sales = salesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -245,7 +247,9 @@ function buildInventoryContext(data) {
 function buildInventoryAskPrompt(question, context, userRole) {
     const roleCtx = userRole === 'master'
         ? 'You are helping a business owner manage their inventory across multiple stores.'
-        : "You are helping a store employee manage their store's inventory.";
+        : userRole === 'manager'
+            ? "You are helping a store manager manage inventory, team operations, and sales for their assigned store."
+            : "You are helping a store employee manage their store's inventory.";
     return `You are a helpful assistant for an inventory management system. ${roleCtx}
 
 Based on the following inventory data, answer the user's question accurately and helpfully.
@@ -276,7 +280,15 @@ function buildInventorySummaryPrompt(context, userRole) {
 5. Sales trends and top-performing products
 6. Employee distribution
 7. Actionable recommendations`
-        : `Analyze the following store inventory data and provide a summary including:
+        : userRole === 'manager'
+            ? `Analyze the following store inventory data for a store manager and provide a summary including:
+1. Current stock levels
+2. Low stock alerts
+3. Store sales performance
+4. Team performance signals from sales and activity
+5. Items that need restocking
+6. Actionable recommendations for the assigned store`
+            : `Analyze the following store inventory data and provide a summary including:
 1. Current stock levels
 2. Low stock alerts
 3. Recent sales performance
@@ -338,7 +350,7 @@ function customerToText(c) {
 }
 
 async function getAllCustomers(ownerUid) {
-    const snapshot = await db.collection('customers')
+    const snapshot = await db.collection(COLLECTIONS.EXTERNAL_CUSTOMER_RECORDS)
         .where('ownerUid', '==', ownerUid)
         .orderBy('createdAt', 'desc').get();
     return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -523,7 +535,7 @@ app.post('/submitFeedback', async (req, res) => {
         if (!['up', 'down'].includes(rating)) { res.status(400).json({ error: 'rating must be "up" or "down"' }); return; }
         if (!['crm', 'inventory'].includes(module)) { res.status(400).json({ error: 'module must be "crm" or "inventory"' }); return; }
 
-        const feedbackRef = db.collection('chatFeedback').doc(messageId);
+        const feedbackRef = db.collection(COLLECTIONS.CHATBOT_FEEDBACK_SUBMISSIONS).doc(messageId);
         const existing = await feedbackRef.get();
         if (existing.exists) {
             await feedbackRef.update({ rating, comment: comment || null, updatedAt: FieldValue.serverTimestamp() });

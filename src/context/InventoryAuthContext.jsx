@@ -11,6 +11,7 @@ import {
 /* eslint-disable react-refresh/only-export-components */
 import { doc, setDoc, getDoc, serverTimestamp, collection, query, where, getDocs, updateDoc } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
+import { COLLECTIONS } from '../backend/firestore/collections';
 
 const InventoryAuthContext = createContext();
 
@@ -45,7 +46,7 @@ export function InventoryAuthProvider({ children }) {
       updatedAt: serverTimestamp(),
     };
 
-    await setDoc(doc(db, 'inventoryUsers', user.uid), profileData);
+    await setDoc(doc(db, COLLECTIONS.INVENTORY_INTERNAL_USER_PROFILES, user.uid), profileData);
 
     // Send email verification
     await sendEmailVerification(user);
@@ -57,8 +58,22 @@ export function InventoryAuthProvider({ children }) {
   // Create employee (Member) account - called by Master
   // This now creates an INVITATION instead of creating an auth account directly
   async function createEmployee(employeeData) {
-    if (!currentUser || userProfile?.role !== 'master') {
-      throw new Error('Only master accounts can create employees');
+    if (!currentUser || !userProfile || (userProfile.role !== 'master' && userProfile.role !== 'manager')) {
+      throw new Error('Only master and manager accounts can create employees');
+    }
+
+    const isMaster = userProfile.role === 'master';
+    const masterUid = isMaster ? currentUser.uid : (userProfile.ownerUid || userProfile.masterUid);
+
+    // Only masters can invite managers; managers can only invite members into their own store
+    const requestedRole = employeeData.role === 'manager' && isMaster ? 'manager' : 'member';
+
+    let assignedStoreId = employeeData.storeId;
+    let assignedStoreName = employeeData.storeName || '';
+
+    if (!isMaster) {
+      assignedStoreId = userProfile.assignedStoreId;
+      assignedStoreName = userProfile.assignedStoreName || assignedStoreName;
     }
 
     // Generate a unique invitation code
@@ -69,11 +84,12 @@ export function InventoryAuthProvider({ children }) {
       email: employeeData.email.toLowerCase().trim(),
       name: employeeData.name,
       phone: employeeData.phone || '',
-      assignedStoreId: employeeData.storeId,
-      assignedStoreName: employeeData.storeName || '',
-      ownerUid: currentUser.uid,
+      assignedStoreId,
+      assignedStoreName,
+      ownerUid: masterUid || currentUser.uid,
       ownerBusinessName: userProfile?.displayName || '',
       inviteCode: inviteCode,
+      role: requestedRole,
       status: 'pending', // pending, accepted, expired
       createdAt: serverTimestamp(),
       // eslint-disable-next-line react-hooks/purity -- called from event handler, not render
@@ -81,7 +97,7 @@ export function InventoryAuthProvider({ children }) {
     };
 
     // Store invitation by invite code for easy lookup
-    await setDoc(doc(db, 'employeeInvitations', inviteCode), invitationData);
+    await setDoc(doc(db, COLLECTIONS.STAFF_ONBOARDING_INVITATIONS, inviteCode), invitationData);
     
     // Return the invitation data with invite code for master to share
     return {
@@ -94,7 +110,7 @@ export function InventoryAuthProvider({ children }) {
   // Signup for Employee using invitation code
   async function signupEmployee(email, password, inviteCode) {
     // First, verify the invitation
-    const inviteDoc = await getDoc(doc(db, 'employeeInvitations', inviteCode));
+    const inviteDoc = await getDoc(doc(db, COLLECTIONS.STAFF_ONBOARDING_INVITATIONS, inviteCode));
     
     if (!inviteDoc.exists()) {
       throw new Error('Invalid invitation code. Please check and try again.');
@@ -146,12 +162,15 @@ export function InventoryAuthProvider({ children }) {
       }
     }
 
-    // Create employee profile in Firestore
+    // Determine role from invitation (manager or member)
+    const role = invitation.role === 'manager' ? 'manager' : 'member';
+
+    // Create employee/manager profile in Firestore
     const employeeProfile = {
       email: user.email,
       displayName: invitation.name,
       phone: invitation.phone || '',
-      role: 'member',
+      role,
       accountType: 'inventory',
       assignedStoreId: invitation.assignedStoreId,
       assignedStoreName: invitation.assignedStoreName || '',
@@ -161,17 +180,17 @@ export function InventoryAuthProvider({ children }) {
       isActive: true,
     };
 
-    await setDoc(doc(db, 'inventoryUsers', user.uid), employeeProfile);
+    await setDoc(doc(db, COLLECTIONS.INVENTORY_INTERNAL_USER_PROFILES, user.uid), employeeProfile);
 
     // Also add to employees collection for easier querying
-    await setDoc(doc(db, 'employees', user.uid), {
+    await setDoc(doc(db, COLLECTIONS.STORE_STAFF_ASSIGNMENTS, user.uid), {
       ...employeeProfile,
       uid: user.uid,
     });
 
     // Increment the assigned store's employeeCount
     if (invitation.assignedStoreId) {
-      const storeRef = doc(db, 'stores', invitation.assignedStoreId);
+      const storeRef = doc(db, COLLECTIONS.BUSINESS_STORE_LOCATIONS, invitation.assignedStoreId);
       const storeDoc = await getDoc(storeRef);
       if (storeDoc.exists()) {
         const currentCount = storeDoc.data().employeeCount || 0;
@@ -183,7 +202,7 @@ export function InventoryAuthProvider({ children }) {
     }
 
     // Mark invitation as accepted
-    await updateDoc(doc(db, 'employeeInvitations', inviteCode), {
+    await updateDoc(doc(db, COLLECTIONS.STAFF_ONBOARDING_INVITATIONS, inviteCode), {
       status: 'accepted',
       acceptedAt: serverTimestamp(),
       acceptedByUid: user.uid,
@@ -210,7 +229,7 @@ export function InventoryAuthProvider({ children }) {
 
   // Check invitation validity (for pre-signup validation)
   async function checkInvitation(inviteCode) {
-    const inviteDoc = await getDoc(doc(db, 'employeeInvitations', inviteCode));
+    const inviteDoc = await getDoc(doc(db, COLLECTIONS.STAFF_ONBOARDING_INVITATIONS, inviteCode));
     
     if (!inviteDoc.exists()) {
       return { valid: false, error: 'Invalid invitation code' };
@@ -233,6 +252,7 @@ export function InventoryAuthProvider({ children }) {
         name: invitation.name,
         storeName: invitation.assignedStoreName,
         businessName: invitation.ownerBusinessName,
+        role: invitation.role || 'member',
       }
     };
   }
@@ -243,7 +263,7 @@ export function InventoryAuthProvider({ children }) {
       throw new Error('Only master accounts can resend invitations');
     }
     
-    const oldInviteDoc = await getDoc(doc(db, 'employeeInvitations', oldInviteCode));
+    const oldInviteDoc = await getDoc(doc(db, COLLECTIONS.STAFF_ONBOARDING_INVITATIONS, oldInviteCode));
     if (!oldInviteDoc.exists()) {
       throw new Error('Original invitation not found');
     }
@@ -262,10 +282,10 @@ export function InventoryAuthProvider({ children }) {
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     };
     
-    await setDoc(doc(db, 'employeeInvitations', newInviteCode), newInvitationData);
+    await setDoc(doc(db, COLLECTIONS.STAFF_ONBOARDING_INVITATIONS, newInviteCode), newInvitationData);
     
     // Mark old invitation as expired
-    await updateDoc(doc(db, 'employeeInvitations', oldInviteCode), {
+    await updateDoc(doc(db, COLLECTIONS.STAFF_ONBOARDING_INVITATIONS, oldInviteCode), {
       status: 'expired',
     });
     
@@ -278,7 +298,7 @@ export function InventoryAuthProvider({ children }) {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
 
-    const profileDoc = await getDoc(doc(db, 'inventoryUsers', user.uid));
+    const profileDoc = await getDoc(doc(db, COLLECTIONS.INVENTORY_INTERNAL_USER_PROFILES, user.uid));
 
     if (!profileDoc.exists()) {
       setUserProfile(null);
@@ -292,7 +312,8 @@ export function InventoryAuthProvider({ children }) {
       return { user, needsInventoryRegistration: true };
     }
 
-    if (profile.role === 'member' && !profile.isActive) {
+    // Block non-master users that have been deactivated
+    if (profile.role !== 'master' && !profile.isActive) {
       await signOut(auth);
       throw new Error('Your account has been deactivated. Please contact your administrator.');
     }
@@ -317,7 +338,7 @@ export function InventoryAuthProvider({ children }) {
       updatedAt: serverTimestamp(),
     };
 
-    await setDoc(doc(db, 'inventoryUsers', user.uid), profileData);
+    await setDoc(doc(db, COLLECTIONS.INVENTORY_INTERNAL_USER_PROFILES, user.uid), profileData);
     setUserProfile(profileData);
     return user;
   }
@@ -343,9 +364,12 @@ export function InventoryAuthProvider({ children }) {
 
   // Fetch user profile
   async function fetchUserProfile(uid) {
-    const profileDoc = await getDoc(doc(db, 'inventoryUsers', uid));
+    const profileDoc = await getDoc(doc(db, COLLECTIONS.INVENTORY_INTERNAL_USER_PROFILES, uid));
     if (profileDoc.exists()) {
       const profile = profileDoc.data();
+      // #region agent log
+      fetch('http://127.0.0.1:7555/ingest/14177494-399b-47b1-a251-61383150f196',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b7d8d0'},body:JSON.stringify({sessionId:'b7d8d0',runId:'initial',hypothesisId:'H6',location:'src/context/InventoryAuthContext.jsx',message:'Inventory profile fetched',data:{role:profile?.role||null,accountType:profile?.accountType||null,hasOwnerUid:!!(profile?.ownerUid||profile?.masterUid),assignedStoreId:profile?.assignedStoreId||null,isActive:profile?.isActive??null},timestamp:Date.now()})}).catch(()=>{});
+      // #endregion
       setUserProfile(profile);
       return profile;
     }
@@ -359,7 +383,7 @@ export function InventoryAuthProvider({ children }) {
     }
 
     const q = query(
-      collection(db, 'employees'),
+      collection(db, COLLECTIONS.STORE_STAFF_ASSIGNMENTS),
       where('ownerUid', '==', currentUser.uid)
     );
     
@@ -370,6 +394,11 @@ export function InventoryAuthProvider({ children }) {
   // Check if user is master
   function isMaster() {
     return userProfile?.role === 'master';
+  }
+
+  // Check if user is manager
+  function isManager() {
+    return userProfile?.role === 'manager';
   }
 
   // Check if user is member
@@ -415,6 +444,7 @@ export function InventoryAuthProvider({ children }) {
     fetchUserProfile,
     getEmployees,
     isMaster,
+    isManager,
     isMember,
     getAssignedStoreId,
   };

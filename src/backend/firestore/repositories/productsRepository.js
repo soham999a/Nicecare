@@ -13,6 +13,7 @@ import {
   writeBatch,
 } from 'firebase/firestore';
 import { db } from '../../../config/firebase';
+import { COLLECTIONS } from '../collections';
 
 /**
  * Subscribe to products list. Returns unsubscribe function.
@@ -24,7 +25,7 @@ export function subscribeProducts({ ownerUid, storeId, onData, onError }) {
     ...(storeId ? [where('storeId', '==', storeId)] : []),
     orderBy('createdAt', 'desc'),
   ];
-  const q = query(collection(db, 'products'), ...constraints);
+  const q = query(collection(db, COLLECTIONS.INVENTORY_PRODUCT_CATALOG), ...constraints);
 
   return onSnapshot(
     q,
@@ -51,10 +52,10 @@ export async function addProduct(ownerUid, productData) {
     updatedAt: serverTimestamp(),
   };
 
-  const docRef = await addDoc(collection(db, 'products'), newProduct);
+  const docRef = await addDoc(collection(db, COLLECTIONS.INVENTORY_PRODUCT_CATALOG), newProduct);
 
   if (productData.storeId) {
-    const storeRef = doc(db, 'stores', productData.storeId);
+    const storeRef = doc(db, COLLECTIONS.BUSINESS_STORE_LOCATIONS, productData.storeId);
     const storeDoc = await getDoc(storeRef);
     if (storeDoc.exists()) {
       const currentCount = storeDoc.data().productCount || 0;
@@ -69,7 +70,7 @@ export async function addProduct(ownerUid, productData) {
 }
 
 export async function updateProduct(productId, updates) {
-  const productRef = doc(db, 'products', productId);
+  const productRef = doc(db, COLLECTIONS.INVENTORY_PRODUCT_CATALOG, productId);
 
   if (updates.storeId !== undefined) {
     const productDoc = await getDoc(productRef);
@@ -79,7 +80,7 @@ export async function updateProduct(productId, updates) {
 
       if (oldStoreId !== newStoreId) {
         if (oldStoreId) {
-          const oldStoreRef = doc(db, 'stores', oldStoreId);
+          const oldStoreRef = doc(db, COLLECTIONS.BUSINESS_STORE_LOCATIONS, oldStoreId);
           const oldStoreDoc = await getDoc(oldStoreRef);
           if (oldStoreDoc.exists()) {
             const currentCount = oldStoreDoc.data().productCount || 0;
@@ -90,7 +91,7 @@ export async function updateProduct(productId, updates) {
           }
         }
         if (newStoreId) {
-          const newStoreRef = doc(db, 'stores', newStoreId);
+          const newStoreRef = doc(db, COLLECTIONS.BUSINESS_STORE_LOCATIONS, newStoreId);
           const newStoreDoc = await getDoc(newStoreRef);
           if (newStoreDoc.exists()) {
             const currentCount = newStoreDoc.data().productCount || 0;
@@ -111,7 +112,7 @@ export async function updateProduct(productId, updates) {
 }
 
 export async function updateStock(productId, quantityChange, reason, { currentUserUid, ownerUid, displayName }) {
-  const productRef = doc(db, 'products', productId);
+  const productRef = doc(db, COLLECTIONS.INVENTORY_PRODUCT_CATALOG, productId);
   const productDoc = await getDoc(productRef);
 
   if (!productDoc.exists()) {
@@ -126,7 +127,7 @@ export async function updateStock(productId, quantityChange, reason, { currentUs
     updatedAt: serverTimestamp(),
   });
 
-  await addDoc(collection(db, 'stockMovements'), {
+  await addDoc(collection(db, COLLECTIONS.INVENTORY_STOCK_MOVEMENT_LOGS), {
     productId,
     productName: productDoc.data().name,
     storeId: productDoc.data().storeId,
@@ -144,13 +145,13 @@ export async function updateStock(productId, quantityChange, reason, { currentUs
 }
 
 export async function deleteProduct(productId) {
-  const productRef = doc(db, 'products', productId);
+  const productRef = doc(db, COLLECTIONS.INVENTORY_PRODUCT_CATALOG, productId);
   const productDoc = await getDoc(productRef);
 
   if (productDoc.exists()) {
     const storeId = productDoc.data().storeId;
     if (storeId) {
-      const storeRef = doc(db, 'stores', storeId);
+      const storeRef = doc(db, COLLECTIONS.BUSINESS_STORE_LOCATIONS, storeId);
       const storeDoc = await getDoc(storeRef);
       if (storeDoc.exists()) {
         const currentCount = storeDoc.data().productCount || 0;
@@ -169,7 +170,7 @@ export async function bulkUpdateStock(updates) {
   const batch = writeBatch(db);
 
   for (const { productId, quantityChange } of updates) {
-    const productRef = doc(db, 'products', productId);
+    const productRef = doc(db, COLLECTIONS.INVENTORY_PRODUCT_CATALOG, productId);
     const productDoc = await getDoc(productRef);
 
     if (productDoc.exists()) {

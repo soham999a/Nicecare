@@ -3,7 +3,7 @@ import { useInventoryAuth } from '../../context/InventoryAuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 
-export default function Sidebar({ isExpanded, toggleSidebar }) {
+export default function Sidebar({ isExpanded, toggleSidebar, isMobileMenuOpen }) {
   const [profileHover, setProfileHover] = useState(false);
   const [showSecretOption, setShowSecretOption] = useState(false);
   const [keyPressTimeout, setKeyPressTimeout] = useState(null);
@@ -62,6 +62,7 @@ export default function Sidebar({ isExpanded, toggleSidebar }) {
   };
 
   const isMaster = userProfile?.role === 'master';
+  const isManager = userProfile?.role === 'manager';
   const userInitial = (() => {
     const name = userProfile?.displayName || currentUser?.email || 'NC';
     const parts = name.trim().split(/\s+/);
@@ -72,7 +73,7 @@ export default function Sidebar({ isExpanded, toggleSidebar }) {
   })();
 
   const navItems = [
-    ...(isMaster ? [
+    ...(isMaster || isManager ? [
       {
         path: '/inventory/dashboard',
         icon: (
@@ -83,6 +84,7 @@ export default function Sidebar({ isExpanded, toggleSidebar }) {
         ),
         label: 'Dashboard'
       },
+      ...(isMaster ? [
       {
         path: '/inventory/stores',
         icon: (
@@ -94,7 +96,7 @@ export default function Sidebar({ isExpanded, toggleSidebar }) {
           </svg>
         ),
         label: 'Stores'
-      },
+      }] : []),
       {
         path: '/inventory/employees',
         icon: (
@@ -119,7 +121,7 @@ export default function Sidebar({ isExpanded, toggleSidebar }) {
       ),
       label: 'Products'
     },
-    ...(!isMaster ? [{
+    ...(!isMaster && !isManager ? [{
       path: '/inventory/my-sales',
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -131,7 +133,7 @@ export default function Sidebar({ isExpanded, toggleSidebar }) {
       ),
       label: 'My Sales'
     }] : []),
-    ...(isMaster ? [
+    ...(isMaster || isManager ? [
       {
         path: '/inventory/sales',
         icon: (
@@ -181,8 +183,10 @@ export default function Sidebar({ isExpanded, toggleSidebar }) {
   return (
     <>
       <aside
-        className={`fixed top-0 left-0 h-screen flex flex-col z-[200] overflow-visible font-sans transition-[width] duration-300 ease-in-out bg-white dark:bg-gray-900/[0.97] border-r border-[#ede8f5] dark:border-[#2d2848] shadow-[4px_0_20px_rgba(110,80,200,0.04)] dark:shadow-[4px_0_20px_rgba(0,0,0,0.2)] w-[72px] ${
-          isExpanded ? 'w-[250px]' : ''
+        className={`fixed top-0 left-0 h-screen flex flex-col z-50 overflow-visible font-sans transition-all duration-300 ease-in-out bg-white dark:bg-gray-900/[0.97] border-r border-[#ede8f5] dark:border-[#2d2848] shadow-[4px_0_20px_rgba(110,80,200,0.04)] dark:shadow-[4px_0_20px_rgba(0,0,0,0.2)] ${
+          isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+        } ${
+          isExpanded ? 'w-[250px]' : 'w-[72px]'
         }`}
       >
         <div
@@ -201,6 +205,32 @@ export default function Sidebar({ isExpanded, toggleSidebar }) {
               </span>
             </div>
           </div>
+          
+          {/* Mobile Close Button - Only visible on mobile when menu is open */}
+          {isMobileMenuOpen && (
+            <button
+              className="flex md:hidden items-center justify-center w-9 h-9 rounded-lg bg-red-500/10 text-red-600 dark:text-red-400 cursor-pointer border-none hover:bg-red-500/20 hover:scale-110 active:scale-95 transition-all duration-200 animate-fade-in"
+              onClick={toggleSidebar}
+              aria-label="Close menu"
+            >
+              <svg 
+                width="20" 
+                height="20" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2.5" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+                className="animate-spin-once"
+              >
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          )}
+          
+          {/* Desktop Toggle Button */}
           <button
             className="hidden md:flex items-center justify-center w-8 h-8 rounded-lg bg-[#6c5ce7] text-white cursor-pointer border-none hover:bg-[#5a4bd1] hover:scale-105 transition-all duration-200"
             onClick={toggleSidebar}
@@ -221,6 +251,12 @@ export default function Sidebar({ isExpanded, toggleSidebar }) {
             <Link
               key={item.path}
               to={item.path}
+              onClick={() => {
+                // Close mobile menu when clicking a nav link
+                if (isMobileMenuOpen && window.innerWidth < 768) {
+                  toggleSidebar();
+                }
+              }}
               className={`${navItemBase} ${
                 isActive(item.path)
                   ? 'bg-[#e9edff] text-[#2d2b3d] dark:bg-[#2a2450] dark:text-gray-100'
@@ -316,7 +352,7 @@ export default function Sidebar({ isExpanded, toggleSidebar }) {
               {userProfile?.displayName || currentUser?.email?.split('@')[0] || 'User'}
             </span>
             <span className="text-[0.7rem] text-[#a09bb5] dark:text-[#6b6580] whitespace-nowrap">
-              {isMaster ? 'Business Owner' : 'Employee'}
+              {isMaster ? 'Business Owner' : isManager ? 'Store Manager' : 'Employee'}
             </span>
           </div>
 
@@ -340,7 +376,7 @@ export default function Sidebar({ isExpanded, toggleSidebar }) {
                 <div className="flex justify-between items-center">
                   <span className="text-[0.8rem] font-medium text-[#a09bb5] dark:text-[#6b6580]">Role</span>
                   <span className="text-[0.8rem] font-medium text-[#2d2b3d] dark:text-gray-100 text-right max-w-[160px] truncate">
-                    {isMaster ? 'Business Owner' : 'Employee'}
+                    {isMaster ? 'Business Owner' : isManager ? 'Store Manager' : 'Employee'}
                   </span>
                 </div>
                 {userProfile?.assignedStoreName && (

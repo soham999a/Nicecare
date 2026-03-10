@@ -7,7 +7,7 @@
  * askAboutInventory / inventorySummary / inventoryLowStock
  * @typedef {Object} InventoryRagRequest
  * @property {string} [question] - Required for askAboutInventory
- * @property {string} userRole - 'master' | 'member'
+ * @property {string} userRole - 'master' | 'manager' | 'member'
  * @property {string|null} [assignedStoreId]
  * @property {string|null} [ownerUidForMember]
  */

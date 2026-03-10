@@ -27,6 +27,13 @@ const MEMBER_SUGGESTED_QUESTIONS = [
   "Which items need restocking?",
 ];
 
+const MANAGER_SUGGESTED_QUESTIONS = [
+  "Show low stock items in my store",
+  "Summarize today's store sales",
+  "Which team members made the most sales this week?",
+  "What should I reorder for this store?",
+];
+
 const CRM_SUGGESTED_QUESTIONS = [
   "How many customers do I have?",
   "Show repairs in progress",
@@ -57,7 +64,11 @@ export default function InventoryChatbot() {
 
   const suggestedQuestions = isCrmPage
     ? CRM_SUGGESTED_QUESTIONS
-    : (userProfile?.role === 'master' ? MASTER_SUGGESTED_QUESTIONS : MEMBER_SUGGESTED_QUESTIONS);
+    : (userProfile?.role === 'master'
+      ? MASTER_SUGGESTED_QUESTIONS
+      : userProfile?.role === 'manager'
+        ? MANAGER_SUGGESTED_QUESTIONS
+        : MEMBER_SUGGESTED_QUESTIONS);
 
   useEffect(() => {
     if (messagesEndRef.current) {

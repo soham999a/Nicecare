@@ -1,7 +1,12 @@
 import { useState, useRef, useLayoutEffect, useEffect } from 'react';
+import { Navigate } from 'react-router-dom';
+import { useInventoryAuth } from '../../context/InventoryAuthContext';
 import { useProducts } from '../../hooks/useProducts';
 import { useStores } from '../../hooks/useStores';
-import ConfirmDialog from '../../components/ConfirmDialog';
+
+const IconAlert = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+);
 
 export default function ProductManagement() {
   useEffect(() => {
@@ -11,16 +16,40 @@ export default function ProductManagement() {
     };
   }, []);
 
+  const { userProfile } = useInventoryAuth();
+  const isMaster = userProfile?.role === 'master';
+  const isManager = userProfile?.role === 'manager';
+
+  if (!isMaster && !isManager) {
+    return <Navigate to="/inventory/pos" replace />;
+  }
+
+  return (
+    <ProductManagementContent
+      userProfile={userProfile}
+      isManager={isManager}
+    />
+  );
+}
+
+function ProductManagementContent({ userProfile, isManager }) {
   const formCardRef = useRef(null);
+
   const [filterStore, setFilterStore] = useState('');
-  const { products, loading, error, lowStockProducts, addProduct, updateProduct, updateStock, deleteProduct } = useProducts(filterStore || null);
+  const managerStoreId = isManager ? userProfile?.assignedStoreId || null : null;
+  const managerStoreName = isManager ? (userProfile?.assignedStoreName || 'My Store') : '';
   const { stores } = useStores();
+  const availableStores = isManager && managerStoreId
+    ? [{ id: managerStoreId, name: managerStoreName }]
+    : stores;
+  const effectiveStoreFilter = isManager ? managerStoreId : (filterStore || null);
+  const { products, loading, error, lowStockProducts, addProduct, updateProduct, updateStock, deleteProduct } = useProducts(effectiveStoreFilter);
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [showStockModal, setShowStockModal] = useState(null);
   const [stockChange, setStockChange] = useState({ quantity: 0, reason: '' });
   const [searchTerm, setSearchTerm] = useState('');
-  const [formData, setFormData] = useState({
+  const getDefaultFormData = () => ({
     name: '',
     sku: '',
     barcode: '',
@@ -30,9 +59,10 @@ export default function ProductManagement() {
     cost: '',
     quantity: '',
     lowStockThreshold: '10',
-    storeId: '',
-    storeName: '',
+    storeId: isManager ? managerStoreId || '' : '',
+    storeName: isManager ? managerStoreName : '',
   });
+  const [formData, setFormData] = useState(() => getDefaultFormData());
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState(null);
@@ -59,26 +89,21 @@ export default function ProductManagement() {
   ];
 
   function resetForm() {
-    setFormData({
-      name: '',
-      sku: '',
-      barcode: '',
-      category: '',
-      description: '',
-      price: '',
-      cost: '',
-      quantity: '',
-      lowStockThreshold: '10',
-      storeId: '',
-      storeName: '',
-    });
+    setFormData(getDefaultFormData());
     setEditingProduct(null);
     setShowForm(false);
     setFormError('');
   }
 
+  function openCreateForm() {
+    setFormData(getDefaultFormData());
+    setEditingProduct(null);
+    setFormError('');
+    setShowForm(true);
+  }
+
   function handleStoreChange(storeId) {
-    const store = stores.find(s => s.id === storeId);
+    const store = availableStores.find(s => s.id === storeId);
     setFormData({
       ...formData,
       storeId,
@@ -207,20 +232,40 @@ export default function ProductManagement() {
 
   return (
     <main className="p-4 md:p-6 lg:p-8 space-y-6 animate-fade-in">
-      <ConfirmDialog
-        isOpen={!!deleteConfirm}
-        title="Delete Product"
-        message={`Are you sure you want to delete "${deleteConfirm?.name}"? This action cannot be undone.`}
-        onConfirm={confirmDelete}
-        onCancel={() => setDeleteConfirm(null)}
-        confirmText="Delete"
-        cancelText="Cancel"
-        variant="danger"
-      />
+      {/* Custom Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md p-6 border border-slate-200 dark:border-gray-700 transform transition-all scale-100">
+            <div className="flex flex-col items-center text-center">
+              <div className="mb-4 bg-red-50 dark:bg-red-900/20 p-3 rounded-full">
+                <IconAlert />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Delete Product?</h3>
+              <p className="text-slate-500 dark:text-gray-400 mb-6">
+                Are you sure you want to delete "{deleteConfirm?.name}"? This action cannot be undone.
+              </p>
+              <div className="flex w-full gap-3">
+                <button
+                  onClick={() => setDeleteConfirm(null)}
+                  className="flex-1 px-4 py-2 bg-slate-100 dark:bg-gray-700 text-slate-700 dark:text-gray-300 rounded-lg hover:bg-slate-200 dark:hover:bg-gray-600 font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors shadow-lg shadow-red-500/30"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="flex items-start justify-between flex-wrap gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-gray-50">Product Management</h1>
+          <h1 className="text-xl sm:text-2xl md:text-[1.9rem] font-bold tracking-tight text-slate-900 dark:text-gray-50">Product Management</h1>
           <p className="text-sm text-slate-500 dark:text-gray-400 mt-1">Manage your product catalog and inventory</p>
         </div>
 
@@ -237,7 +282,7 @@ export default function ProductManagement() {
           </button>
         )}
 
-        {stores?.length === 0 && (
+        {!isManager && stores?.length === 0 && (
           <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-100 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 text-sm w-full">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
@@ -395,20 +440,35 @@ export default function ProductManagement() {
                 </select>
               </div>
 
-              <div className="space-y-1">
-                <label className="block text-sm font-medium text-slate-700 dark:text-gray-300">Store *</label>
-                <select
-                  className="w-full px-3 py-2.5 border border-slate-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-sm text-slate-900 dark:text-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600"
-                  value={formData.storeId}
-                  onChange={(e) => handleStoreChange(e.target.value)}
-                  required
-                >
-                  <option value="">Select store</option>
-                  {stores.map((store) => (
-                    <option key={store.id} value={store.id}>{store.name}</option>
-                  ))}
-                </select>
-              </div>
+              {!isManager ? (
+                <div className="space-y-1">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-gray-300">Store *</label>
+                  <select
+                    className="w-full px-3 py-2.5 border border-slate-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-sm text-slate-900 dark:text-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600"
+                    value={formData.storeId}
+                    onChange={(e) => handleStoreChange(e.target.value)}
+                    required
+                  >
+                    <option value="">Select store</option>
+                    {availableStores.map((store) => (
+                      <option key={store.id} value={store.id}>{store.name}</option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-gray-300">Store *</label>
+                  <input
+                    type="text"
+                    className="w-full px-3 py-2.5 border border-slate-200 dark:border-gray-700 rounded-lg bg-slate-50 dark:bg-gray-900 text-sm text-slate-900 dark:text-gray-50"
+                    value={managerStoreName || 'Unassigned'}
+                    readOnly
+                  />
+                  <p className="text-xs text-slate-400 dark:text-gray-500">
+                    Managers can only manage products in their assigned store.
+                  </p>
+                </div>
+              )}
 
               <div className="space-y-1">
                 <label className="block text-sm font-medium text-slate-700 dark:text-gray-300">Selling Price *</label>
@@ -501,22 +561,24 @@ export default function ProductManagement() {
           />
         </div>
 
-        <select
-          className="px-3 py-2.5 border border-slate-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-sm text-slate-900 dark:text-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600"
-          value={filterStore}
-          onChange={(e) => setFilterStore(e.target.value)}
-        >
-          <option value="">All Stores</option>
-          {stores.map((store) => (
-            <option key={store.id} value={store.id}>{store.name}</option>
-          ))}
-        </select>
+        {!isManager && (
+          <select
+            className="px-3 py-2.5 border border-slate-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-sm text-slate-900 dark:text-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600"
+            value={filterStore}
+            onChange={(e) => setFilterStore(e.target.value)}
+          >
+            <option value="">All Stores</option>
+            {availableStores.map((store) => (
+              <option key={store.id} value={store.id}>{store.name}</option>
+            ))}
+          </select>
+        )}
 
-        {stores?.length > 0 && (
-          <button className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all bg-blue-600 hover:bg-blue-700 text-white" onClick={() => setShowForm(true)}>
+        {(isManager && managerStoreId) || (!isManager && stores?.length > 0) ? (
+          <button className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all bg-blue-600 hover:bg-blue-700 text-white" onClick={openCreateForm}>
             + Add Product
           </button>
-        )}
+        ) : null}
       </div>
 
       {/* Products List */}
@@ -540,7 +602,7 @@ export default function ProductManagement() {
             <h3 className="text-lg font-semibold text-slate-700 dark:text-gray-300">No products found</h3>
             <p className="text-sm">{searchTerm ? 'Try a different search term' : 'Add your first product to get started'}</p>
             {!searchTerm && stores?.length > 0 && (
-              <button className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all bg-blue-600 hover:bg-blue-700 text-white mt-2" onClick={() => setShowForm(true)}>
+              <button className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg font-semibold text-sm transition-all bg-blue-600 hover:bg-blue-700 text-white mt-2" onClick={openCreateForm}>
                 + Add Product
               </button>
             )}
@@ -614,7 +676,7 @@ export default function ProductManagement() {
                       <td className="text-center px-5 py-3">
                         <div className="flex items-center gap-1 justify-center">
                           <button
-                            className="p-2 rounded-lg text-slate-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                            className="p-1.5 text-slate-600 dark:text-gray-300 rounded-lg hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors"
                             onClick={() => {
                               setShowStockModal(product);
                               setStockChange({ quantity: 0, reason: '' });
@@ -629,7 +691,7 @@ export default function ProductManagement() {
                             </svg>
                           </button>
                           <button
-                            className="p-2 rounded-lg text-slate-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                            className="p-1.5 text-slate-600 dark:text-gray-300 rounded-lg hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors"
                             onClick={() => handleEdit(product)}
                             title="Edit"
                           >
@@ -639,7 +701,7 @@ export default function ProductManagement() {
                             </svg>
                           </button>
                           <button
-                            className="p-2 rounded-lg text-slate-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                            className="p-1.5 text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                             onClick={() => handleDelete(product.id, product.name)}
                             title="Delete"
                           >

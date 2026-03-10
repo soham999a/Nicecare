@@ -18,6 +18,8 @@ export default function InventoryNavbar() {
   }
 
   const isMaster = userProfile?.role === 'master';
+  const isManager = userProfile?.role === 'manager';
+  const isMember = userProfile?.role === 'member';
   const currentPath = location.pathname;
 
   const handleApiDocsDoubleClick = (e) => {
@@ -42,7 +44,20 @@ export default function InventoryNavbar() {
     { path: '/inventory/crm', label: 'CRM', icon: 'crm' },
   ];
 
-  const navItems = isMaster ? masterNavItems : memberNavItems;
+  const managerNavItems = [
+    { path: '/inventory/dashboard', label: 'Dashboard', icon: 'dashboard' },
+    { path: '/inventory/employees', label: 'Employees', icon: 'people' },
+    { path: '/inventory/products', label: 'Products', icon: 'inventory' },
+    { path: '/inventory/sales', label: 'Sales', icon: 'receipt' },
+    { path: '/inventory/crm', label: 'CRM', icon: 'crm' },
+  ];
+
+  let navItems = memberNavItems;
+  if (isMaster) {
+    navItems = masterNavItems;
+  } else if (isManager) {
+    navItems = managerNavItems;
+  }
 
   const getIcon = (iconName) => {
     switch (iconName) {
@@ -173,7 +188,7 @@ export default function InventoryNavbar() {
             {userProfile?.displayName || currentUser?.email}
           </span>
           <span className="text-xs text-slate-400 dark:text-gray-500">
-            {isMaster ? 'Business Owner' : 'Employee'}
+            {isMaster ? 'Business Owner' : isManager ? 'Store Manager' : isMember ? 'Employee' : ''}
           </span>
         </div>
 

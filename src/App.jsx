@@ -59,7 +59,7 @@ function App() {
                       <Route
                         path="/dashboard"
                         element={
-                          <InventoryProtectedRoute requireMaster={true}>
+                          <InventoryProtectedRoute>
                             <MasterDashboard />
                           </InventoryProtectedRoute>
                         }
@@ -75,7 +75,7 @@ function App() {
                       <Route
                         path="/employees"
                         element={
-                          <InventoryProtectedRoute requireMaster={true}>
+                          <InventoryProtectedRoute>
                             <EmployeeManagement />
                           </InventoryProtectedRoute>
                         }
@@ -83,7 +83,7 @@ function App() {
                       <Route
                         path="/products"
                         element={
-                          <InventoryProtectedRoute requireMaster={true}>
+                          <InventoryProtectedRoute>
                             <ProductManagement />
                           </InventoryProtectedRoute>
                         }
@@ -91,7 +91,7 @@ function App() {
                       <Route
                         path="/sales"
                         element={
-                          <InventoryProtectedRoute requireMaster={true}>
+                          <InventoryProtectedRoute>
                             <SalesReports />
                           </InventoryProtectedRoute>
                         }

@@ -1,7 +1,3 @@
-/**
- * Canonical Firestore collection names. Use these constants instead of string literals
- * to keep references consistent and avoid typos.
- */
 export const COLLECTIONS = {
   CRM_INTERNAL_USER_PROFILES: 'crmInternalUserProfiles',
   EXTERNAL_CUSTOMER_RECORDS: 'externalCustomerRecords',

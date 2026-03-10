@@ -52,12 +52,16 @@ describe('Backend config and contracts', () => {
 
   describe('collections', () => {
     it('COLLECTIONS has expected names', () => {
-      expect(COLLECTIONS.STORES).toBe('stores');
-      expect(COLLECTIONS.PRODUCTS).toBe('products');
-      expect(COLLECTIONS.EMPLOYEES).toBe('employees');
-      expect(COLLECTIONS.SALES).toBe('sales');
-      expect(COLLECTIONS.STOCK_MOVEMENTS).toBe('stockMovements');
-      expect(COLLECTIONS.EMPLOYEE_INVITATIONS).toBe('employeeInvitations');
+      expect(COLLECTIONS.CRM_INTERNAL_USER_PROFILES).toBe('crmInternalUserProfiles');
+      expect(COLLECTIONS.EXTERNAL_CUSTOMER_RECORDS).toBe('externalCustomerRecords');
+      expect(COLLECTIONS.INVENTORY_INTERNAL_USER_PROFILES).toBe('inventoryInternalUserProfiles');
+      expect(COLLECTIONS.STORE_STAFF_ASSIGNMENTS).toBe('storeStaffAssignments');
+      expect(COLLECTIONS.BUSINESS_STORE_LOCATIONS).toBe('businessStoreLocations');
+      expect(COLLECTIONS.INVENTORY_PRODUCT_CATALOG).toBe('inventoryProductCatalog');
+      expect(COLLECTIONS.SALES_TRANSACTION_RECORDS).toBe('salesTransactionRecords');
+      expect(COLLECTIONS.INVENTORY_STOCK_MOVEMENT_LOGS).toBe('inventoryStockMovementLogs');
+      expect(COLLECTIONS.STAFF_ONBOARDING_INVITATIONS).toBe('staffOnboardingInvitations');
+      expect(COLLECTIONS.CHATBOT_FEEDBACK_SUBMISSIONS).toBe('chatbotFeedbackSubmissions');
     });
   });
 });
