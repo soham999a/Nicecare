@@ -22,6 +22,7 @@ import ApiDocsPage from './pages/inventory/ApiDocsPage';
 import MemberPOS from './pages/inventory/MemberPOS';
 import MemberSales from './pages/inventory/MemberSales';
 import CRMPage from './pages/inventory/CRMPage';
+import DataMigrationHub from './pages/inventory/DataMigrationHub';
 
 
 function App() {
@@ -92,6 +93,14 @@ function App() {
                         element={
                           <InventoryProtectedRoute>
                             <SalesReports />
+                          </InventoryProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/data-migration-hub"
+                        element={
+                          <InventoryProtectedRoute requireMaster={true}>
+                            <DataMigrationHub />
                           </InventoryProtectedRoute>
                         }
                       />
