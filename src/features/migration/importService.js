@@ -11,6 +11,7 @@ import {
   serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '../../config/firebase';
+import { COLLECTIONS } from '../../backend/firestore/collections';
 import { addStore } from '../../backend/firestore/repositories/storesRepository';
 import { addProduct } from '../../backend/firestore/repositories/productsRepository';
 
@@ -142,7 +143,7 @@ async function importProducts(validRows, ownerUid, stores) {
 async function importEmployees(validRows, ownerUid, stores) {
   const errors = [];
   let succeeded = 0;
-  const employeesRef = collection(db, 'employees');
+  const employeesRef = collection(db, COLLECTIONS.STORE_STAFF_ASSIGNMENTS);
 
   const createdDocIds = [];
   for (const { rowIndex, doc: rowDoc } of validRows) {
@@ -161,7 +162,7 @@ async function importEmployees(validRows, ownerUid, stores) {
       succeeded++;
 
       // Update store employeeCount
-      const storeRef = doc(db, 'stores', prepared.assignedStoreId);
+      const storeRef = doc(db, COLLECTIONS.BUSINESS_STORE_LOCATIONS, prepared.assignedStoreId);
       const storeDoc = await getDoc(storeRef);
       if (storeDoc.exists()) {
         const currentCount = storeDoc.data().employeeCount || 0;
@@ -192,7 +193,7 @@ async function importEmployees(validRows, ownerUid, stores) {
 async function importCustomers(validRows, ownerUid, stores) {
   const errors = [];
   let succeeded = 0;
-  const customersRef = collection(db, 'customers');
+  const customersRef = collection(db, COLLECTIONS.EXTERNAL_CUSTOMER_RECORDS);
   const createdDocIds = [];
 
   for (const { rowIndex, doc: rowDoc } of validRows) {

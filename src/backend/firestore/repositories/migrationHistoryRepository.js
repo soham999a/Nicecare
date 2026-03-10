@@ -17,6 +17,7 @@ import {
   serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '../../../config/firebase';
+import { COLLECTIONS } from '../collections';
 import { deleteStore } from './storesRepository';
 import { deleteProduct } from './productsRepository';
 import { deleteEmployee } from './employeesRepository';
@@ -135,7 +136,7 @@ export async function revokeMigration(migrationId, ownerUid) {
   const customerIds = createdDocIds.customers ?? [];
   for (const id of customerIds) {
     try {
-      await deleteDoc(doc(db, 'customers', id));
+      await deleteDoc(doc(db, COLLECTIONS.EXTERNAL_CUSTOMER_RECORDS, id));
       deleted.customers++;
     } catch (e) {
       console.warn('Failed to delete customer', id, e);

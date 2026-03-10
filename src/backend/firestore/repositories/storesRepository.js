@@ -16,7 +16,7 @@ import { COLLECTIONS } from '../collections';
 
 export async function getStoresOnce(ownerUid) {
   const q = query(
-    collection(db, 'stores'),
+    collection(db, COLLECTIONS.BUSINESS_STORE_LOCATIONS),
     where('ownerUid', '==', ownerUid),
     orderBy('createdAt', 'desc')
   );
