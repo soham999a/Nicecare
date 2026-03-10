@@ -73,7 +73,7 @@ export function useSales(storeId = null, dateRange = null) {
     });
 
     return () => unsubscribe();
-  }, [currentUser, userProfile, storeId, startTime, endTime]);
+  }, [currentUser, userProfile, storeId, startTime, endTime, dateRange]);
 
   async function createSale(saleData) {
     if (!currentUser) throw new Error('Not authenticated');

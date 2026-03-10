@@ -13,7 +13,6 @@ import {
 import { db } from '../../config/firebase';
 import { addStore } from '../../backend/firestore/repositories/storesRepository';
 import { addProduct } from '../../backend/firestore/repositories/productsRepository';
-import { getEntitySpec } from './migrationRegistry';
 
 const BATCH_SIZE = 500; // Firestore batch limit is 500
 
@@ -40,7 +39,6 @@ function resolveStoreId(stores, storeIdOrName) {
  * @param {{ id: string; name: string }[]} [stores]
  */
 function prepareDoc(doc, entityId, ownerUid, stores = []) {
-  const spec = getEntitySpec(entityId);
   const augmented = { ...doc, ownerUid };
 
   if (entityId === 'stores') {

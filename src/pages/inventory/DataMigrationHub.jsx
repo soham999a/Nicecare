@@ -331,7 +331,7 @@ export default function DataMigrationHub() {
     } finally {
       setImporting(false);
     }
-  }, [ownerUid, sheets, sheetToEntity, workbookValidation, stores, wbFileName, refreshMigrationHistory]);
+  }, [ownerUid, sheets, sheetToEntity, workbookValidation, wbFileName, refreshMigrationHistory]);
 
   const handleRevokeLast = useCallback(async () => {
     if (!lastRevokable || !ownerUid) return;
