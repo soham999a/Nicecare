@@ -1,9 +1,9 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useInventoryAuth } from '../../context/InventoryAuthContext';
+import { useStores } from '../../hooks/useStores';
 import { useEnhancedDashboard } from '../../hooks/useEnhancedDashboard';
 
-// Dashboard components
 import RevenueChart from '../../components/dashboard/charts/RevenueChart';
 import PerformanceChart from '../../components/dashboard/charts/PerformanceChart';
 import RepairTypeChart from '../../components/dashboard/charts/RepairTypeChart';
@@ -11,6 +11,7 @@ import StoreMap from '../../components/dashboard/StoreMap';
 import EmployeeRanking from '../../components/dashboard/EmployeeRanking';
 import RepairPipeline from '../../components/dashboard/RepairPipeline';
 import ActionItems from '../../components/dashboard/ActionItems';
+import StoreCommandTable from '../../components/dashboard/StoreCommandTable';
 import {
   RevenueKPICard,
   RepairsKPICard,
@@ -18,340 +19,340 @@ import {
   RepairKPICard,
 } from '../../components/dashboard/KPICard';
 
+const DATE_PRESETS = [
+  { id: 'today', label: 'Today' },
+  { id: '7d', label: 'Last 7d' },
+  { id: '30d', label: 'Last 30d' },
+  { id: 'month', label: 'This Month' },
+];
+
+const resolveDateRange = (preset) => {
+  const now = new Date();
+  const start = new Date(now);
+  const end = new Date(now);
+  end.setHours(23, 59, 59, 999);
+
+  if (preset === 'today') {
+    start.setHours(0, 0, 0, 0);
+    return { start, end };
+  }
+
+  if (preset === '7d') {
+    start.setDate(now.getDate() - 6);
+    start.setHours(0, 0, 0, 0);
+    return { start, end };
+  }
+
+  if (preset === 'month') {
+    start.setDate(1);
+    start.setHours(0, 0, 0, 0);
+    return { start, end };
+  }
+
+  start.setDate(now.getDate() - 29);
+  start.setHours(0, 0, 0, 0);
+  return { start, end };
+};
+
+const LoadingSkeleton = () => (
+  <div className="min-h-screen bg-slate-50 dark:bg-[#0a0f1a]">
+    <div className="h-52 bg-gradient-to-r from-[#0f1f3d] to-[#1a56db] animate-pulse" />
+    <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-5">
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <div key={i} className="h-28 rounded-xl bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 animate-pulse" />
+        ))}
+      </div>
+      <div className="h-[540px] rounded-xl bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 animate-pulse" />
+    </div>
+  </div>
+);
+
+const SectionLabel = ({ children }) => (
+  <p className="text-xs font-bold text-slate-400 dark:text-gray-500 uppercase tracking-widest mb-3">
+    {children}
+  </p>
+);
+
+const DataFreshness = ({ dataHealth }) => {
+  const latest = Math.max(
+    ...Object.values(dataHealth?.sourceTimestamps || {}).map((v) => v || 0),
+    0
+  );
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 shadow-sm p-4">
+      <div className="flex items-center justify-between gap-3 mb-3">
+        <p className="text-sm font-semibold text-slate-800 dark:text-white">Data Trust</p>
+        <span className="text-xs text-slate-500 dark:text-gray-400">
+          {latest ? `Latest update ${new Date(latest).toLocaleTimeString()}` : 'No updates yet'}
+        </span>
+      </div>
+      {dataHealth?.freshnessWarnings?.length ? (
+        <div className="space-y-2">
+          {dataHealth.freshnessWarnings.map((warning) => (
+            <p key={warning} className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded">
+              {warning}
+            </p>
+          ))}
+        </div>
+      ) : (
+        <p className="text-xs text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 rounded">
+          All dashboard sources are streaming live.
+        </p>
+      )}
+    </div>
+  );
+};
+
 export default function MasterDashboard() {
   const { userProfile } = useInventoryAuth();
   const isMaster = userProfile?.role === 'master';
   const isManager = userProfile?.role === 'manager';
 
-  if (!isMaster && !isManager) {
-    return <Navigate to="/inventory/pos" replace />;
-  }
-
-  return <EnterpriseDashboard userProfile={userProfile} isMaster={isMaster} isManager={isManager} />;
+  if (!isMaster && !isManager) return <Navigate to="/inventory/pos" replace />;
+  return <EnterpriseDashboard userProfile={userProfile} isMaster={isMaster} />;
 }
 
-// ---------- Skeleton loading ----------
-const LoadingSkeleton = () => (
-  <div className="min-h-screen bg-slate-50 dark:bg-[#0a0f1a]">
-    <div className="h-52 bg-gradient-to-r from-[#0f1f3d] to-[#1a56db] animate-pulse" />
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {[1, 2, 3, 4].map(i => (
-          <div key={i} className="h-32 rounded-xl bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 animate-pulse" />
-        ))}
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {[1, 2].map(i => (
-          <div key={i} className="h-80 rounded-xl bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 animate-pulse" />
-        ))}
-      </div>
-    </div>
-  </div>
-);
+function EnterpriseDashboard({ userProfile, isMaster }) {
+  const [datePreset, setDatePreset] = useState('30d');
+  const [selectedStoreId, setSelectedStoreId] = useState('all');
+  const [compareMode, setCompareMode] = useState('vs-yesterday');
+  const { stores: allStores } = useStores();
 
-// ---------- Section header ----------
-const SectionLabel = ({ children }) => (
-  <p className="text-xs font-bold text-slate-400 dark:text-gray-500 uppercase tracking-widest mb-4">
-    {children}
-  </p>
-);
+  const dateRange = useMemo(() => resolveDateRange(datePreset), [datePreset]);
+  const effectiveStoreId = selectedStoreId === 'all' ? null : selectedStoreId;
 
-// ---------- Operational status badge ----------
-const OperationalStatus = ({ alerts }) => {
-  const hasCritical = alerts.some(a => a.type === 'critical');
-  const hasWarning = alerts.some(a => a.type === 'warning');
-
-  if (hasCritical)
-    return (
-      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500/20 text-red-200 text-xs font-semibold border border-red-400/30">
-        <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse inline-block" />
-        {alerts.filter(a => a.type === 'critical').length} Critical Alert{alerts.filter(a => a.type === 'critical').length > 1 ? 's' : ''}
-      </span>
-    );
-  if (hasWarning)
-    return (
-      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/20 text-amber-200 text-xs font-semibold border border-amber-400/30">
-        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse inline-block" />
-        Attention Needed
-      </span>
-    );
-  return (
-    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-200 text-xs font-semibold border border-emerald-400/30">
-      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
-      All Stores Operational
-    </span>
-  );
-};
-
-// ---------- Main dashboard ----------
-function EnterpriseDashboard({ userProfile, isMaster, isManager }) {
   const {
     stores,
+    employees,
     summary,
+    ownerPulse,
     chartData,
     alerts,
+    kpis,
     loading,
     lastRefresh,
     formatCurrency,
-  } = useEnhancedDashboard();
+    dataHealth,
+    compareSnapshot,
+  } = useEnhancedDashboard({
+    selectedStoreId: effectiveStoreId,
+    dateRange,
+    compareMode,
+  });
 
-  // Derive 7-day sparkline data (stable — no Math.random in render)
-  const revenueSparkline = useMemo(
-    () => chartData.revenue?.slice(-7) ?? [],
-    [chartData.revenue]
-  );
+  const storeCommandRows = useMemo(() => {
+    const inventoryByStore = (kpis?.inventory?.stockAlerts || []).reduce((acc, item) => {
+      acc[item.storeId] = (acc[item.storeId] || 0) + 1;
+      return acc;
+    }, {});
 
-  // Stable per-store data derived without Math.random
-  const storeMetrics = useMemo(() => {
-    return stores.map((store, i) => ({
-      id: store.id,
-      name: store.name,
-      criticalAlerts: ((store.id?.charCodeAt(0) ?? i + 65) % 4) + 1,
-      activeRepairs: ((store.id?.charCodeAt(1) ?? i + 70) % 8) + 2,
-    }));
-  }, [stores]);
+    const managerByStore = employees.reduce((acc, employee) => {
+      if (employee.role === 'manager' && employee.assignedStoreId) {
+        acc[employee.assignedStoreId] = employee.displayName || employee.name || 'Manager';
+      }
+      return acc;
+    }, {});
+
+    return (chartData.performance || [])
+      .map((store) => ({
+        ...store,
+        lowStockCount: inventoryByStore[store.storeId] || 0,
+        managerName: managerByStore[store.storeId] || '',
+      }))
+      .sort((a, b) => {
+        const riskScoreA = a.staleRepairs + a.lowStockCount;
+        const riskScoreB = b.staleRepairs + b.lowStockCount;
+        if (riskScoreB !== riskScoreA) return riskScoreB - riskScoreA;
+        return b.revenue - a.revenue;
+      });
+  }, [chartData.performance, employees, kpis]);
+
+  const revenueSparkline = useMemo(() => chartData.revenue?.slice(-7) ?? [], [chartData.revenue]);
 
   if (loading) return <LoadingSkeleton />;
 
-  const now = new Date();
+  const greetingHour = new Date().getHours();
   const greeting =
-    now.getHours() < 12 ? 'Good morning' : now.getHours() < 17 ? 'Good afternoon' : 'Good evening';
+    greetingHour < 12 ? 'Good morning' : greetingHour < 17 ? 'Good afternoon' : 'Good evening';
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#0a0f1a]">
-
-      {/* ── Header ── */}
       <div className="bg-gradient-to-br from-[#0f1f3d] via-[#0d2d6b] to-[#1a56db]">
         <div className="px-4 sm:px-6 lg:px-8 py-8">
-          <div className="max-w-7xl mx-auto">
-            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
-
-              {/* Left: identity */}
+          <div className="max-w-[1500px] mx-auto">
+            <div className="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-6">
               <div className="text-white">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="flex items-center gap-3">
-                    <span className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-white/10 border border-white/20">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-                        <rect x="3" y="3" width="7" height="7" rx="1" />
-                        <rect x="14" y="3" width="7" height="7" rx="1" />
-                        <rect x="3" y="14" width="7" height="7" rx="1" />
-                        <rect x="14" y="14" width="7" height="7" rx="1" />
-                      </svg>
-                    </span>
-                    <span className="text-xs font-semibold text-blue-200 uppercase tracking-widest">
-                      Operations Command Center
-                    </span>
-                  </div>
-                </div>
-
+                <p className="text-xs font-semibold text-blue-200 uppercase tracking-widest mb-2">
+                  Owner Dashboard Cockpit
+                </p>
                 <h1 className="text-3xl lg:text-4xl font-bold tracking-tight">
-                  {greeting},{' '}
-                  {userProfile?.displayName?.split(' ')[0] ||
-                    (isMaster ? 'Owner' : 'Manager')}
+                  {greeting}, {userProfile?.displayName?.split(' ')[0] || 'Owner'}
                 </h1>
+                <p className="text-sm text-blue-200 mt-2">
+                  Balanced view of profitability, operations, inventory, and team execution.
+                </p>
+              </div>
 
-                <div className="flex flex-wrap items-center gap-3 mt-3">
-                  <OperationalStatus alerts={alerts} />
-                  {isManager && userProfile?.assignedStoreName && (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-blue-100 text-xs font-semibold border border-white/15">
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                        <polyline points="9 22 9 12 15 12 15 22" />
-                      </svg>
-                      {userProfile.assignedStoreName}
-                    </span>
-                  )}
-                  <span className="text-xs text-blue-300">
-                    Refreshed {lastRefresh
-                      ? new Date(lastRefresh).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                      : '--:--'}
-                  </span>
+              <div className="flex flex-wrap items-center gap-2">
+                <select
+                  value={selectedStoreId}
+                  onChange={(e) => setSelectedStoreId(e.target.value)}
+                  className="px-3 py-2 rounded-lg text-sm bg-white/10 text-white border border-white/20"
+                >
+                  <option value="all" className="text-slate-800">All Stores</option>
+                  {allStores.map((store) => (
+                    <option key={store.id} value={store.id} className="text-slate-800">
+                      {store.name}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  value={datePreset}
+                  onChange={(e) => setDatePreset(e.target.value)}
+                  className="px-3 py-2 rounded-lg text-sm bg-white/10 text-white border border-white/20"
+                >
+                  {DATE_PRESETS.map((preset) => (
+                    <option key={preset.id} value={preset.id} className="text-slate-800">
+                      {preset.label}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  value={compareMode}
+                  onChange={(e) => setCompareMode(e.target.value)}
+                  className="px-3 py-2 rounded-lg text-sm bg-white/10 text-white border border-white/20"
+                >
+                  <option value="vs-yesterday" className="text-slate-800">Compare: Yesterday</option>
+                  <option value="vs-last-week" className="text-slate-800">Compare: Last Week</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 text-white mt-6">
+              {[
+                {
+                  label: "Today's Revenue",
+                  value: formatCurrency(ownerPulse?.todayRevenue || 0),
+                  sub: `${(summary?.revenue?.growth || 0).toFixed(1)}% vs yesterday`,
+                },
+                {
+                  label: 'Gross Profit',
+                  value: formatCurrency(ownerPulse?.grossProfit || 0),
+                  sub: `${(ownerPulse?.grossMarginPct || 0).toFixed(1)}% margin`,
+                },
+                {
+                  label: 'Open Queue',
+                  value: ownerPulse?.openRepairQueue || 0,
+                  sub: `${summary?.repairs?.staleTickets || 0} stale`,
+                },
+                {
+                  label: 'Critical Inventory',
+                  value: ownerPulse?.criticalInventory || 0,
+                  sub: `${summary?.inventory?.lowStock || 0} low stock`,
+                },
+                {
+                  label: 'Cash At Risk',
+                  value: formatCurrency(ownerPulse?.cashAtRisk || 0),
+                  sub: `${formatCurrency(summary?.cashflow?.pendingPickupValue || 0)} pending pickup`,
+                },
+                {
+                  label: 'Compare Snapshot',
+                  value: compareSnapshot?.label || '--',
+                  sub: compareMode === 'vs-last-week'
+                    ? formatCurrency(compareSnapshot?.value || 0)
+                    : `${(compareSnapshot?.value || 0).toFixed(1)}%`,
+                },
+              ].map((card) => (
+                <div
+                  key={card.label}
+                  className="bg-white/10 backdrop-blur-sm border border-white/15 rounded-xl px-4 py-3"
+                >
+                  <p className="text-lg font-bold tabular-nums">{card.value}</p>
+                  <p className="text-xs text-blue-100 mt-0.5 font-medium">{card.label}</p>
+                  <p className="text-xs text-blue-200 mt-0.5">{card.sub}</p>
                 </div>
-              </div>
-
-              {/* Right: 4 quick stats */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 text-white lg:min-w-[480px]">
-                {[
-                  {
-                    label: "Today's Revenue",
-                    value: formatCurrency(summary?.revenue?.today || 0),
-                    sub: `${summary?.revenue?.growth >= 0 ? '+' : ''}${(summary?.revenue?.growth || 0).toFixed(1)}% vs yesterday`,
-                    subColor: (summary?.revenue?.growth || 0) >= 0 ? 'text-emerald-300' : 'text-red-300',
-                  },
-                  {
-                    label: 'Active Stores',
-                    value: `${summary?.operations?.activeStores ?? 0} / ${summary?.operations?.totalStores ?? 0}`,
-                    sub: 'Locations open today',
-                    subColor: 'text-blue-200',
-                  },
-                  {
-                    label: 'Repair Queue',
-                    value: summary?.repairs?.queueLength ?? 0,
-                    sub: summary?.repairs?.staleTickets > 0
-                      ? `${summary.repairs.staleTickets} stale`
-                      : 'All current',
-                    subColor: summary?.repairs?.staleTickets > 0 ? 'text-amber-300' : 'text-emerald-300',
-                  },
-                  {
-                    label: 'Critical Alerts',
-                    value: summary?.inventory?.criticalStock ?? 0,
-                    sub: 'Parts below reorder point',
-                    subColor: summary?.inventory?.criticalStock > 0 ? 'text-red-300' : 'text-emerald-300',
-                  },
-                ].map((stat, i) => (
-                  <div
-                    key={i}
-                    className="bg-white/10 backdrop-blur-sm border border-white/15 rounded-xl px-4 py-3 text-center hover:bg-white/15 transition-colors"
-                  >
-                    <div className="text-xl font-bold tabular-nums">{stat.value}</div>
-                    <div className="text-xs text-blue-100 mt-0.5 font-medium">{stat.label}</div>
-                    <div className={`text-xs mt-0.5 ${stat.subColor}`}>{stat.sub}</div>
-                  </div>
-                ))}
-              </div>
+              ))}
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── Body ── */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
+      <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="lg:col-span-3 space-y-6">
+            <SectionLabel>Intervention Queue</SectionLabel>
+            <ActionItems alerts={alerts} />
+            <DataFreshness dataHealth={dataHealth} />
+          </div>
 
-        {/* KPI Cards */}
-        <div>
-          <SectionLabel>Key Performance Indicators</SectionLabel>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            <RevenueKPICard
-              todayRevenue={summary?.revenue?.today || 0}
-              growth={summary?.revenue?.growth || 0}
-              sparklineData={revenueSparkline}
-            />
-            <RepairsKPICard
-              repairsCount={summary?.repairs?.totalTickets || 0}
-              completionRate={summary?.repairs?.completionRate || 0}
-              sparklineData={revenueSparkline}
-            />
-            <InventoryKPICard
-              criticalCount={summary?.inventory?.criticalStock || 0}
-              lowStockCount={summary?.inventory?.lowStock || 0}
-            />
-            <RepairKPICard
-              queueLength={summary?.repairs?.queueLength || 0}
-              staleCount={summary?.repairs?.staleTickets || 0}
-              sparklineData={revenueSparkline}
-            />
+          <div className="lg:col-span-6 space-y-6">
+            <SectionLabel>Business Health</SectionLabel>
+            <RevenueChart data={chartData.revenue} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <RevenueKPICard
+                todayRevenue={summary?.revenue?.today || 0}
+                growth={summary?.revenue?.growth || 0}
+                sparklineData={revenueSparkline}
+              />
+              <RepairsKPICard
+                repairsCount={summary?.repairs?.totalTickets || 0}
+                completionRate={summary?.repairs?.completionRate || 0}
+                sparklineData={revenueSparkline}
+              />
+              <InventoryKPICard
+                criticalCount={summary?.inventory?.criticalStock || 0}
+                lowStockCount={summary?.inventory?.lowStock || 0}
+              />
+              <RepairKPICard
+                queueLength={summary?.repairs?.queueLength || 0}
+                staleCount={summary?.repairs?.staleTickets || 0}
+                sparklineData={revenueSparkline}
+              />
+            </div>
+          </div>
+
+          <div className="lg:col-span-3 space-y-6">
+            <SectionLabel>Store Command</SectionLabel>
+            <StoreCommandTable rows={storeCommandRows} formatCurrency={formatCurrency} />
           </div>
         </div>
 
-        {/* Repair Pipeline */}
-        <div>
-          <SectionLabel>Repair Workflow Pipeline</SectionLabel>
-          <RepairPipeline
-            stores={stores}
-            queueLength={summary?.repairs?.queueLength || 0}
-          />
-        </div>
-
-        {/* Charts row */}
-        <div>
-          <SectionLabel>Revenue & Store Performance</SectionLabel>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <RevenueChart data={chartData.revenue} />
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+          <div className="xl:col-span-4">
             <PerformanceChart data={chartData.performance} />
           </div>
-        </div>
-
-        {/* Store Map */}
-        <div>
-          <SectionLabel>Store Locations</SectionLabel>
-          <StoreMap stores={stores} performanceData={chartData.performance} />
-        </div>
-
-        {/* Employee Rankings + Action Items + Repair Type */}
-        <div>
-          <SectionLabel>Team Performance & Operations</SectionLabel>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2">
-              <EmployeeRanking employees={chartData.employeePerformance ?? []} />
-            </div>
-            <div className="flex flex-col gap-6">
-              <ActionItems alerts={alerts} summary={summary} />
-            </div>
+          <div className="xl:col-span-4">
+            <RepairPipeline
+              stores={stores}
+              queueLength={summary?.repairs?.queueLength || 0}
+              staleTickets={summary?.repairs?.staleTickets || 0}
+              performanceData={chartData.performance ?? []}
+            />
           </div>
-        </div>
-
-        {/* Repair type breakdown */}
-        <div>
-          <SectionLabel>Repair Type Analysis</SectionLabel>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="xl:col-span-4">
             <RepairTypeChart data={chartData.repairTypes ?? []} />
-
-            {/* Parts risk by store */}
-            <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 shadow-sm">
-              <div className="p-6 border-b border-slate-200 dark:border-gray-700">
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                  Parts Risk by Store
-                </h3>
-                <p className="text-sm text-slate-500 dark:text-gray-400 mt-0.5">
-                  Inventory alerts per location
-                </p>
-              </div>
-              <div className="p-6">
-                {storeMetrics.length === 0 ? (
-                  <p className="text-sm text-slate-500 dark:text-gray-400 text-center py-6">
-                    No stores found
-                  </p>
-                ) : (
-                  <div className="space-y-3">
-                    {storeMetrics.slice(0, 6).map(store => (
-                      <div
-                        key={store.id}
-                        className="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-gray-700/50 hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors"
-                      >
-                        <div>
-                          <p className="text-sm font-semibold text-slate-800 dark:text-white">
-                            {store.name}
-                          </p>
-                          <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">
-                            {store.activeRepairs} active repairs
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="text-right">
-                            <p
-                              className={`text-base font-bold tabular-nums ${
-                                store.criticalAlerts > 2
-                                  ? 'text-red-600 dark:text-red-400'
-                                  : store.criticalAlerts > 0
-                                  ? 'text-amber-600 dark:text-amber-400'
-                                  : 'text-emerald-600 dark:text-emerald-400'
-                              }`}
-                            >
-                              {store.criticalAlerts}
-                            </p>
-                            <p className="text-xs text-slate-400 dark:text-gray-500">
-                              critical SKUs
-                            </p>
-                          </div>
-                          <div
-                            className={`w-2 h-2 rounded-full ${
-                              store.criticalAlerts > 2
-                                ? 'bg-red-500'
-                                : store.criticalAlerts > 0
-                                ? 'bg-amber-500'
-                                : 'bg-emerald-500'
-                            }`}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
           </div>
         </div>
 
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+          <div className="xl:col-span-7">
+            <EmployeeRanking employees={chartData.employeePerformance ?? []} />
+          </div>
+          <div className="xl:col-span-5">
+            <StoreMap stores={stores} performanceData={chartData.performance ?? []} />
+          </div>
+        </div>
+      </div>
+
+      <div className="px-4 sm:px-6 lg:px-8 pb-6">
+        <div className="max-w-[1500px] mx-auto text-xs text-slate-500 dark:text-gray-400">
+          Last refresh: {lastRefresh ? new Date(lastRefresh).toLocaleTimeString() : 'waiting for first interval'}.
+          {isMaster ? ' Master scope view enabled.' : ' Store-scoped manager view enabled.'}
+        </div>
       </div>
     </div>
   );

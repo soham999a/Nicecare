@@ -10,17 +10,31 @@ export function useStores() {
   const { currentUser, userProfile } = useInventoryAuth();
 
   useEffect(() => {
-    if (!currentUser || userProfile?.role !== 'master') {
+    if (!currentUser || !userProfile || !['master', 'manager'].includes(userProfile.role)) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- guard clause reset
       setStores([]);
       setLoading(false);
       return;
     }
 
+    const ownerUid =
+      userProfile.role === 'master'
+        ? currentUser.uid
+        : (userProfile.ownerUid || userProfile.masterUid);
+
+    if (!ownerUid) {
+      setStores([]);
+      setLoading(false);
+      return;
+    }
+
     const unsubscribe = storesRepo.subscribeStores(
-      currentUser.uid,
+      ownerUid,
       (storeData) => {
-        setStores(storeData);
+        const scopedData = userProfile.role === 'manager' && userProfile.assignedStoreId
+          ? storeData.filter((store) => store.id === userProfile.assignedStoreId)
+          : storeData;
+        setStores(scopedData);
         setLoading(false);
         setError(null);
       },

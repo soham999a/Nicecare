@@ -55,7 +55,7 @@ const ICON_MAP = {
   pickup: <CheckIcon />,
 };
 
-const ActionItems = ({ alerts = [], summary }) => {
+const ActionItems = ({ alerts = [] }) => {
   const items = useMemo(() => {
     const list = alerts.map(alert => ({
       id: alert.id,
@@ -66,22 +66,8 @@ const ActionItems = ({ alerts = [], summary }) => {
       action: alert.action,
       href: alert.href,
     }));
-
-    const readyCount = Math.max(0, Math.floor((summary?.repairs?.queueLength || 0) * 0.12));
-    if (readyCount > 0) {
-      list.push({
-        id: 'ready-pickup',
-        severity: 'low',
-        iconKey: 'pickup',
-        label: `${readyCount} device${readyCount !== 1 ? 's' : ''} ready for pickup`,
-        detail: 'Notify customers to boost satisfaction score',
-        action: 'Notify',
-        href: '/inventory/service-tickets',
-      });
-    }
-
     return list.slice(0, 6);
-  }, [alerts, summary]);
+  }, [alerts]);
 
   const criticalCount = items.filter(i => i.severity === 'high').length;
 

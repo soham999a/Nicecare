@@ -48,8 +48,11 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 const PerformanceChart = ({ data, className = '' }) => {
+  const chartData = Array.isArray(data) ? data : [];
+
   // Color coding based on performance
   const getBarColor = (value, maxValue) => {
+    if (maxValue <= 0) return '#3b82f6';
     const ratio = value / maxValue;
     if (ratio >= 0.8) return '#10b981'; // Green - Excellent
     if (ratio >= 0.6) return '#3b82f6'; // Blue - Good
@@ -57,7 +60,7 @@ const PerformanceChart = ({ data, className = '' }) => {
     return '#ef4444'; // Red - Poor
   };
 
-  const maxRevenue = Math.max(...data.map(item => item.revenue));
+  const maxRevenue = Math.max(...chartData.map(item => item.revenue), 0);
 
   return (
     <div
@@ -93,35 +96,43 @@ const PerformanceChart = ({ data, className = '' }) => {
       </div>
 
       <div className="p-6">
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" className="dark:stroke-gray-700" />
-            <XAxis 
-              dataKey="storeName" 
-              stroke="#64748b"
-              className="dark:stroke-gray-400"
-              fontSize={12}
-              angle={-45}
-              textAnchor="end"
-              height={80}
-            />
-            <YAxis 
-              tickFormatter={formatCurrency}
-              stroke="#64748b"
-              className="dark:stroke-gray-400"
-              fontSize={12}
-            />
-            <Tooltip content={<CustomTooltip />} />
-            <Bar dataKey="revenue" radius={[4, 4, 0, 0]}>
-              {data.map((entry, index) => (
-                <Cell 
-                  key={`cell-${index}`} 
-                  fill={getBarColor(entry.revenue, maxRevenue)}
-                />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+        {chartData.length > 0 ? (
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" className="dark:stroke-gray-700" />
+              <XAxis
+                dataKey="storeName"
+                stroke="#64748b"
+                className="dark:stroke-gray-400"
+                fontSize={12}
+                angle={-45}
+                textAnchor="end"
+                height={80}
+              />
+              <YAxis
+                tickFormatter={formatCurrency}
+                stroke="#64748b"
+                className="dark:stroke-gray-400"
+                fontSize={12}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Bar dataKey="revenue" radius={[4, 4, 0, 0]}>
+                {chartData.map((entry, index) => (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={getBarColor(entry.revenue, maxRevenue)}
+                  />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="h-72 flex items-center justify-center text-center">
+            <p className="text-sm text-slate-500 dark:text-gray-400">
+              No store revenue data available yet.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

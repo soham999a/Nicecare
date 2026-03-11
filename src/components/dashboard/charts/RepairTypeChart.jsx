@@ -8,14 +8,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 
-const FALLBACK_DATA = [
-  { name: 'Screen Repair', value: 38, count: 38, color: '#3b82f6' },
-  { name: 'Battery Replace', value: 25, count: 25, color: '#10b981' },
-  { name: 'Water Damage', value: 14, count: 14, color: '#f59e0b' },
-  { name: 'Board Repair', value: 11, count: 11, color: '#8b5cf6' },
-  { name: 'Charging Port', value: 8, count: 8, color: '#06b6d4' },
-  { name: 'Other', value: 4, count: 4, color: '#94a3b8' },
-];
+const COLOR_PALETTE = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#06b6d4', '#94a3b8'];
 
 const CustomTooltip = ({ active, payload }) => {
   if (!active || !payload?.length) return null;
@@ -32,7 +25,7 @@ const CustomTooltip = ({ active, payload }) => {
 
 const RepairTypeChart = ({ data = [] }) => {
   const hasData = Array.isArray(data) && data.length > 0;
-  const chartData = hasData ? data : FALLBACK_DATA;
+  const chartData = hasData ? data : [];
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 shadow-sm">
@@ -58,7 +51,7 @@ const RepairTypeChart = ({ data = [] }) => {
                 dataKey="value"
               >
                 {chartData.map((entry, i) => (
-                  <Cell key={entry.name || i} fill={entry.color || FALLBACK_DATA[i % FALLBACK_DATA.length].color} />
+                  <Cell key={entry.name || i} fill={entry.color || COLOR_PALETTE[i % COLOR_PALETTE.length]} />
                 ))}
               </Pie>
               <Tooltip content={<CustomTooltip />} />

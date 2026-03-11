@@ -15,8 +15,6 @@ const PERFORMANCE_BADGES = [
   { min: 0, label: 'Needs Improvement', color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' },
 ];
 
-const RANK_CHANGE = [null, 2, -1, 0, 1, -2]; // simulated rank changes per position
-
 const getPerformanceBadge = (performance) =>
   PERFORMANCE_BADGES.find(b => performance >= b.min) ?? PERFORMANCE_BADGES[PERFORMANCE_BADGES.length - 1];
 
@@ -54,27 +52,6 @@ const RankBadge = ({ index }) => {
   );
 };
 
-const RankChange = ({ delta }) => {
-  if (delta === null || delta === 0) return null;
-  if (delta > 0)
-    return (
-      <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5">
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-          <polyline points="18 15 12 9 6 15" />
-        </svg>
-        {delta}
-      </span>
-    );
-  return (
-    <span className="text-xs font-semibold text-red-500 dark:text-red-400 flex items-center gap-0.5">
-      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-        <polyline points="6 9 12 15 18 9" />
-      </svg>
-      {Math.abs(delta)}
-    </span>
-  );
-};
-
 const EmployeeRanking = ({ employees = [], className = '' }) => {
   const topEmployee = employees[0];
 
@@ -93,13 +70,7 @@ const EmployeeRanking = ({ employees = [], className = '' }) => {
               Ranked by revenue across all locations
             </p>
           </div>
-          <div className="flex items-center gap-1 text-xs text-slate-500 dark:text-gray-400">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
-              <polyline points="17 6 23 6 23 12" />
-            </svg>
-            vs last week
-          </div>
+          <span className="text-xs text-slate-500 dark:text-gray-400">Current period</span>
         </div>
       </div>
 
@@ -141,7 +112,6 @@ const EmployeeRanking = ({ employees = [], className = '' }) => {
         <div className="space-y-3">
           {employees.map((employee, index) => {
             const badge = getPerformanceBadge(employee.performance);
-            const rankDelta = RANK_CHANGE[index] ?? null;
 
             return (
               <div
@@ -149,9 +119,8 @@ const EmployeeRanking = ({ employees = [], className = '' }) => {
                 className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-gray-700/50 hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors"
               >
                 {/* Rank */}
-                <div className="flex-shrink-0 flex flex-col items-center gap-0.5">
+                <div className="flex-shrink-0">
                   <RankBadge index={index} />
-                  <RankChange delta={rankDelta} />
                 </div>
 
                 {/* Avatar */}
