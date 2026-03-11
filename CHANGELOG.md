@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
-- Restored Manager access to products, sales reports, and CRM by aligning Firestore rules with Manager profiles stored in `inventoryUsers`
+- Added 'Manager' role and restored 'Manager' access to products, sales reports, and CRM by aligning Firestore rules with Manager profiles stored in `inventoryUsers`
 - Added consistent Manager permission fallback across protected inventory collections to prevent store-scoped access regressions
 
 ## [1.0.2] - 2026-03-11
