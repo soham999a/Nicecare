@@ -30,9 +30,9 @@ jobs:
     if: ${{ github.base_ref == 'develop' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: "20"
           cache: "npm"
@@ -57,7 +57,7 @@ jobs:
     if: ${{ github.base_ref == 'main' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - name: Fetch main branch for comparison
@@ -92,7 +92,7 @@ jobs:
             echo "::notice::No CHANGELOG.md found. Consider adding one to track release notes."
           fi
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: "20"
           cache: "npm"
