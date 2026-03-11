@@ -24,6 +24,15 @@ export default function StoreManagement() {
     }
     return counts;
   }, [employees]);
+  const managerNameByStore = useMemo(() => {
+    const managers = {};
+    for (const emp of employees) {
+      if (emp.role === 'manager' && emp.assignedStoreId) {
+        managers[emp.assignedStoreId] = emp.displayName || emp.name || '';
+      }
+    }
+    return managers;
+  }, [employees]);
   const [showForm, setShowForm] = useState(false);
   const [editingStore, setEditingStore] = useState(null);
   const [formData, setFormData] = useState({
@@ -31,7 +40,6 @@ export default function StoreManagement() {
     address: '',
     phone: '',
     email: '',
-    manager: '',
   });
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
@@ -43,7 +51,6 @@ export default function StoreManagement() {
       address: '',
       phone: '',
       email: '',
-      manager: '',
     });
     setEditingStore(null);
     setShowForm(false);
@@ -56,7 +63,6 @@ export default function StoreManagement() {
       address: store.address || '',
       phone: store.phone || '',
       email: store.email || '',
-      manager: store.manager || '',
     });
     setEditingStore(store);
     setShowForm(true);
@@ -215,13 +221,14 @@ export default function StoreManagement() {
 
               <div className="space-y-1">
                 <label className="block text-sm font-medium text-slate-700 dark:text-gray-300">Store Manager</label>
-                <input
-                  type="text"
-                  className="w-full px-3 py-2.5 border border-slate-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-sm text-slate-900 dark:text-gray-50 placeholder:text-slate-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600"
-                  value={formData.manager}
-                  onChange={(e) => setFormData({ ...formData, manager: e.target.value })}
-                  placeholder="e.g., John Smith"
-                />
+                <div className="w-full px-3 py-2.5 border border-slate-200 dark:border-gray-700 rounded-lg bg-slate-50 dark:bg-gray-900 text-sm text-slate-900 dark:text-gray-50">
+                  {editingStore
+                    ? (managerNameByStore[editingStore.id] || editingStore.manager || 'Unassigned')
+                    : 'Assigned via Employee Management'}
+                </div>
+                <p className="text-xs text-slate-500 dark:text-gray-400">
+                  Manager is synced from employee assignment to avoid data mismatch.
+                </p>
               </div>
             </div>
 
@@ -262,7 +269,7 @@ export default function StoreManagement() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm [&_td]:border [&_td]:border-slate-200 dark:[&_td]:border-gray-700">
               <thead>
                 <tr className="border-b border-slate-100 dark:border-gray-700 bg-slate-50/50 dark:bg-gray-800/50">
                   <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 dark:text-gray-500 uppercase tracking-wider">Store Name</th>
@@ -294,7 +301,7 @@ export default function StoreManagement() {
                       </div>
                     </td>
                     <td className="px-5 py-3">
-                      <span className="text-slate-600 dark:text-gray-300">{store.manager || '-'}</span>
+                      <span className="text-slate-600 dark:text-gray-300">{managerNameByStore[store.id] || store.manager || '-'}</span>
                     </td>
                     <td className="text-center px-5 py-3">
                       <span className="inline-flex items-center justify-center min-w-[28px] px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">{employeeCountByStore[store.id] || 0}</span>

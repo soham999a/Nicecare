@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useInventoryAuth } from '../context/InventoryAuthContext';
 import * as employeesRepo from '../backend/firestore/repositories/employeesRepository';
+import { resolveOwnerUid } from '../utils/inventoryScope';
 
 export function useEmployees() {
   const [employees, setEmployees] = useState([]);
@@ -18,9 +19,7 @@ export function useEmployees() {
     }
 
     const isMaster = userProfile.role === 'master';
-    const ownerUidForTenant = isMaster
-      ? currentUser.uid
-      : (userProfile.ownerUid || userProfile.masterUid);
+    const ownerUidForTenant = resolveOwnerUid(currentUser, userProfile);
 
     const storeIdForManager = isMaster ? null : userProfile.assignedStoreId || null;
 

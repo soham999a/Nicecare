@@ -7,7 +7,7 @@
 const thCls =
   'px-3 py-2 text-left border-b-2 border-slate-200 dark:border-gray-700 bg-slate-100 dark:bg-gray-800 text-slate-900 dark:text-gray-50 text-sm font-semibold';
 const tdCls =
-  'px-3 py-2 border-b border-slate-200 dark:border-gray-700 align-top text-slate-900 dark:text-gray-50 text-sm';
+  'px-3 py-2 border border-slate-200 dark:border-gray-700 align-top text-slate-900 dark:text-gray-50 text-sm';
 
 const FIRESTORE_MAPPING = [
   { frontend: 'StoreManagement.jsx', hook: 'useStores', backend: 'storesRepository.js', api: 'Firestore collection stores (CRUD)' },

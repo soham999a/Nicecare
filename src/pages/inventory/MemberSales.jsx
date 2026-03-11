@@ -70,31 +70,30 @@ export default function MemberSales() {
   myStats.todayCount = myStats.todaySales.length;
 
   return (
-    <main className="flex flex-col gap-5 flex-1 min-h-0">
-      <div className="flex items-start gap-4 mb-2">
-        <div className="flex flex-col gap-1.5">
+    <main className="min-h-screen p-4 md:p-6 lg:p-8 space-y-6 animate-fade-in bg-slate-50 dark:bg-[#0a0f1a]">
+      <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
+        <div>
           <h1 className="text-xl sm:text-2xl md:text-[1.9rem] font-bold tracking-tight text-slate-900 dark:text-gray-50">
             My Sales
           </h1>
-          <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-[0.95rem] text-slate-600 dark:text-gray-400">
-              View your sales history at {userProfile?.assignedStoreName || 'your store'}
-            </p>
-            {userProfile?.assignedStoreName && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-600/10 text-blue-600 dark:text-blue-400 text-xs font-semibold">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                </svg>
-                Store: {userProfile.assignedStoreName}
-              </span>
-            )}
-          </div>
+          <p className="text-sm text-slate-500 dark:text-gray-400 mt-1">
+            View your sales history at {userProfile?.assignedStoreName || 'your store'}
+          </p>
         </div>
+
+        {userProfile?.assignedStoreName && (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-600/10 text-blue-600 dark:text-blue-400 text-xs font-semibold border border-blue-600/20">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+            </svg>
+            Store: {userProfile.assignedStoreName}
+          </span>
+        )}
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div className="bg-gradient-to-br from-blue-600/10 to-sky-500/10 rounded-2xl p-6 border border-blue-600 dark:border-blue-400 flex items-start gap-4 transition-all duration-200 hover:shadow-md">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="bg-gradient-to-br from-blue-600/10 to-sky-500/10 rounded-2xl p-6 border border-blue-200 dark:border-blue-800 flex items-start gap-4 shadow-sm transition-all duration-200 hover:shadow-md">
           <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 bg-blue-600/10 text-blue-600 dark:text-blue-400">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="10" />
@@ -111,7 +110,7 @@ export default function MemberSales() {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-slate-200 dark:border-gray-700 flex items-start gap-4 transition-all duration-200 hover:border-blue-600 dark:hover:border-blue-400 hover:shadow-md">
+        <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-slate-200 dark:border-gray-700 flex items-start gap-4 shadow-sm transition-all duration-200 hover:border-blue-600 dark:hover:border-blue-400 hover:shadow-md">
           <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 bg-emerald-500/10 text-emerald-500">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="12" y1="1" x2="12" y2="23" />
@@ -126,7 +125,7 @@ export default function MemberSales() {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-slate-200 dark:border-gray-700 flex items-start gap-4 transition-all duration-200 hover:border-blue-600 dark:hover:border-blue-400 hover:shadow-md">
+        <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-slate-200 dark:border-gray-700 flex items-start gap-4 shadow-sm transition-all duration-200 hover:border-blue-600 dark:hover:border-blue-400 hover:shadow-md">
           <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 bg-blue-600/10 text-blue-600 dark:text-blue-400">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
@@ -143,7 +142,7 @@ export default function MemberSales() {
       </div>
 
       {/* Sales List */}
-      <div className="rounded-2xl border border-slate-200 dark:border-gray-700 shadow-sm">
+      <div className="rounded-2xl border border-slate-200 dark:border-gray-700 shadow-sm bg-white/90 dark:bg-gray-900">
         <div className="flex items-center justify-between gap-3 flex-wrap px-5 pt-5 mb-4">
           <h2 className="m-0 text-lg font-semibold text-slate-900 dark:text-gray-50">
             Sales History

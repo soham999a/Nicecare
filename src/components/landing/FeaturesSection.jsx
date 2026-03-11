@@ -9,7 +9,7 @@ const features = [
   },
   {
     title: 'Point of Sale (POS)',
-    description: 'Fast checkout with barcode scanning, multiple payment methods, and instant digital receipts.',
+    description: 'Fast checkout with SKU scanning, multiple payment methods, and instant digital receipts.',
     color: '#6366f1',
     icon: ShoppingCart
   },

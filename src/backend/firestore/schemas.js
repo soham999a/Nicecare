@@ -25,7 +25,6 @@ import { COLLECTIONS } from './collections';
  * @property {string} ownerUid
  * @property {string} name
  * @property {string} [sku]
- * @property {string} [barcode]
  * @property {string} [category]
  * @property {string} [description]
  * @property {number} price

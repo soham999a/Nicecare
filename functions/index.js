@@ -20,6 +20,7 @@ import {
   buildSummaryPrompt as buildCustomerSummaryPrompt,
   streamGeminiResponse as streamCustomerGemini,
 } from './customerRag.js';
+import { reconcileInventoryConsistency } from './reconcileConsistencyCore.js';
 
 initializeApp();
 
@@ -315,6 +316,48 @@ export const submitFeedback = onRequest(
     } catch (err) {
       console.error('submitFeedback error:', err);
       res.status(500).json({ error: err.message });
+    }
+  }
+);
+
+// ─── Inventory: Consistency Reconciliation (master only) ─────────────────────
+
+export const inventoryConsistencyReconcile = onRequest(
+  { cors: true, timeoutSeconds: 120, memory: '512MiB' },
+  async (req, res) => {
+    if (req.method !== 'POST') {
+      res.status(405).json({ error: 'Method not allowed' });
+      return;
+    }
+
+    const decoded = await verifyAuth(req, res);
+    if (!decoded) return;
+
+    try {
+      checkRateLimit(decoded.uid);
+    } catch (err) {
+      res.status(429).json({ error: err.message });
+      return;
+    }
+
+    try {
+      const db = getFirestore();
+      const profileRef = db.collection(COLLECTIONS.INVENTORY_INTERNAL_USER_PROFILES).doc(decoded.uid);
+      const profileDoc = await profileRef.get();
+      if (!profileDoc.exists || profileDoc.data()?.role !== 'master') {
+        res.status(403).json({ error: 'Only master accounts can run consistency reconciliation.' });
+        return;
+      }
+
+      const { apply = false } = req.body || {};
+      const result = await reconcileInventoryConsistency(db, {
+        ownerUid: decoded.uid,
+        apply: Boolean(apply),
+      });
+      res.status(200).json(result);
+    } catch (err) {
+      console.error('inventoryConsistencyReconcile error:', err);
+      res.status(500).json({ error: err.message || 'Failed to reconcile consistency' });
     }
   }
 );

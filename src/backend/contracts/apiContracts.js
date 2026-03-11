@@ -53,6 +53,12 @@
  * @property {boolean} success
  */
 
+/**
+ * inventoryConsistencyReconcile
+ * @typedef {Object} InventoryConsistencyRequest
+ * @property {boolean} [apply] - false=dry-run, true=apply reconciliation
+ */
+
 export const API_CONTRACTS = {
   askAboutInventory: { method: 'POST', body: ['question', 'userRole', 'assignedStoreId', 'ownerUidForMember'] },
   inventorySummary: { method: 'POST', body: ['userRole', 'assignedStoreId', 'ownerUidForMember'] },
@@ -60,4 +66,5 @@ export const API_CONTRACTS = {
   askAboutCustomers: { method: 'POST', body: ['question'] },
   customerSummary: { method: 'POST', body: [] },
   submitFeedback: { method: 'POST', body: ['messageId', 'question', 'answer', 'rating', 'comment', 'module'] },
+  inventoryConsistencyReconcile: { method: 'POST', body: ['apply'] },
 };

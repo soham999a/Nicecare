@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useInventoryAuth } from '../context/InventoryAuthContext';
 import * as storesRepo from '../backend/firestore/repositories/storesRepository';
+import { resolveOwnerUid } from '../utils/inventoryScope';
 
 export function useStores() {
   const [stores, setStores] = useState([]);
@@ -17,10 +18,7 @@ export function useStores() {
       return;
     }
 
-    const ownerUid =
-      userProfile.role === 'master'
-        ? currentUser.uid
-        : (userProfile.ownerUid || userProfile.masterUid);
+    const ownerUid = resolveOwnerUid(currentUser, userProfile);
 
     if (!ownerUid) {
       setStores([]);
@@ -28,22 +26,24 @@ export function useStores() {
       return;
     }
 
-    const unsubscribe = storesRepo.subscribeStores(
-      ownerUid,
-      (storeData) => {
-        const scopedData = userProfile.role === 'manager' && userProfile.assignedStoreId
-          ? storeData.filter((store) => store.id === userProfile.assignedStoreId)
-          : storeData;
-        setStores(scopedData);
-        setLoading(false);
-        setError(null);
-      },
-      (err) => {
-        console.error('Error fetching stores:', err);
-        setError('Failed to load stores');
-        setLoading(false);
-      }
-    );
+    const onData = (storeData) => {
+      const scopedData = userProfile.role === 'manager' && userProfile.assignedStoreId
+        ? storeData.filter((store) => store.id === userProfile.assignedStoreId)
+        : storeData;
+      setStores(scopedData);
+      setLoading(false);
+      setError(null);
+    };
+
+    const onError = (err) => {
+      console.error('Error fetching stores:', err);
+      setError('Failed to load stores');
+      setLoading(false);
+    };
+
+    const unsubscribe = userProfile.role === 'manager' && userProfile.assignedStoreId
+      ? storesRepo.subscribeStoreById(userProfile.assignedStoreId, onData, onError)
+      : storesRepo.subscribeStores(ownerUid, onData, onError);
 
     return () => unsubscribe();
   }, [currentUser, userProfile]);

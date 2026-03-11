@@ -14,6 +14,7 @@ import {
 import { db } from '../config/firebase';
 import { useInventoryAuth } from '../context/InventoryAuthContext';
 import { COLLECTIONS } from '../backend/firestore/collections';
+import { resolveOwnerUid, resolveScopedStoreId, isStoreScopedRole } from '../utils/inventoryScope';
 
 /**
  * Store-scoped CRM customers. Pass storeId to filter by store (master only).
@@ -34,11 +35,9 @@ export function useCustomers(storeId = null) {
       return;
     }
 
-    const ownerUid = userProfile.role === 'master'
-      ? currentUser.uid
-      : (userProfile.ownerUid || userProfile.masterUid || currentUser.uid);
+    const ownerUid = resolveOwnerUid(currentUser, userProfile);
     const customersRef = collection(db, COLLECTIONS.EXTERNAL_CUSTOMER_RECORDS);
-    const isStoreScopedUser = userProfile.role === 'member' || userProfile.role === 'manager';
+    const isStoreScopedUser = isStoreScopedRole(userProfile.role);
 
     let q;
 
@@ -97,14 +96,9 @@ export function useCustomers(storeId = null) {
   async function addCustomer(customerData) {
     if (!currentUser || !userProfile) throw new Error('Not authenticated');
 
-    const ownerUid = userProfile.role === 'master'
-      ? currentUser.uid
-      : (userProfile.ownerUid || userProfile.masterUid || currentUser.uid);
-    const resolvedStoreId = customerData.storeId ?? (
-      userProfile.role === 'member' || userProfile.role === 'manager'
-        ? userProfile.assignedStoreId
-        : null
-    );
+    const ownerUid = resolveOwnerUid(currentUser, userProfile);
+    if (!ownerUid) throw new Error('Unable to determine owner. Please contact your administrator.');
+    const resolvedStoreId = customerData.storeId ?? resolveScopedStoreId(userProfile, null);
 
     if (!resolvedStoreId) {
       throw new Error('Store is required to add a customer. Please select a store.');

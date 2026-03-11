@@ -65,9 +65,9 @@ A complete retail solution with multi-store support, employee management, Point 
 |---------|-------------|
 | 🏪 **Multi-Store Management** | Manage multiple retail locations |
 | 👥 **Employee Management** | Invite and manage staff with role-based access |
-| 📦 **Product Catalog** | Categories, SKU, barcodes, pricing |
+| 📦 **Product Catalog** | Categories, SKU, pricing |
 | 📊 **Stock Tracking** | Real-time inventory with low-stock alerts |
-| 🛒 **Point of Sale (POS)** | Fast checkout with barcode scanning |
+| 🛒 **Point of Sale (POS)** | Fast checkout with SKU scanning |
 | 🧾 **Digital Receipts** | Generate and share receipts |
 | 📈 **Sales Analytics** | Revenue reports and performance tracking |
 | 🔄 **Stock Movement History** | Track all inventory changes |
@@ -361,7 +361,6 @@ This system solves the problem where existing CRM users couldn't be added as emp
   name: string,
   description: string,
   sku: string,
-  barcode: string,
   category: string,
   price: number,
   cost: number,

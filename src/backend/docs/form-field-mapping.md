@@ -30,13 +30,12 @@ This document maps each inventory UI form to the Firestore collections and field
 
 **Route:** `/inventory/products` (master only)
 
-**Form state keys:** `name`, `sku`, `barcode`, `category`, `description`, `price`, `cost`, `quantity`, `lowStockThreshold`, `storeId`, `storeName`
+**Form state keys:** `name`, `sku`, `category`, `description`, `price`, `cost`, `quantity`, `lowStockThreshold`, `storeId`, `storeName`
 
 | Form field | Firestore collection | Firestore field | Notes |
 |------------|----------------------|-----------------|-------|
 | `name` | `products` | `name` | Required |
 | `sku` | `products` | `sku` | |
-| `barcode` | `products` | `barcode` | |
 | `category` | `products` | `category` | Dropdown (e.g. Electronics, Parts) |
 | `description` | `products` | `description` | |
 | `price` | `products` | `price` | `parseFloat`; required, min 0 |

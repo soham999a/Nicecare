@@ -359,12 +359,16 @@ export default function DataMigrationHub() {
 
   return (
     <main className="p-4 md:p-6 lg:p-8 space-y-6 animate-fade-in flex flex-col min-h-0">
-      <h1 className="text-2xl font-bold text-[#2d2b3d] dark:text-gray-100">
-        Data Migration Hub
-      </h1>
-      <p className="text-[#6b6580] dark:text-[#9690a8] text-sm">
-        Import CSV or Excel data into Firestore. Use single-entity import or import a complete workbook with multiple sheets.
-      </p>
+      <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
+        <div>
+          <h1 className="text-xl sm:text-2xl md:text-[1.9rem] font-bold tracking-tight text-[#2d2b3d] dark:text-gray-100">
+            Data Migration Hub
+          </h1>
+          <p className="text-sm text-[#6b6580] dark:text-[#9690a8] mt-1">
+            Import CSV or Excel data into Firestore. Use single-entity import or import a complete workbook with multiple sheets.
+          </p>
+        </div>
+      </div>
 
       {/* Migration history & revoke */}
       <section className="bg-white dark:bg-gray-800 rounded-xl border border-[#ede8f5] dark:border-gray-700 p-4 shadow-sm">
@@ -530,7 +534,7 @@ export default function DataMigrationHub() {
         <section className="bg-white dark:bg-gray-800 rounded-xl border border-[#ede8f5] dark:border-gray-700 p-6 shadow-sm space-y-4">
           <h2 className="text-lg font-semibold text-[#2d2b3d] dark:text-gray-100">Map sheets to entity types</h2>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm [&_td]:border [&_td]:border-[#ede8f5] dark:[&_td]:border-gray-700">
               <thead>
                 <tr className="border-b border-[#ede8f5] dark:border-gray-700">
                   <th className="text-left py-2 pr-4 font-medium text-[#2d2b3d] dark:text-gray-100">Sheet</th>
@@ -585,7 +589,7 @@ export default function DataMigrationHub() {
             return (
               <div key={sh.sheetName} className="border border-[#ede8f5] dark:border-gray-700 rounded-lg p-4">
                 <h3 className="font-medium text-[#2d2b3d] dark:text-gray-100 mb-3">{sh.sheetName} → {MIGRATION_ENTITY_SPECS[eid]?.label}</h3>
-                <table className="w-full text-sm">
+                <table className="w-full text-sm [&_td]:border [&_td]:border-[#ede8f5] dark:[&_td]:border-gray-700">
                   <thead>
                     <tr className="border-b border-[#ede8f5] dark:border-gray-700">
                       <th className="text-left py-2 pr-4 font-medium text-[#2d2b3d] dark:text-gray-100">Column</th>
@@ -702,7 +706,7 @@ export default function DataMigrationHub() {
           <h2 className="text-lg font-semibold text-[#2d2b3d] dark:text-gray-100">Map columns to Firestore fields</h2>
           <p className="text-sm text-[#6b6580] dark:text-[#9690a8]">{rows.length} rows detected.</p>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm [&_td]:border [&_td]:border-[#ede8f5] dark:[&_td]:border-gray-700">
               <thead>
                 <tr className="border-b border-[#ede8f5] dark:border-gray-700">
                   <th className="text-left py-2 pr-4 font-medium text-[#2d2b3d] dark:text-gray-100">Column</th>

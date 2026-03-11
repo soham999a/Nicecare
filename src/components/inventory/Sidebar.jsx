@@ -121,6 +121,16 @@ export default function Sidebar({ isExpanded, toggleSidebar, isMobileMenuOpen })
       ),
       label: 'Products'
     },
+    ...(!isMaster ? [{
+      path: '/inventory/pos',
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+          <line x1="1" y1="10" x2="23" y2="10" />
+        </svg>
+      ),
+      label: 'POS'
+    }] : []),
     ...(!isMaster && !isManager ? [{
       path: '/inventory/my-sales',
       icon: (
@@ -146,7 +156,7 @@ export default function Sidebar({ isExpanded, toggleSidebar, isMobileMenuOpen })
         ),
         label: 'Sales Reports'
       },
-      {
+      ...(isMaster ? [{
         path: '/inventory/data-migration-hub',
         icon: (
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -156,7 +166,7 @@ export default function Sidebar({ isExpanded, toggleSidebar, isMobileMenuOpen })
           </svg>
         ),
         label: 'Data Migration Hub'
-      }
+      }] : [])
     ] : []),
     {
       path: '/inventory/crm',
@@ -176,21 +186,25 @@ export default function Sidebar({ isExpanded, toggleSidebar, isMobileMenuOpen })
     isExpanded ? 'opacity-100 w-auto overflow-visible pointer-events-auto' : 'opacity-0 w-0 overflow-hidden pointer-events-none'
   }`;
 
-  const navItemBase = `flex items-center rounded-xl text-sm font-medium cursor-pointer no-underline border-none w-full transition-colors duration-200 p-3 ${
+  const navItemBase = `group relative flex items-center rounded-xl text-sm font-medium cursor-pointer no-underline border border-transparent w-full transition-all duration-200 p-3 ${
     isExpanded ? 'justify-start gap-3 py-2.5 px-3.5' : 'justify-center'
   }`;
 
   return (
     <>
       <aside
-        className={`fixed top-0 left-0 h-screen flex flex-col z-50 overflow-visible font-sans transition-all duration-300 ease-in-out bg-white dark:bg-gray-900/[0.97] border-r border-[#ede8f5] dark:border-[#2d2848] shadow-[4px_0_20px_rgba(110,80,200,0.04)] dark:shadow-[4px_0_20px_rgba(0,0,0,0.2)] ${
+        className={`fixed top-0 left-0 h-screen flex flex-col z-50 overflow-visible font-sans transition-all duration-300 ease-in-out bg-gradient-to-b from-white/95 via-[#f7f5ff]/95 to-[#f1f4ff]/95 dark:from-[#0b1120]/95 dark:via-[#131b2f]/95 dark:to-[#171f35]/95 backdrop-blur-xl border-r border-white/60 dark:border-[#27324f] shadow-[0_12px_40px_rgba(15,31,61,0.12)] dark:shadow-[0_12px_40px_rgba(2,6,23,0.55)] ${
           isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         } ${
           isExpanded ? 'w-[250px]' : 'w-[72px]'
         }`}
       >
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute left-[-50px] top-[-40px] h-44 w-44 rounded-full bg-[#3b82f6]/15 blur-3xl dark:bg-[#2563eb]/20" />
+          <div className="absolute right-[-50px] bottom-16 h-44 w-44 rounded-full bg-[#8b5cf6]/15 blur-3xl dark:bg-[#7c3aed]/20" />
+        </div>
         <div
-          className={`flex items-center border-b border-[#f0ecf7] dark:border-[#2d2848] py-3.5 px-2 ${
+          className={`relative flex items-center border-b border-white/70 dark:border-[#253250] py-3.5 px-2 ${
             isExpanded ? 'justify-between py-[18px] px-3.5' : 'justify-center'
           }`}
         >
@@ -200,7 +214,7 @@ export default function Sidebar({ isExpanded, toggleSidebar, isMobileMenuOpen })
                 isExpanded ? 'opacity-100 w-auto overflow-visible' : 'opacity-0 w-0'
               }`}
             >
-              <span className="text-[1.35rem] font-black text-[#2d2b3d] dark:text-gray-100 tracking-tight">
+              <span className="text-[1.35rem] font-black text-[#14213d] dark:text-slate-100 tracking-tight">
                 {userProfile?.displayName || currentUser?.email?.split('@')[0] || 'User'}
               </span>
             </div>
@@ -232,7 +246,7 @@ export default function Sidebar({ isExpanded, toggleSidebar, isMobileMenuOpen })
           
           {/* Desktop Toggle Button */}
           <button
-            className="hidden md:flex items-center justify-center w-8 h-8 rounded-lg bg-[#6c5ce7] text-white cursor-pointer border-none hover:bg-[#5a4bd1] hover:scale-105 transition-all duration-200"
+            className="hidden md:flex items-center justify-center w-8 h-8 rounded-xl bg-white/70 dark:bg-slate-900/70 backdrop-blur-md text-[#1d4ed8] dark:text-blue-300 cursor-pointer border border-white/80 dark:border-slate-700/80 shadow-[0_10px_25px_rgba(15,23,42,0.12)] dark:shadow-[0_10px_25px_rgba(2,6,23,0.5)] hover:bg-white dark:hover:bg-slate-900 hover:border-[#bfdbfe] dark:hover:border-blue-800/70 hover:-translate-y-0.5 hover:shadow-[0_14px_28px_rgba(37,99,235,0.2)] dark:hover:shadow-[0_14px_28px_rgba(30,64,175,0.35)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent transition-all duration-200"
             onClick={toggleSidebar}
             aria-label={!isExpanded ? 'Expand sidebar' : 'Collapse sidebar'}
           >
@@ -246,7 +260,7 @@ export default function Sidebar({ isExpanded, toggleSidebar, isMobileMenuOpen })
           </button>
         </div>
 
-        <nav className="shrink-0 py-2 px-2.5 flex flex-col gap-1">
+        <nav className="relative shrink-0 py-2.5 px-2.5 flex flex-col gap-1.5">
           {navItems.map((item) => (
             <Link
               key={item.path}
@@ -259,11 +273,14 @@ export default function Sidebar({ isExpanded, toggleSidebar, isMobileMenuOpen })
               }}
               className={`${navItemBase} ${
                 isActive(item.path)
-                  ? 'bg-[#e9edff] text-[#2d2b3d] dark:bg-[#2a2450] dark:text-gray-100'
-                  : 'text-[#6b6580] hover:text-[#2d2b3d] hover:bg-[#f5f3fa] dark:text-[#9690a8] dark:hover:text-gray-100 dark:hover:bg-white/5'
+                  ? 'bg-gradient-to-r from-[#dbeafe] via-[#eef2ff] to-[#ede9fe] border-[#bfdbfe] text-[#14213d] shadow-[0_6px_20px_rgba(59,130,246,0.2)] dark:from-[#1d4ed8]/35 dark:via-[#1e3a8a]/30 dark:to-[#6d28d9]/35 dark:border-[#334a82] dark:text-slate-100'
+                  : 'text-[#4b5563] hover:text-[#14213d] hover:bg-white/70 hover:border-[#dbeafe] hover:shadow-[0_4px_14px_rgba(59,130,246,0.12)] dark:text-[#9ba7c0] dark:hover:text-slate-100 dark:hover:bg-[#1e293b]/45 dark:hover:border-[#2d3f63]'
               }`}
               title={!isExpanded ? item.label : ''}
             >
+              {isActive(item.path) && (
+                <span className="absolute left-0 top-2.5 bottom-2.5 w-1 rounded-r-full bg-gradient-to-b from-[#3b82f6] to-[#8b5cf6]" />
+              )}
               <span className="w-5 h-5 shrink-0 flex items-center justify-center">{item.icon}</span>
               <span className={labelClasses}>{item.label}</span>
             </Link>
@@ -272,9 +289,9 @@ export default function Sidebar({ isExpanded, toggleSidebar, isMobileMenuOpen })
 
         <div className="flex-1" />
 
-        <div className="py-2 px-2.5 flex flex-col gap-1">
+        <div className="relative py-2 px-2.5 flex flex-col gap-1.5">
           <div
-            className={`${navItemBase} text-[#6b6580] hover:bg-[#f5f3fa] dark:text-[#9690a8] dark:hover:bg-white/5`}
+            className={`${navItemBase} text-[#4b5563] hover:text-[#14213d] hover:bg-white/70 hover:border-[#dbeafe] dark:text-[#9ba7c0] dark:hover:text-slate-100 dark:hover:bg-[#1e293b]/45 dark:hover:border-[#2d3f63]`}
             title={!isExpanded ? 'Toggle theme' : ''}
             onClick={!isExpanded ? toggleTheme : undefined}
           >
@@ -310,12 +327,12 @@ export default function Sidebar({ isExpanded, toggleSidebar, isMobileMenuOpen })
                 onChange={toggleTheme}
                 className="peer sr-only"
               />
-              <span className="absolute inset-0 rounded-full cursor-pointer transition-all duration-300 bg-[#d4d0e0] dark:bg-[#3d3655] peer-checked:bg-[#3b5bfd] before:content-[''] before:absolute before:w-[18px] before:h-[18px] before:left-[3px] before:bottom-[3px] before:bg-white before:rounded-full before:transition-all before:duration-300 peer-checked:before:translate-x-[18px]" />
+              <span className="absolute inset-0 rounded-full cursor-pointer transition-all duration-300 bg-[#dbe4ff] dark:bg-[#2c395b] peer-checked:bg-gradient-to-r peer-checked:from-[#2563eb] peer-checked:to-[#7c3aed] before:content-[''] before:absolute before:w-[18px] before:h-[18px] before:left-[3px] before:bottom-[3px] before:bg-white before:rounded-full before:transition-all before:duration-300 peer-checked:before:translate-x-[18px]" />
             </label>
           </div>
 
           <button
-            className={`${navItemBase} text-[#6b6580] dark:text-[#9690a8] hover:text-red-500 hover:bg-red-500/[0.06]`}
+            className={`${navItemBase} text-[#4b5563] dark:text-[#9ba7c0] hover:text-red-500 hover:bg-red-500/[0.08] hover:border-red-200 dark:hover:border-red-900/40`}
             onClick={handleLogout}
             title={!isExpanded ? 'Logout' : ''}
           >
@@ -331,7 +348,7 @@ export default function Sidebar({ isExpanded, toggleSidebar, isMobileMenuOpen })
         </div>
 
         <div
-          className={`relative flex items-center gap-3 border-t cursor-pointer transition-colors duration-200 border-[#f0ecf7] dark:border-[#2d2848] hover:bg-[#f9f7fd] dark:hover:bg-white/[0.03] py-3.5 px-2 ${
+          className={`relative flex items-center gap-3 border-t cursor-pointer transition-colors duration-200 border-white/70 dark:border-[#253250] hover:bg-white/50 dark:hover:bg-[#1e293b]/35 py-3.5 px-2 ${
             isExpanded ? 'justify-start px-3.5' : 'justify-center'
           }`}
           onMouseEnter={() => setProfileHover(true)}
@@ -340,7 +357,7 @@ export default function Sidebar({ isExpanded, toggleSidebar, isMobileMenuOpen })
             setShowSecretOption(false);
           }}
         >
-          <div className="w-[38px] h-[38px] min-w-[38px] rounded-xl bg-gradient-to-br from-[#3b5bfd] to-[#a78bfa] flex items-center justify-center font-bold text-sm text-white shadow-[0_4px_12px_rgba(108,92,231,0.25)] transition-transform duration-200 group-hover:scale-105">
+          <div className="w-[38px] h-[38px] min-w-[38px] rounded-xl bg-gradient-to-br from-[#2563eb] via-[#4f46e5] to-[#9333ea] flex items-center justify-center font-bold text-sm text-white shadow-[0_8px_22px_rgba(59,130,246,0.35)] transition-transform duration-200 group-hover:scale-105">
             {userInitial}
           </div>
           <div
@@ -357,9 +374,9 @@ export default function Sidebar({ isExpanded, toggleSidebar, isMobileMenuOpen })
           </div>
 
           {profileHover && (
-            <div className="absolute bottom-2 left-[calc(100%+12px)] w-[280px] bg-white dark:bg-[#1a1530] border border-[#ede8f5] dark:border-[#2d2848] rounded-2xl shadow-[0_8px_32px_rgba(108,92,231,0.12),0_0_0_1px_rgba(108,92,231,0.04)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] z-[300] overflow-hidden animate-popup-slide-in">
-              <div className="p-[18px] bg-gradient-to-br from-violet-500/[0.08] to-violet-400/[0.06] dark:from-violet-500/[0.12] dark:to-violet-400/[0.08] flex flex-col items-center gap-2 border-b border-[#f0ecf7] dark:border-[#2d2848]">
-                <div className="w-[50px] h-[50px] rounded-[14px] bg-gradient-to-br from-[#3b5bfd] to-[#a78bfa] flex items-center justify-center font-bold text-lg text-white shadow-[0_4px_12px_rgba(108,92,231,0.25)]">
+            <div className="absolute bottom-2 left-[calc(100%+12px)] w-[280px] bg-white/95 dark:bg-[#0f172a]/95 border border-white/60 dark:border-[#253250] rounded-2xl shadow-[0_18px_40px_rgba(15,31,61,0.25)] dark:shadow-[0_18px_40px_rgba(2,6,23,0.6)] backdrop-blur-lg z-[300] overflow-hidden animate-popup-slide-in">
+              <div className="p-[18px] bg-gradient-to-br from-blue-500/[0.12] via-indigo-500/[0.08] to-violet-500/[0.1] dark:from-blue-500/[0.22] dark:via-indigo-500/[0.16] dark:to-violet-500/[0.2] flex flex-col items-center gap-2 border-b border-white/70 dark:border-[#253250]">
+                <div className="w-[50px] h-[50px] rounded-[14px] bg-gradient-to-br from-[#2563eb] via-[#4f46e5] to-[#9333ea] flex items-center justify-center font-bold text-lg text-white shadow-[0_8px_20px_rgba(59,130,246,0.35)]">
                   {userInitial}
                 </div>
                 <div className="text-[0.95rem] font-semibold text-[#2d2b3d] dark:text-gray-100">
@@ -397,10 +414,10 @@ export default function Sidebar({ isExpanded, toggleSidebar, isMobileMenuOpen })
                 )}
 
                 {isMaster && showSecretOption && (
-                  <div className="mt-3 pt-3 border-t border-[#f0ecf7] dark:border-[#2d2848]">
+                  <div className="mt-3 pt-3 border-t border-[#e7edf9] dark:border-[#253250]">
                     <Link
                       to="/inventory/api-docs"
-                      className="flex items-center justify-center gap-2 w-full py-2.5 px-3.5 bg-gradient-to-br from-[#3b5bfd] to-[#8b7cf6] dark:from-indigo-600 dark:to-violet-600 border-none rounded-xl text-white text-[0.85rem] font-semibold cursor-pointer no-underline hover:-translate-y-0.5 hover:shadow-[0_6px_14px_rgba(108,92,231,0.4)] transition-all duration-200"
+                      className="flex items-center justify-center gap-2 w-full py-2.5 px-3.5 bg-gradient-to-br from-[#2563eb] to-[#7c3aed] dark:from-[#2563eb] dark:to-[#7c3aed] border-none rounded-xl text-white text-[0.85rem] font-semibold cursor-pointer no-underline hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgba(59,130,246,0.45)] transition-all duration-200"
                     >
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />

@@ -22,6 +22,13 @@ const toDate = (value) => {
   return null;
 };
 
+const toMillis = (value) => {
+  if (!value) return 0;
+  if (typeof value?.toMillis === 'function') return value.toMillis();
+  const date = toDate(value);
+  return date ? date.getTime() : 0;
+};
+
 const parseMoney = (value) => {
   if (value === null || value === undefined || value === '') return 0;
   const parsed = Number(value);
@@ -47,6 +54,25 @@ const getMaxTimestamp = (records) => {
     if (date && date.getTime() > maxMillis) maxMillis = date.getTime();
   });
   return maxMillis || null;
+};
+
+const buildManagerByStore = (employees = []) => {
+  const managerByStore = {};
+  const managerTimestampByStore = {};
+
+  employees.forEach((employee) => {
+    if (employee.role !== 'manager' || !employee.assignedStoreId) return;
+    const managerName = employee.displayName || employee.name || '';
+    if (!managerName) return;
+    const timestamp = Math.max(toMillis(employee.updatedAt), toMillis(employee.createdAt));
+    const currentTimestamp = managerTimestampByStore[employee.assignedStoreId] || 0;
+    if (timestamp >= currentTimestamp) {
+      managerByStore[employee.assignedStoreId] = managerName;
+      managerTimestampByStore[employee.assignedStoreId] = timestamp;
+    }
+  });
+
+  return managerByStore;
 };
 
 /**
@@ -337,6 +363,74 @@ export const useEnhancedDashboard = (options = {}) => {
     };
   }, [stores, employees, products, sales, customers, tickets]);
 
+  const consistencyHealth = useMemo(() => {
+    const storesById = new Map(scopedStores.map((store) => [store.id, store]));
+    const employeeCountByStore = {};
+    const productCountByStore = {};
+    const managerByStore = buildManagerByStore(scopedEmployees);
+
+    scopedEmployees.forEach((employee) => {
+      if (!employee.assignedStoreId) return;
+      employeeCountByStore[employee.assignedStoreId] =
+        (employeeCountByStore[employee.assignedStoreId] || 0) + 1;
+    });
+
+    scopedProducts.forEach((product) => {
+      if (!product.storeId) return;
+      productCountByStore[product.storeId] =
+        (productCountByStore[product.storeId] || 0) + 1;
+    });
+
+    let employeeCountMismatches = 0;
+    let productCountMismatches = 0;
+    let managerMismatches = 0;
+    let employeeStoreNameMismatches = 0;
+    let productStoreNameMismatches = 0;
+
+    scopedStores.forEach((store) => {
+      const expectedEmployeeCount = employeeCountByStore[store.id] || 0;
+      const expectedProductCount = productCountByStore[store.id] || 0;
+      const expectedManager = managerByStore[store.id] || '';
+
+      if ((store.employeeCount || 0) !== expectedEmployeeCount) employeeCountMismatches += 1;
+      if ((store.productCount || 0) !== expectedProductCount) productCountMismatches += 1;
+      if ((store.manager || '') !== expectedManager) managerMismatches += 1;
+    });
+
+    scopedEmployees.forEach((employee) => {
+      if (!employee.assignedStoreId) return;
+      const store = storesById.get(employee.assignedStoreId);
+      if (!store?.name) return;
+      if ((employee.assignedStoreName || '') !== store.name) employeeStoreNameMismatches += 1;
+    });
+
+    scopedProducts.forEach((product) => {
+      if (!product.storeId) return;
+      const store = storesById.get(product.storeId);
+      if (!store?.name) return;
+      if ((product.storeName || '') !== store.name) productStoreNameMismatches += 1;
+    });
+
+    const totalMismatches =
+      employeeCountMismatches +
+      productCountMismatches +
+      managerMismatches +
+      employeeStoreNameMismatches +
+      productStoreNameMismatches;
+
+    return {
+      totalMismatches,
+      checks: {
+        employeeCountMismatches,
+        productCountMismatches,
+        managerMismatches,
+        employeeStoreNameMismatches,
+        productStoreNameMismatches,
+      },
+      healthy: totalMismatches === 0,
+    };
+  }, [scopedStores, scopedEmployees, scopedProducts]);
+
   const ownerPulse = useMemo(() => {
     if (!summary) return null;
     return {
@@ -364,6 +458,7 @@ export const useEnhancedDashboard = (options = {}) => {
     ownerPulse,
     compareSnapshot,
     dataHealth,
+    consistencyHealth,
     loading,
     lastRefresh,
     refreshInterval,

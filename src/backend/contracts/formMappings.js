@@ -33,7 +33,6 @@ export const PRODUCT_FORM_TO_FIRESTORE = {
   mappings: [
     { formField: 'name', firestoreField: 'name', collection: COLLECTIONS.INVENTORY_PRODUCT_CATALOG },
     { formField: 'sku', firestoreField: 'sku', collection: COLLECTIONS.INVENTORY_PRODUCT_CATALOG },
-    { formField: 'barcode', firestoreField: 'barcode', collection: COLLECTIONS.INVENTORY_PRODUCT_CATALOG },
     { formField: 'category', firestoreField: 'category', collection: COLLECTIONS.INVENTORY_PRODUCT_CATALOG },
     { formField: 'description', firestoreField: 'description', collection: COLLECTIONS.INVENTORY_PRODUCT_CATALOG },
     { formField: 'price', firestoreField: 'price', collection: COLLECTIONS.INVENTORY_PRODUCT_CATALOG, notes: 'parseFloat' },

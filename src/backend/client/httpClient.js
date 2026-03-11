@@ -29,6 +29,12 @@ export async function getAuthToken() {
 export async function postJson(endpoint, body = {}) {
   const token = await getAuthToken();
   const functionsUrl = getFunctionsUrl();
+  if (!functionsUrl) {
+    throw buildError(
+      'Backend URL is not configured. Set VITE_FUNCTIONS_URL in your environment.',
+      500
+    );
+  }
   const response = await fetch(`${functionsUrl}/${endpoint}`, {
     method: 'POST',
     headers: {
@@ -40,6 +46,13 @@ export async function postJson(endpoint, body = {}) {
 
   if (!response.ok) {
     const details = await response.json().catch(() => ({}));
+    if (response.status === 404) {
+      throw buildError(
+        `Endpoint not found (${endpoint}). Restart local backend or deploy updated Cloud Functions.`,
+        404,
+        details
+      );
+    }
     throw buildError(
       details?.error || `Request failed with status ${response.status}`,
       response.status,

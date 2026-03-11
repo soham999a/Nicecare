@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useInventoryAuth } from '../context/InventoryAuthContext';
 import * as salesRepo from '../backend/firestore/repositories/salesRepository';
+import { resolveOwnerUid, resolveScopedStoreId } from '../utils/inventoryScope';
 
 export function useSales(storeId = null, dateRange = null) {
   const [sales, setSales] = useState([]);
@@ -24,11 +25,9 @@ export function useSales(storeId = null, dateRange = null) {
       return;
     }
 
-    let ownerUid = currentUser.uid;
-    let effectiveStoreId = storeId;
+    const ownerUid = resolveOwnerUid(currentUser, userProfile);
+    const effectiveStoreId = resolveScopedStoreId(userProfile, storeId);
     if (userProfile?.role === 'member' || userProfile?.role === 'manager') {
-      ownerUid = userProfile.ownerUid || userProfile.masterUid;
-      effectiveStoreId = userProfile.assignedStoreId;
       if (!effectiveStoreId || !ownerUid) {
         setSales([]);
         setLoading(false);
@@ -72,32 +71,32 @@ export function useSales(storeId = null, dateRange = null) {
     return () => unsubscribe();
   }, [currentUser, userProfile, storeId, dateRange]);
 
-  async function createSale(saleData) {
+  async function createSale(saleData, options = {}) {
     if (!currentUser) throw new Error('Not authenticated');
 
-    let ownerUid = currentUser.uid;
-    if (userProfile?.role === 'member' || userProfile?.role === 'manager') {
-      ownerUid = userProfile.ownerUid || userProfile.masterUid;
-    }
+    const ownerUid = resolveOwnerUid(currentUser, userProfile);
     if (!ownerUid) {
       throw new Error('Unable to determine owner. Please contact your administrator.');
     }
 
+    const selectedEmployee = options.selectedEmployee || null;
+    const employeeId = selectedEmployee?.id || currentUser.uid;
+    const employeeName = selectedEmployee?.displayName || selectedEmployee?.name || selectedEmployee?.email || userProfile?.displayName || currentUser.email;
+    const employeeEmail = selectedEmployee?.email || currentUser.email;
+
     return salesRepo.createSale(ownerUid, saleData, {
-      employeeId: currentUser.uid,
-      employeeName: userProfile?.displayName || currentUser.email,
+      employeeId,
+      employeeName,
+      employeeEmail,
     });
   }
 
   async function getSalesReport(startDate, endDate, filterStoreId = null) {
     if (!currentUser) throw new Error('Not authenticated');
 
-    let ownerUid = currentUser.uid;
-    let effectiveStoreId = filterStoreId;
-    if (userProfile?.role === 'member' || userProfile?.role === 'manager') {
-      ownerUid = userProfile.ownerUid || userProfile.masterUid || currentUser.uid;
-      effectiveStoreId = userProfile.assignedStoreId;
-    }
+    const ownerUid = resolveOwnerUid(currentUser, userProfile);
+    const effectiveStoreId = resolveScopedStoreId(userProfile, filterStoreId);
+    if (!ownerUid) throw new Error('Unable to determine owner. Please contact your administrator.');
 
     return salesRepo.getSalesReport(startDate, endDate, {
       ownerUid,

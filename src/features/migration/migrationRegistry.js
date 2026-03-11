@@ -50,7 +50,6 @@ export const MIGRATION_ENTITY_SPECS = {
     fields: [
       { firestoreField: 'name', label: 'Product Name', type: 'string', required: true },
       { firestoreField: 'sku', label: 'SKU', type: 'string' },
-      { firestoreField: 'barcode', label: 'Barcode', type: 'string' },
       { firestoreField: 'category', label: 'Category', type: 'string' },
       { firestoreField: 'description', label: 'Description', type: 'string' },
       { firestoreField: 'price', label: 'Price', type: 'number', coercion: 'parseFloat', defaultValue: 0 },

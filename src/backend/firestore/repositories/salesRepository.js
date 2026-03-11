@@ -52,12 +52,13 @@ export function subscribeSales({ ownerUid, storeId, dateRange, onData, onError }
   );
 }
 
-export async function createSale(ownerUid, saleData, { employeeId, employeeName }) {
+export async function createSale(ownerUid, saleData, { employeeId, employeeName, employeeEmail }) {
   const newSale = {
     ...saleData,
     ownerUid,
     employeeId,
     employeeName: employeeName || '',
+    employeeEmail: employeeEmail || '',
     status: 'completed',
     createdAt: serverTimestamp(),
   };

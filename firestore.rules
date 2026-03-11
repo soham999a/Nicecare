@@ -25,8 +25,13 @@ service cloud.firestore {
         );
     }
     
+    // Support both current ownerUid and legacy masterUid tenant keys.
+    function getTenantOwnerUid(data) {
+      return data.ownerUid != null ? data.ownerUid : data.masterUid;
+    }
+
     function isOwner(resourceData) {
-      return isInventoryOwnerFor(resourceData.ownerUid);
+      return isInventoryOwnerFor(getTenantOwnerUid(resourceData));
     }
 
     // CRM internal user profile document - only owner can read/write
@@ -63,13 +68,21 @@ service cloud.firestore {
     // Inventory internal user profiles (master and staff accounts)
     match /inventoryInternalUserProfiles/{userId} {
       allow create: if request.auth != null && request.auth.uid == userId;
-      allow read: if request.auth != null && request.auth.uid == userId;
-      allow update, delete: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null &&
+        (
+          request.auth.uid == userId ||
+          (getTenantOwnerUid(resource.data) is string && isInventoryOwnerFor(getTenantOwnerUid(resource.data)))
+        );
+      allow update, delete: if request.auth != null &&
+        (
+          request.auth.uid == userId ||
+          (getTenantOwnerUid(resource.data) is string && isInventoryOwnerFor(getTenantOwnerUid(resource.data)))
+        );
     }
 
     // Helper function to check if user is master owner
     function isMasterOwner(resourceData) {
-      return isInventoryOwnerFor(resourceData.ownerUid);
+      return isInventoryOwnerFor(getTenantOwnerUid(resourceData));
     }
 
     // Helper function to check if user is employee of the store
@@ -116,12 +129,57 @@ service cloud.firestore {
         isAssignedManagerFromInventoryUsers(ownerUid, storeId);
     }
 
+    function hasStaffAssignment(uid) {
+      return exists(/databases/$(database)/documents/storeStaffAssignments/$(uid));
+    }
+
+    function isManagerRequest() {
+      return isSignedIn() &&
+        (
+          isAssignedManagerFromInventoryUsers(
+            request.resource.data.ownerUid,
+            request.resource.data.storeId
+          ) ||
+          (
+            hasStaffAssignment(request.auth.uid) &&
+            get(/databases/$(database)/documents/storeStaffAssignments/$(request.auth.uid)).data.role == 'manager' &&
+            get(/databases/$(database)/documents/storeStaffAssignments/$(request.auth.uid)).data.ownerUid == request.resource.data.ownerUid &&
+            get(/databases/$(database)/documents/storeStaffAssignments/$(request.auth.uid)).data.assignedStoreId == request.resource.data.storeId
+          )
+        );
+    }
+
+    function isValidCreditedMember(ownerUid, storeId, employeeId) {
+      return employeeId is string &&
+        exists(/databases/$(database)/documents/storeStaffAssignments/$(employeeId)) &&
+        get(/databases/$(database)/documents/storeStaffAssignments/$(employeeId)).data.role == 'member' &&
+        get(/databases/$(database)/documents/storeStaffAssignments/$(employeeId)).data.ownerUid == ownerUid &&
+        get(/databases/$(database)/documents/storeStaffAssignments/$(employeeId)).data.assignedStoreId == storeId;
+    }
+
+    function hasDiscountOverride(data) {
+      return (data.discountAmount is number && data.discountAmount > 0) ||
+        (data.discountOverride is map &&
+          data.discountOverride.amount is number &&
+          data.discountOverride.amount > 0);
+    }
+
+    function isNoDiscountOverride(data) {
+      return (!(data.discountAmount is number) || data.discountAmount == 0) &&
+        (!(data.discountOverride is map) ||
+          !(data.discountOverride.amount is number) ||
+          data.discountOverride.amount == 0);
+    }
+
     // Business store locations - only master can CRUD their stores
     match /businessStoreLocations/{storeId} {
-      allow create: if isInventoryOwnerFor(request.resource.data.ownerUid);
-      allow read: if isMasterOwner(resource.data) || isStoreEmployee(storeId);
+      allow create: if isInventoryOwnerFor(getTenantOwnerUid(request.resource.data));
+      allow read: if
+        (resource.data.ownerUid is string && isInventoryOwnerFor(resource.data.ownerUid)) ||
+        (resource.data.masterUid is string && isInventoryOwnerFor(resource.data.masterUid)) ||
+        isStoreEmployee(storeId);
       allow update: if isMasterOwner(resource.data) ||
-        (isAssignedManagerForStore(resource.data.ownerUid, storeId) &&
+        (isAssignedManagerForStore(getTenantOwnerUid(resource.data), storeId) &&
          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['productCount', 'updatedAt']));
       allow delete: if isMasterOwner(resource.data);
     }
@@ -131,43 +189,43 @@ service cloud.firestore {
       // Master can create staff assignments with their ownerUid
       // Employee can create their own record during signup (employeeId must match their uid)
       allow create: if isSignedIn() && 
-        (isInventoryOwnerFor(request.resource.data.ownerUid) || 
+        (isInventoryOwnerFor(getTenantOwnerUid(request.resource.data)) || 
          (employeeId == request.auth.uid && request.resource.data.uid == request.auth.uid));
       // Master can read all their staff assignments, employee can read their own record
       // Manager can read staff in their store (from storeStaffAssignments or inventoryInternalUserProfiles)
-      allow read: if isInventoryOwnerFor(resource.data.ownerUid) ||
+      allow read: if isInventoryOwnerFor(getTenantOwnerUid(resource.data)) ||
         request.auth.uid == employeeId ||
-        isAssignedManagerForStore(resource.data.ownerUid, resource.data.assignedStoreId);
+        isAssignedManagerForStore(getTenantOwnerUid(resource.data), resource.data.assignedStoreId);
       // Only master can update/delete
-      allow update, delete: if isInventoryOwnerFor(resource.data.ownerUid);
+      allow update, delete: if isInventoryOwnerFor(getTenantOwnerUid(resource.data));
     }
 
     // Inventory product catalog - master can CRUD, employee can read products from their store
     match /inventoryProductCatalog/{productId} {
       allow create: if isSignedIn() &&
-        (isInventoryOwnerFor(request.resource.data.ownerUid) ||
-         isAssignedManagerForStore(request.resource.data.ownerUid, request.resource.data.storeId));
+        (isInventoryOwnerFor(getTenantOwnerUid(request.resource.data)) ||
+         isAssignedManagerForStore(getTenantOwnerUid(request.resource.data), request.resource.data.storeId));
       // Master can read all their products
       // Employee can read products from their assigned store
       allow read: if isMasterOwner(resource.data) || 
-        isAssignedManagerForStore(resource.data.ownerUid, resource.data.storeId) ||
+        isAssignedManagerForStore(getTenantOwnerUid(resource.data), resource.data.storeId) ||
         (isSignedIn() && 
          exists(/databases/$(database)/documents/storeStaffAssignments/$(request.auth.uid)) && 
          resource.data.storeId == getEmployeeStoreId() &&
-         resource.data.ownerUid == getEmployeeOwnerUid());
+         getTenantOwnerUid(resource.data) == getEmployeeOwnerUid());
       // Master can update/delete
       // Employee can update stock quantity only (for sales)
       allow update: if isMasterOwner(resource.data) || 
-        (isAssignedManagerForStore(resource.data.ownerUid, resource.data.storeId) &&
-         request.resource.data.ownerUid == resource.data.ownerUid &&
+        (isAssignedManagerForStore(getTenantOwnerUid(resource.data), resource.data.storeId) &&
+         getTenantOwnerUid(request.resource.data) == getTenantOwnerUid(resource.data) &&
          request.resource.data.storeId == resource.data.storeId) ||
         (isSignedIn() && 
          exists(/databases/$(database)/documents/storeStaffAssignments/$(request.auth.uid)) && 
          resource.data.storeId == getEmployeeStoreId() &&
-         resource.data.ownerUid == getEmployeeOwnerUid() &&
+         getTenantOwnerUid(resource.data) == getEmployeeOwnerUid() &&
          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['quantity', 'updatedAt']));
       allow delete: if isMasterOwner(resource.data) ||
-        isAssignedManagerForStore(resource.data.ownerUid, resource.data.storeId);
+        isAssignedManagerForStore(getTenantOwnerUid(resource.data), resource.data.storeId);
     }
 
     // Sales transaction records - master can read all, employee can create and read their store's sales
@@ -178,7 +236,22 @@ service cloud.firestore {
          isAssignedManagerForStore(request.resource.data.ownerUid, request.resource.data.storeId) ||
          (exists(/databases/$(database)/documents/storeStaffAssignments/$(request.auth.uid)) &&
           request.resource.data.ownerUid == getEmployeeOwnerUid() &&
-          request.resource.data.storeId == getEmployeeStoreId()));
+          request.resource.data.storeId == getEmployeeStoreId())) &&
+        (
+          // Managers can credit only same-store members.
+          (isManagerRequest() &&
+            isValidCreditedMember(
+              request.resource.data.ownerUid,
+              request.resource.data.storeId,
+              request.resource.data.employeeId
+            )) ||
+          // Non-managers can only credit themselves and cannot apply discounts.
+          (!isManagerRequest() &&
+            request.resource.data.employeeId == request.auth.uid &&
+            isNoDiscountOverride(request.resource.data))
+        ) &&
+        // If discount exists, only managers may create it.
+        (!hasDiscountOverride(request.resource.data) || isManagerRequest());
       // Master can read all their sales
       // Employee can read sales from their store
       allow read: if isMasterOwner(resource.data) ||

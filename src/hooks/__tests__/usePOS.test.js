@@ -171,6 +171,8 @@ describe('usePOS Hook', () => {
 
       // Use toBeCloseTo for floating point comparison
       expect(totals.subtotal).toBeCloseTo(3199.97, 2);
+      expect(totals.baseSubtotal).toBeCloseTo(3199.97, 2);
+      expect(totals.discountAmount).toBe(0);
       expect(totals.itemCount).toBe(3);
       expect(totals.tax).toBe(0);
       expect(totals.total).toBeCloseTo(3199.97, 2);
@@ -182,6 +184,8 @@ describe('usePOS Hook', () => {
       const totals = result.current.getCartTotals();
 
       expect(totals.subtotal).toBe(0);
+      expect(totals.baseSubtotal).toBe(0);
+      expect(totals.discountAmount).toBe(0);
       expect(totals.itemCount).toBe(0);
       expect(totals.total).toBe(0);
     });
@@ -226,7 +230,8 @@ describe('usePOS Hook', () => {
           customerName: 'Jane Doe',
           total: 2399.98,
           itemCount: 2,
-        })
+        }),
+        expect.objectContaining({ selectedEmployee: null })
       );
     });
 
@@ -270,7 +275,8 @@ describe('usePOS Hook', () => {
       expect(mockCreateSale).toHaveBeenCalledWith(
         expect.objectContaining({
           customerName: 'Walk-in Customer',
-        })
+        }),
+        expect.objectContaining({ selectedEmployee: null })
       );
     });
 

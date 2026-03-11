@@ -2,6 +2,19 @@ import { useState, useCallback } from 'react';
 import { useProducts } from './useProducts';
 import { useSales } from './useSales';
 
+function computeDiscountAmount(subtotal, discountConfig) {
+  if (!discountConfig || subtotal <= 0) return 0;
+  const numericValue = Number(discountConfig.value);
+  if (!Number.isFinite(numericValue) || numericValue <= 0) return 0;
+
+  if (discountConfig.type === 'percentage') {
+    const clampedPercent = Math.min(100, numericValue);
+    return (subtotal * clampedPercent) / 100;
+  }
+
+  return Math.min(subtotal, numericValue);
+}
+
 export function usePOS(storeId) {
   const [cart, setCart] = useState([]);
   const [processing, setProcessing] = useState(false);
@@ -76,14 +89,18 @@ export function usePOS(storeId) {
   }, []);
 
   // Calculate cart totals
-  const getCartTotals = useCallback(() => {
-    const subtotal = cart.reduce((sum, item) => sum + item.subtotal, 0);
+  const getCartTotals = useCallback((discountConfig = null) => {
+    const baseSubtotal = cart.reduce((sum, item) => sum + item.subtotal, 0);
+    const discountAmount = computeDiscountAmount(baseSubtotal, discountConfig);
+    const subtotal = Math.max(0, baseSubtotal - discountAmount);
     const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
     const tax = 0; // Can be configured based on business needs
     const total = subtotal + tax;
 
     return {
+      baseSubtotal,
       subtotal,
+      discountAmount,
       tax,
       total,
       itemCount,
@@ -91,15 +108,43 @@ export function usePOS(storeId) {
   }, [cart]);
 
   // Process checkout
-  const checkout = useCallback(async (paymentMethod, customerName = '', customerPhone = '', notes = '') => {
+  const checkout = useCallback(async (
+    paymentMethod,
+    customerName = '',
+    customerPhone = '',
+    notes = '',
+    options = {}
+  ) => {
     if (cart.length === 0) {
       throw new Error('Cart is empty');
+    }
+
+    const {
+      selectedEmployee = null,
+      discountConfig = null,
+      approvalPayload = null,
+      actorRole = 'member',
+    } = options;
+    const currentBaseSubtotal = cart.reduce((sum, item) => sum + item.subtotal, 0);
+    const computedDiscountAmount = computeDiscountAmount(currentBaseSubtotal, discountConfig);
+
+    if (actorRole !== 'manager' && computedDiscountAmount > 0) {
+      throw new Error('Only managers can apply discount overrides');
+    }
+    if (actorRole === 'manager' && computedDiscountAmount > 0 && !(discountConfig?.reason || '').trim()) {
+      throw new Error('Discount reason is required when applying a discount override');
+    }
+    if (discountConfig?.type === 'percentage' && Number(discountConfig?.value || 0) > 100) {
+      throw new Error('Discount percentage cannot exceed 100');
     }
 
     setProcessing(true);
 
     try {
-      const totals = getCartTotals();
+      const totals = getCartTotals(discountConfig);
+      const hasDiscount = totals.discountAmount > 0;
+      const discountType = hasDiscount ? (discountConfig?.type === 'percentage' ? 'percentage' : 'amount') : 'none';
+      const discountValue = hasDiscount ? Number(discountConfig?.value || 0) : 0;
       
       // Create sale record
       const saleData = {
@@ -120,9 +165,21 @@ export function usePOS(storeId) {
         customerName: customerName || 'Walk-in Customer',
         customerPhone: customerPhone || '',
         notes: notes || '',
+        discountAmount: totals.discountAmount,
+        discountType,
+        discountValue,
+        discountReason: hasDiscount ? (discountConfig?.reason || '').trim() : '',
+        discountOverride: {
+          amount: totals.discountAmount,
+          type: discountType,
+          value: discountValue,
+          reason: hasDiscount ? (discountConfig?.reason || '').trim() : '',
+          appliedByRole: actorRole,
+        },
+        approval: approvalPayload || null,
       };
 
-      const saleId = await createSale(saleData);
+      const saleId = await createSale(saleData, { selectedEmployee });
 
       // Update stock for all items
       const stockUpdates = cart.map((item) => ({
@@ -161,16 +218,14 @@ export function usePOS(storeId) {
       (product) =>
         product.name?.toLowerCase().includes(term) ||
         product.sku?.toLowerCase().includes(term) ||
-        product.barcode?.toLowerCase().includes(term) ||
         product.category?.toLowerCase().includes(term)
     );
   }, [products]);
 
-  // Get product by barcode/SKU
+  // Get product by SKU
   const getProductByCode = useCallback((code) => {
     return products.find(
       (product) =>
-        product.barcode === code ||
         product.sku === code
     );
   }, [products]);

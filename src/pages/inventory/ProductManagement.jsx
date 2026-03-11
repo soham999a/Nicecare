@@ -46,13 +46,22 @@ function ProductManagementContent({ userProfile, isManager }) {
   const { products, loading, error, lowStockProducts, addProduct, updateProduct, updateStock, deleteProduct } = useProducts(effectiveStoreFilter);
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
+  const productStoreOptions = editingProduct?.storeId &&
+    !availableStores.some((store) => store.id === editingProduct.storeId)
+    ? [
+        {
+          id: editingProduct.storeId,
+          name: editingProduct.storeName || 'Current assigned store',
+        },
+        ...availableStores,
+      ]
+    : availableStores;
   const [showStockModal, setShowStockModal] = useState(null);
   const [stockChange, setStockChange] = useState({ quantity: 0, reason: '' });
   const [searchTerm, setSearchTerm] = useState('');
   const getDefaultFormData = () => ({
     name: '',
     sku: '',
-    barcode: '',
     category: '',
     description: '',
     price: '',
@@ -115,7 +124,6 @@ function ProductManagementContent({ userProfile, isManager }) {
     setFormData({
       name: product.name || '',
       sku: product.sku || '',
-      barcode: product.barcode || '',
       category: product.category || '',
       description: product.description || '',
       price: product.price?.toString() || '',
@@ -160,7 +168,6 @@ function ProductManagementContent({ userProfile, isManager }) {
       const productData = {
         name: formData.name.trim(),
         sku: formData.sku.trim(),
-        barcode: formData.barcode.trim(),
         category: formData.category,
         description: formData.description.trim(),
         price: parseFloat(formData.price) || 0,
@@ -218,7 +225,6 @@ function ProductManagementContent({ userProfile, isManager }) {
     return (
       product.name?.toLowerCase().includes(term) ||
       product.sku?.toLowerCase().includes(term) ||
-      product.barcode?.toLowerCase().includes(term) ||
       product.category?.toLowerCase().includes(term)
     );
   });
@@ -230,8 +236,18 @@ function ProductManagementContent({ userProfile, isManager }) {
     }).format(amount);
   };
 
+  const totalInventoryUnits = products.reduce(
+    (sum, product) => sum + (Number(product.quantity) || 0),
+    0
+  );
+  const totalInventoryValue = products.reduce(
+    (sum, product) =>
+      sum + (Number(product.price) || 0) * (Number(product.quantity) || 0),
+    0
+  );
+
   return (
-    <main className="p-4 md:p-6 lg:p-8 space-y-6 animate-fade-in">
+    <main className="min-h-screen p-4 md:p-6 lg:p-8 space-y-6 animate-fade-in bg-slate-50 dark:bg-[#0a0f1a]">
       {/* Custom Delete Confirmation Modal */}
       {deleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
@@ -263,7 +279,7 @@ function ProductManagementContent({ userProfile, isManager }) {
         </div>
       )}
 
-      <div className="flex items-start justify-between flex-wrap gap-4 mb-6">
+      <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
         <div>
           <h1 className="text-xl sm:text-2xl md:text-[1.9rem] font-bold tracking-tight text-slate-900 dark:text-gray-50">Product Management</h1>
           <p className="text-sm text-slate-500 dark:text-gray-400 mt-1">Manage your product catalog and inventory</p>
@@ -282,35 +298,54 @@ function ProductManagementContent({ userProfile, isManager }) {
           </button>
         )}
 
-        {!isManager && stores?.length === 0 && (
-          <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-100 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 text-sm w-full">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div className="rounded-2xl border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-gray-400">Catalog size</p>
+          <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-gray-50">{products.length}</p>
+        </div>
+        <div className="rounded-2xl border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-gray-400">Inventory units</p>
+          <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-gray-50">{totalInventoryUnits}</p>
+        </div>
+        <div className="rounded-2xl border border-amber-200 dark:border-amber-800 bg-amber-50/80 dark:bg-amber-900/20 p-4 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">Low stock items</p>
+          <p className="mt-2 text-2xl font-bold text-amber-700 dark:text-amber-300">{lowStockProducts.length}</p>
+        </div>
+        <div className="rounded-2xl border border-blue-200 dark:border-blue-800 bg-blue-50/80 dark:bg-blue-900/20 p-4 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-400">Inventory value</p>
+          <p className="mt-2 text-2xl font-bold text-blue-700 dark:text-blue-300">{formatCurrency(totalInventoryValue)}</p>
+        </div>
+      </div>
+
+      {!isManager && stores?.length === 0 && (
+        <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-100 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 text-sm">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          You need to create at least one store before adding products.
+          <a href="/inventory/stores" className="font-semibold underline underline-offset-2 hover:text-amber-700 dark:hover:text-amber-300 ml-1">Create a store</a>
+        </div>
+      )}
+
+      {lowStockProducts.length > 0 && (
+        <div className="flex items-center gap-3 rounded-2xl border border-amber-200 dark:border-amber-800 bg-amber-50/80 dark:bg-amber-900/20 px-4 py-3">
+          <div className="text-amber-600 dark:text-amber-400 shrink-0">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
               <line x1="12" y1="9" x2="12" y2="13"/>
               <line x1="12" y1="17" x2="12.01" y2="17"/>
             </svg>
-            You need to create at least one store before adding products.
-            <a href="/inventory/stores" className="font-semibold underline underline-offset-2 hover:text-amber-700 dark:hover:text-amber-300 ml-1">Create a store</a>
           </div>
-        )}
-
-        {/* Low Stock Warning */}
-        {lowStockProducts.length > 0 && (
-          <div className="flex items-center gap-3 bg-amber-100 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl px-4 py-3 w-full">
-            <div className="text-amber-600 dark:text-amber-400 shrink-0">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-                <line x1="12" y1="9" x2="12" y2="13"/>
-                <line x1="12" y1="17" x2="12.01" y2="17"/>
-              </svg>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-amber-700 dark:text-amber-400">
-              <strong>Low Stock Alert!</strong>
-              <span>{lowStockProducts.length} product{lowStockProducts.length !== 1 ? 's' : ''} running low on stock</span>
-            </div>
+          <div className="flex items-center gap-2 text-sm text-amber-700 dark:text-amber-400">
+            <strong>Low Stock Alert</strong>
+            <span>{lowStockProducts.length} product{lowStockProducts.length !== 1 ? 's' : ''} running low on stock</span>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Stock Update Modal */}
       {showStockModal && (
@@ -416,17 +451,6 @@ function ProductManagementContent({ userProfile, isManager }) {
               </div>
 
               <div className="space-y-1">
-                <label className="block text-sm font-medium text-slate-700 dark:text-gray-300">Barcode</label>
-                <input
-                  type="text"
-                  className="w-full px-3 py-2.5 border border-slate-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-sm text-slate-900 dark:text-gray-50 placeholder:text-slate-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600"
-                  value={formData.barcode}
-                  onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
-                  placeholder="e.g., 123456789012"
-                />
-              </div>
-
-              <div className="space-y-1">
                 <label className="block text-sm font-medium text-slate-700 dark:text-gray-300">Category</label>
                 <select
                   className="w-full px-3 py-2.5 border border-slate-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-sm text-slate-900 dark:text-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600"
@@ -450,7 +474,7 @@ function ProductManagementContent({ userProfile, isManager }) {
                     required
                   >
                     <option value="">Select store</option>
-                    {availableStores.map((store) => (
+                    {productStoreOptions.map((store) => (
                       <option key={store.id} value={store.id}>{store.name}</option>
                     ))}
                   </select>
@@ -546,7 +570,7 @@ function ProductManagementContent({ userProfile, isManager }) {
       )}
 
       {/* Filters */}
-      <div className="flex items-center gap-3 flex-wrap">
+      <div className="flex items-center gap-3 flex-wrap bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-2xl px-4 py-3 shadow-sm">
         <div className="relative flex items-center flex-1 min-w-[200px]">
           <svg className="absolute left-3 text-slate-400 dark:text-gray-500 pointer-events-none" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="11" cy="11" r="8" />
@@ -609,7 +633,7 @@ function ProductManagementContent({ userProfile, isManager }) {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm [&_td]:border [&_td]:border-slate-200 dark:[&_td]:border-gray-700">
               <thead>
                 <tr className="border-b border-slate-100 dark:border-gray-700 bg-slate-50/50 dark:bg-gray-800/50">
                   <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 dark:text-gray-500 uppercase tracking-wider">Product</th>

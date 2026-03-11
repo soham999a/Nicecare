@@ -65,7 +65,7 @@ export default function InventoryVerifyEmailPage() {
 
   if (currentUser.emailVerified) {
     return (
-      <div className="grid min-h-screen grid-cols-1 bg-slate-50 md:grid-cols-[55%_45%] dark:bg-[#0a0f1a]">
+      <div className="modern-auth-shell grid min-h-screen grid-cols-1 md:grid-cols-[55%_45%]">
         <div className="relative hidden overflow-hidden bg-gradient-to-br from-[#1e40af] via-[#3b82f6] to-[#0ea5e9] px-12 py-8 text-white md:flex md:flex-col">
           <div className="relative z-10 flex h-full flex-col items-center justify-center">
             <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/15">
@@ -122,7 +122,7 @@ export default function InventoryVerifyEmailPage() {
   }
 
   return (
-    <div className="grid min-h-screen grid-cols-1 bg-slate-50 md:grid-cols-[55%_45%] dark:bg-[#0a0f1a]">
+    <div className="modern-auth-shell grid min-h-screen grid-cols-1 md:grid-cols-[55%_45%]">
       {/* Left Panel - Branding */}
       <div className="relative hidden overflow-hidden bg-gradient-to-br from-[#1e40af] via-[#3b82f6] to-[#0ea5e9] px-12 py-8 text-white md:flex md:flex-col">
         <div className="relative z-10 flex h-full flex-col">

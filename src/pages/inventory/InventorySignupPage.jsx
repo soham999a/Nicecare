@@ -223,7 +223,7 @@ export default function InventorySignupPage() {
   const prevFeature = () => setActiveFeature((prev) => (prev === 0 ? FEATURES.length - 1 : prev - 1));
 
   return (
-    <div className="flex h-screen w-full bg-[#fcfcfc] dark:bg-[#0a0f1a] transition-colors duration-300 overflow-hidden">
+    <div className="modern-auth-shell flex h-screen w-full transition-colors duration-300 overflow-hidden">
       
       {/* LEFT SIDE: 50% IMAGE/FEATURES PANEL (Hidden on Mobile) */}
       <div className="relative hidden w-1/2 overflow-hidden md:block">

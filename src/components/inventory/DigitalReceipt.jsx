@@ -183,8 +183,8 @@ ${sale.items.map(item =>
 ).join('\n')}
 
 -------------------------------------
-Subtotal: ${formatCurrency(sale.subtotal)}
-Tax: ${formatCurrency(sale.tax)}
+Subtotal: ${formatCurrency(sale.baseSubtotal ?? sale.subtotal)}
+${sale.discountAmount > 0 ? `Discount: -${formatCurrency(sale.discountAmount)}\n` : ''}Tax: ${formatCurrency(sale.tax)}
 -------------------------------------
 TOTAL: ${formatCurrency(sale.total)}
 -------------------------------------
@@ -276,8 +276,14 @@ Thank you for your purchase!
           <div className="px-6 py-4 bg-white dark:bg-gray-900 border-t border-dashed border-slate-200 dark:border-gray-700">
             <div className="flex justify-between py-2">
               <span className="text-slate-600 dark:text-gray-400">Subtotal</span>
-              <span className="font-medium text-slate-900 dark:text-gray-50">{formatCurrency(sale.subtotal)}</span>
+              <span className="font-medium text-slate-900 dark:text-gray-50">{formatCurrency(sale.baseSubtotal ?? sale.subtotal)}</span>
             </div>
+            {sale.discountAmount > 0 && (
+              <div className="flex justify-between py-2">
+                <span className="text-emerald-600 dark:text-emerald-400">Discount</span>
+                <span className="font-medium text-emerald-600 dark:text-emerald-400">-{formatCurrency(sale.discountAmount)}</span>
+              </div>
+            )}
             <div className="flex justify-between py-2">
               <span className="text-slate-600 dark:text-gray-400">Tax</span>
               <span className="font-medium text-slate-900 dark:text-gray-50">{formatCurrency(sale.tax)}</span>

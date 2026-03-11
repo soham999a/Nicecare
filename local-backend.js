@@ -24,6 +24,7 @@ import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { COLLECTIONS } from './src/backend/firestore/collections.js';
+import { reconcileInventoryConsistency } from './functions/reconcileConsistencyCore.js';
 
 // ── Firebase Admin init ───────────────────────────────────────────────────────
 // We explicitly load the service account JSON (if a path is set) so that
@@ -553,6 +554,29 @@ app.post('/submitFeedback', async (req, res) => {
     }
 });
 
+// ── POST /inventoryConsistencyReconcile (master only) ─────────────────────────
+app.post('/inventoryConsistencyReconcile', async (req, res) => {
+    const decoded = requireAuth(req, res); if (!decoded) return;
+    try {
+        const profileRef = db.collection(COLLECTIONS.INVENTORY_INTERNAL_USER_PROFILES).doc(decoded.uid);
+        const profileDoc = await profileRef.get();
+        if (!profileDoc.exists || profileDoc.data()?.role !== 'master') {
+            res.status(403).json({ error: 'Only master accounts can run consistency reconciliation.' });
+            return;
+        }
+
+        const { apply = false } = req.body || {};
+        const result = await reconcileInventoryConsistency(db, {
+            ownerUid: decoded.uid,
+            apply: Boolean(apply),
+        });
+        res.status(200).json(result);
+    } catch (err) {
+        console.error('inventoryConsistencyReconcile error:', err);
+        res.status(500).json({ error: err.message || 'Failed to reconcile consistency' });
+    }
+});
+
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get('/health', (_req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
 
@@ -564,6 +588,7 @@ const server = app.listen(PORT, () => {
     console.log(`\n🚀 Local backend running at http://localhost:${PORT}`);
     console.log(`   Endpoints: askAboutInventory | inventorySummary | inventoryLowStock`);
     console.log(`             askAboutCustomers | customerSummary | submitFeedback`);
+    console.log(`             inventoryConsistencyReconcile`);
     console.log(`   Health:   http://localhost:${PORT}/health`);
     console.log(`   Gemini key: ${geminiKey ? geminiKey.slice(0, 8) + '...' + geminiKey.slice(-4) : '❌ NOT SET – add GOOGLE_AI_API_KEY to .env'}`);
     if (geminiKey.startsWith('AIzaSyC2')) {

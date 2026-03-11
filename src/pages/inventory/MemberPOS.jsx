@@ -1,10 +1,24 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
+import { getApp, getApps, initializeApp } from 'firebase/app';
+import {
+  EmailAuthProvider,
+  getAuth,
+  inMemoryPersistence,
+  reauthenticateWithCredential,
+  setPersistence,
+  signInWithEmailAndPassword,
+  signOut,
+} from 'firebase/auth';
 import { usePOS } from '../../hooks/usePOS';
 import { useInventoryAuth } from '../../context/InventoryAuthContext';
+import { useEmployees } from '../../hooks/useEmployees';
+import { auth } from '../../config/firebase';
 import DigitalReceipt from '../../components/inventory/DigitalReceipt';
 
 export default function MemberPOS() {
-  const { userProfile } = useInventoryAuth();
+  const { userProfile, currentUser } = useInventoryAuth();
+  const { employees } = useEmployees();
+  const isManager = userProfile?.role === 'manager';
   const storeId = userProfile?.assignedStoreId;
   const storeName = userProfile?.assignedStoreName;
 
@@ -33,14 +47,42 @@ export default function MemberPOS() {
     customerName: '',
     customerPhone: '',
     notes: '',
+    selectedEmployeeId: '',
+    discountType: 'amount',
+    discountValue: '',
+    discountReason: '',
   });
+  const [showApprovalModal, setShowApprovalModal] = useState(false);
+  const [approvalForm, setApprovalForm] = useState({
+    managerPassword: '',
+    employeePassword: '',
+  });
+  const [approvalError, setApprovalError] = useState('');
+  const [approvalProcessing, setApprovalProcessing] = useState(false);
   const [error, setError] = useState('');
 
   const searchInputRef = useRef(null);
-  const barcodeBuffer = useRef('');
-  const barcodeTimer = useRef(null);
+  const skuBuffer = useRef('');
+  const skuTimer = useRef(null);
 
-  const totals = getCartTotals();
+  const selectedEmployee = useMemo(
+    () => employees.find((employee) => employee.id === checkoutForm.selectedEmployeeId) || null,
+    [employees, checkoutForm.selectedEmployeeId]
+  );
+  const eligibleMembers = useMemo(
+    () => employees.filter((employee) => employee.role === 'member' && employee.assignedStoreId === storeId),
+    [employees, storeId]
+  );
+  const discountInputValue = Number.parseFloat(checkoutForm.discountValue);
+  const discountValue = Number.isFinite(discountInputValue) ? discountInputValue : 0;
+  const discountConfig = isManager
+    ? {
+      type: checkoutForm.discountType,
+      value: discountValue,
+      reason: checkoutForm.discountReason,
+    }
+    : null;
+  const totals = getCartTotals(discountConfig);
   const filteredProducts = searchProducts(searchTerm);
 
   const categories = ['all', ...new Set(products.map(p => p.category).filter(Boolean))];
@@ -55,18 +97,18 @@ export default function MemberPOS() {
         return;
       }
 
-      clearTimeout(barcodeTimer.current);
+      clearTimeout(skuTimer.current);
 
-      if (e.key === 'Enter' && barcodeBuffer.current) {
-        const product = getProductByCode(barcodeBuffer.current);
+      if (e.key === 'Enter' && skuBuffer.current) {
+        const product = getProductByCode(skuBuffer.current);
         if (product) {
           addToCart(product, 1);
         }
-        barcodeBuffer.current = '';
+        skuBuffer.current = '';
       } else if (e.key.length === 1) {
-        barcodeBuffer.current += e.key;
-        barcodeTimer.current = setTimeout(() => {
-          barcodeBuffer.current = '';
+        skuBuffer.current += e.key;
+        skuTimer.current = setTimeout(() => {
+          skuBuffer.current = '';
         }, 100);
       }
     }
@@ -78,6 +120,70 @@ export default function MemberPOS() {
   useEffect(() => {
     searchInputRef.current?.focus();
   }, []);
+
+  function resetApprovalState() {
+    setShowApprovalModal(false);
+    setApprovalError('');
+    setApprovalForm({
+      managerPassword: '',
+      employeePassword: '',
+    });
+  }
+
+  async function verifyManagerPassword(managerPassword) {
+    if (!auth.currentUser?.email) {
+      throw new Error('Manager email is missing. Please sign in again.');
+    }
+    const credential = EmailAuthProvider.credential(auth.currentUser.email, managerPassword);
+    await reauthenticateWithCredential(auth.currentUser, credential);
+  }
+
+  async function verifyEmployeePassword(employeeEmail, employeePassword) {
+    const firebaseConfig = {
+      apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+      authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+      projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+      storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+      messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+      appId: import.meta.env.VITE_FIREBASE_APP_ID,
+    };
+    const verificationAppName = 'employee-password-verification';
+    const verificationApp = getApps().some((app) => app.name === verificationAppName)
+      ? getApp(verificationAppName)
+      : initializeApp(firebaseConfig, verificationAppName);
+    const verificationAuth = getAuth(verificationApp);
+    await setPersistence(verificationAuth, inMemoryPersistence);
+    await signInWithEmailAndPassword(verificationAuth, employeeEmail, employeePassword);
+    await signOut(verificationAuth);
+  }
+
+  async function performCheckout(approvalPayload = null) {
+    await checkout(
+      checkoutForm.paymentMethod,
+      checkoutForm.customerName,
+      checkoutForm.customerPhone,
+      checkoutForm.notes,
+      {
+        selectedEmployee,
+        discountConfig,
+        approvalPayload,
+        actorRole: userProfile?.role || 'member',
+      }
+    );
+    setShowCheckout(false);
+    resetApprovalState();
+    setShowReceipt(true);
+    setCheckoutForm({
+      paymentMethod: 'Cash',
+      customerName: '',
+      customerPhone: '',
+      notes: '',
+      selectedEmployeeId: '',
+      discountType: 'amount',
+      discountValue: '',
+      discountReason: '',
+    });
+  }
 
   async function handleCheckout() {
     if (cart.length === 0 || processing) return;
@@ -105,23 +211,71 @@ export default function MemberPOS() {
       return;
     }
 
+    if (isManager) {
+      if (!checkoutForm.selectedEmployeeId) {
+        setError('Please select an employee to credit this sale');
+        return;
+      }
+      if (!selectedEmployee || selectedEmployee.role !== 'member' || selectedEmployee.assignedStoreId !== storeId) {
+        setError('Selected employee must be a member from this store');
+        return;
+      }
+      if (!selectedEmployee.email) {
+        setError('Selected employee does not have an email for password verification');
+        return;
+      }
+      if (discountValue > 0 && !checkoutForm.discountReason.trim()) {
+        setError('Discount reason is required when applying a discount override');
+        return;
+      }
+      if (discountValue < 0) {
+        setError('Discount value cannot be negative');
+        return;
+      }
+      if (checkoutForm.discountType === 'percentage' && discountValue > 100) {
+        setError('Discount percentage cannot exceed 100');
+        return;
+      }
+      if (totals.discountAmount > totals.baseSubtotal) {
+        setError('Discount cannot exceed subtotal');
+        return;
+      }
+      setShowApprovalModal(true);
+      return;
+    }
+
     try {
-      await checkout(
-        checkoutForm.paymentMethod,
-        checkoutForm.customerName,
-        checkoutForm.customerPhone,
-        checkoutForm.notes
-      );
-      setShowCheckout(false);
-      setShowReceipt(true);
-      setCheckoutForm({
-        paymentMethod: 'Cash',
-        customerName: '',
-        customerPhone: '',
-        notes: '',
-      });
+      await performCheckout();
     } catch (err) {
       setError(err.message || 'Checkout failed');
+    }
+  }
+
+  async function handleApprovalAndCheckout() {
+    if (approvalProcessing || !currentUser?.uid || !currentUser?.email || !selectedEmployee?.email) return;
+    setApprovalError('');
+
+    if (!approvalForm.managerPassword || !approvalForm.employeePassword) {
+      setApprovalError('Both manager and employee passwords are required');
+      return;
+    }
+
+    try {
+      setApprovalProcessing(true);
+      await verifyManagerPassword(approvalForm.managerPassword);
+      await verifyEmployeePassword(selectedEmployee.email, approvalForm.employeePassword);
+      await performCheckout({
+        managerUid: currentUser.uid,
+        managerEmail: currentUser.email,
+        employeeUid: selectedEmployee.id,
+        employeeEmail: selectedEmployee.email,
+        verifiedAt: new Date().toISOString(),
+        verificationMethod: 'dual-password',
+      });
+    } catch (err) {
+      setApprovalError(err.message || 'Password verification failed');
+    } finally {
+      setApprovalProcessing(false);
     }
   }
 
@@ -196,7 +350,7 @@ export default function MemberPOS() {
             <input
               ref={searchInputRef}
               type="text"
-              placeholder="Search products or scan barcode..."
+              placeholder="Search products or scan SKU..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="flex-1 border-none bg-transparent text-[0.9375rem] text-slate-900 dark:text-gray-50 outline-none font-[inherit] placeholder:text-slate-400 dark:placeholder:text-gray-500"
@@ -310,7 +464,7 @@ export default function MemberPOS() {
 
                     <div className="flex-1 flex flex-col min-h-0">
                       <h4 className="text-[0.8125rem] sm:text-sm font-semibold text-slate-900 dark:text-gray-50 leading-tight line-clamp-2">{product.name}</h4>
-                      <span className="text-[0.6875rem] text-slate-400 dark:text-gray-500 mb-auto font-mono">{product.sku || product.barcode || ''}</span>
+                      <span className="text-[0.6875rem] text-slate-400 dark:text-gray-500 mb-auto font-mono">{product.sku || ''}</span>
                     </div>
 
                     <div className="flex justify-between items-end mt-2.5 pt-2 border-t border-slate-200 dark:border-gray-700">
@@ -376,7 +530,7 @@ export default function MemberPOS() {
                 </svg>
               </div>
               <h3 className="text-[0.9375rem] font-semibold text-slate-600 dark:text-gray-400 mb-1.5">Your cart is empty</h3>
-              <p className="text-[0.8125rem] text-slate-400 dark:text-gray-500 max-w-[220px] leading-relaxed">Click on a product or scan a barcode to get started</p>
+              <p className="text-[0.8125rem] text-slate-400 dark:text-gray-500 max-w-[220px] leading-relaxed">Click on a product or scan a SKU to get started</p>
             </div>
           ) : (
             <div className="flex flex-col gap-2">
@@ -434,8 +588,14 @@ export default function MemberPOS() {
           <div className="mb-4">
             <div className="flex justify-between items-center py-1.5 text-sm text-slate-600 dark:text-gray-400">
               <span>Subtotal</span>
-              <span>{formatCurrency(totals.subtotal)}</span>
+              <span>{formatCurrency(totals.baseSubtotal)}</span>
             </div>
+            {isManager && totals.discountAmount > 0 && (
+              <div className="flex justify-between items-center py-1.5 text-sm text-emerald-600 dark:text-emerald-400">
+                <span>Discount Override</span>
+                <span>-{formatCurrency(totals.discountAmount)}</span>
+              </div>
+            )}
             <div className="flex justify-between items-center py-1.5 text-sm text-slate-600 dark:text-gray-400">
               <span>Tax (8%)</span>
               <span>{formatCurrency(totals.tax)}</span>
@@ -500,7 +660,7 @@ export default function MemberPOS() {
       </div>
 
       {showCheckout && (
-        <div className="fixed inset-0 bg-black/55 backdrop-blur-[8px] flex items-center justify-center z-[1000] p-6 animate-fade-in" onClick={() => setShowCheckout(false)}>
+        <div className="fixed inset-0 bg-black/55 backdrop-blur-[8px] flex items-center justify-center z-[1000] p-6 animate-fade-in" onClick={() => { setShowCheckout(false); resetApprovalState(); }}>
           <div className="w-full max-w-[480px] bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-xl sm:rounded-2xl overflow-hidden animate-modal-slide-up shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-start justify-between px-6 pt-6 pb-5 border-b border-slate-200 dark:border-gray-700">
               <div>
@@ -509,7 +669,7 @@ export default function MemberPOS() {
               </div>
               <button
                 className="w-[34px] h-[34px] flex items-center justify-center bg-slate-50 dark:bg-[#0a0f1a] border border-slate-200 dark:border-gray-700 rounded cursor-pointer transition-all shrink-0 text-slate-400 dark:text-gray-500 hover:bg-red-600/10 hover:border-red-600 hover:text-red-600 dark:hover:bg-red-400/10 dark:hover:border-red-400 dark:hover:text-red-400"
-                onClick={() => setShowCheckout(false)}
+                onClick={() => { setShowCheckout(false); resetApprovalState(); }}
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <line x1="18" y1="6" x2="6" y2="18" />
@@ -529,6 +689,61 @@ export default function MemberPOS() {
                 <span className="text-slate-600 dark:text-gray-400 text-[0.9375rem] font-medium">Total Amount</span>
                 <strong className="text-[1.625rem] font-extrabold text-blue-600 dark:text-blue-400 tracking-tight">{formatCurrency(totals.total)}</strong>
               </div>
+
+              {isManager && (
+                <div className="mb-5">
+                  <label className="flex items-center gap-2 text-[0.8125rem] font-semibold text-slate-600 dark:text-gray-400 mb-2.5 uppercase tracking-wide">Employee Credit *</label>
+                  <select
+                    value={checkoutForm.selectedEmployeeId}
+                    onChange={(e) => setCheckoutForm({ ...checkoutForm, selectedEmployeeId: e.target.value })}
+                    className="w-full px-3.5 py-3 bg-slate-50 dark:bg-[#0a0f1a] border-[1.5px] border-slate-200 dark:border-gray-700 rounded text-sm text-slate-900 dark:text-gray-50 outline-none font-[inherit] transition-all focus:border-blue-600 dark:focus:border-blue-400 focus:ring-[3px] focus:ring-blue-600/20 dark:focus:ring-blue-400/20"
+                  >
+                    <option value="">Select employee</option>
+                    {eligibleMembers.map((employee) => (
+                      <option key={employee.id} value={employee.id}>
+                        {employee.displayName || employee.name || employee.email}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {isManager && (
+                <div className="mb-5">
+                  <label className="flex items-center gap-2 text-[0.8125rem] font-semibold text-slate-600 dark:text-gray-400 mb-2.5 uppercase tracking-wide">Discount Override</label>
+                  <div className="grid grid-cols-[130px_1fr] gap-2.5 mb-2.5">
+                    <select
+                      value={checkoutForm.discountType}
+                      onChange={(e) => setCheckoutForm({ ...checkoutForm, discountType: e.target.value })}
+                      className="w-full px-3.5 py-3 bg-slate-50 dark:bg-[#0a0f1a] border-[1.5px] border-slate-200 dark:border-gray-700 rounded text-sm text-slate-900 dark:text-gray-50 outline-none font-[inherit] transition-all focus:border-blue-600 dark:focus:border-blue-400 focus:ring-[3px] focus:ring-blue-600/20 dark:focus:ring-blue-400/20"
+                    >
+                      <option value="amount">Amount</option>
+                      <option value="percentage">Percent</option>
+                    </select>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder={checkoutForm.discountType === 'percentage' ? '0-100' : '0.00'}
+                      value={checkoutForm.discountValue}
+                      onChange={(e) => setCheckoutForm({ ...checkoutForm, discountValue: e.target.value })}
+                      className="w-full px-3.5 py-3 bg-slate-50 dark:bg-[#0a0f1a] border-[1.5px] border-slate-200 dark:border-gray-700 rounded text-sm text-slate-900 dark:text-gray-50 outline-none font-[inherit] transition-all focus:border-blue-600 dark:focus:border-blue-400 focus:ring-[3px] focus:ring-blue-600/20 dark:focus:ring-blue-400/20 placeholder:text-slate-400 dark:placeholder:text-gray-500"
+                    />
+                  </div>
+                  <textarea
+                    placeholder="Reason for discount override (required if discount applied)"
+                    value={checkoutForm.discountReason}
+                    onChange={(e) => setCheckoutForm({ ...checkoutForm, discountReason: e.target.value })}
+                    rows={2}
+                    className="w-full px-3.5 py-3 bg-slate-50 dark:bg-[#0a0f1a] border-[1.5px] border-slate-200 dark:border-gray-700 rounded text-sm text-slate-900 dark:text-gray-50 outline-none font-[inherit] transition-all resize-none focus:border-blue-600 dark:focus:border-blue-400 focus:ring-[3px] focus:ring-blue-600/20 dark:focus:ring-blue-400/20 placeholder:text-slate-400 dark:placeholder:text-gray-500"
+                  />
+                  {totals.discountAmount > 0 && (
+                    <p className="mt-2 text-xs text-emerald-600 dark:text-emerald-400">
+                      Discount applied: -{formatCurrency(totals.discountAmount)}
+                    </p>
+                  )}
+                </div>
+              )}
 
               <div className="mb-5">
                 <label className="flex items-center gap-2 text-[0.8125rem] font-semibold text-slate-600 dark:text-gray-400 mb-2.5 uppercase tracking-wide">Payment Method *</label>
@@ -593,14 +808,14 @@ export default function MemberPOS() {
             <div className="flex gap-3 px-6 py-5 bg-slate-50 dark:bg-gray-900 border-t border-slate-200 dark:border-gray-700">
               <button
                 className="flex-1 py-3 px-4 bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-lg text-slate-600 dark:text-gray-400 text-sm font-semibold cursor-pointer transition-all hover:border-slate-300 dark:hover:border-gray-600 hover:text-slate-900 dark:hover:text-gray-50"
-                onClick={() => setShowCheckout(false)}
+                onClick={() => { setShowCheckout(false); resetApprovalState(); }}
               >
                 Cancel
               </button>
               <button
                 className="flex-[2] flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-br from-emerald-600 to-emerald-700 border-none rounded-lg text-white text-sm font-semibold relative overflow-hidden cursor-pointer transition-all hover:not-disabled:-translate-y-px hover:not-disabled:shadow-[0_6px_20px_rgba(5,150,105,0.4)] disabled:bg-slate-400 dark:disabled:bg-gray-500 disabled:shadow-none disabled:cursor-not-allowed disabled:bg-none"
                 onClick={handleCheckout}
-                disabled={processing || !checkoutForm.paymentMethod || !checkoutForm.customerName || !checkoutForm.customerPhone}
+                disabled={processing || !checkoutForm.paymentMethod || !checkoutForm.customerName || !checkoutForm.customerPhone || (isManager && !checkoutForm.selectedEmployeeId)}
               >
                 {processing ? (
                   <>
@@ -615,6 +830,64 @@ export default function MemberPOS() {
                     Complete Sale
                   </>
                 )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showApprovalModal && isManager && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-[6px] flex items-center justify-center z-[1100] p-6" onClick={resetApprovalState}>
+          <div className="w-full max-w-[460px] bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-xl overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="px-6 py-5 border-b border-slate-200 dark:border-gray-700">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-gray-50">Dual Approval Required</h3>
+              <p className="text-sm text-slate-500 dark:text-gray-400 mt-1">
+                Confirm manager and employee passwords before checkout.
+              </p>
+            </div>
+            <div className="px-6 py-5">
+              {approvalError && (
+                <div className="mb-4 px-3.5 py-2.5 bg-red-600/10 dark:bg-red-400/10 border border-red-600/50 dark:border-red-400/40 rounded text-sm text-red-600 dark:text-red-400">
+                  {approvalError}
+                </div>
+              )}
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-gray-400 mb-2">Manager Password *</label>
+                  <input
+                    type="password"
+                    value={approvalForm.managerPassword}
+                    onChange={(e) => setApprovalForm({ ...approvalForm, managerPassword: e.target.value })}
+                    placeholder="Enter manager password"
+                    className="w-full px-3.5 py-3 bg-slate-50 dark:bg-[#0a0f1a] border-[1.5px] border-slate-200 dark:border-gray-700 rounded text-sm text-slate-900 dark:text-gray-50 outline-none font-[inherit] transition-all focus:border-blue-600 dark:focus:border-blue-400 focus:ring-[3px] focus:ring-blue-600/20 dark:focus:ring-blue-400/20"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-gray-400 mb-2">Employee Password *</label>
+                  <input
+                    type="password"
+                    value={approvalForm.employeePassword}
+                    onChange={(e) => setApprovalForm({ ...approvalForm, employeePassword: e.target.value })}
+                    placeholder={`Enter password for ${selectedEmployee?.displayName || selectedEmployee?.name || selectedEmployee?.email || 'employee'}`}
+                    className="w-full px-3.5 py-3 bg-slate-50 dark:bg-[#0a0f1a] border-[1.5px] border-slate-200 dark:border-gray-700 rounded text-sm text-slate-900 dark:text-gray-50 outline-none font-[inherit] transition-all focus:border-blue-600 dark:focus:border-blue-400 focus:ring-[3px] focus:ring-blue-600/20 dark:focus:ring-blue-400/20"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-3 px-6 py-4 bg-slate-50 dark:bg-gray-900 border-t border-slate-200 dark:border-gray-700">
+              <button
+                className="flex-1 py-2.5 px-4 bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-lg text-sm font-semibold text-slate-600 dark:text-gray-400 transition-all hover:border-slate-300 dark:hover:border-gray-600"
+                onClick={resetApprovalState}
+                disabled={approvalProcessing}
+              >
+                Back
+              </button>
+              <button
+                className="flex-[1.8] py-2.5 px-4 bg-gradient-to-r from-emerald-600 to-emerald-500 border-none rounded-lg text-sm font-semibold text-white transition-all hover:not-disabled:-translate-y-px disabled:opacity-60 disabled:cursor-not-allowed"
+                onClick={handleApprovalAndCheckout}
+                disabled={approvalProcessing || !approvalForm.managerPassword || !approvalForm.employeePassword}
+              >
+                {approvalProcessing ? 'Verifying...' : 'Verify & Complete Sale'}
               </button>
             </div>
           </div>

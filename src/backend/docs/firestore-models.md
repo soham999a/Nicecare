@@ -36,7 +36,6 @@ Products are SKU-level items that can be assigned to a store and have stock.
 | `ownerUid` | string | Owner UID (master). For members, set to master's UID. |
 | `name` | string | Product name (required). |
 | `sku` | string | Optional SKU. |
-| `barcode` | string | Optional barcode. |
 | `category` | string | Optional category (e.g. Electronics, Parts). |
 | `description` | string | Optional description. |
 | `price` | number | Selling price. |

@@ -12,6 +12,7 @@ import EmployeeRanking from '../../components/dashboard/EmployeeRanking';
 import RepairPipeline from '../../components/dashboard/RepairPipeline';
 import ActionItems from '../../components/dashboard/ActionItems';
 import StoreCommandTable from '../../components/dashboard/StoreCommandTable';
+import { reconcileInventoryConsistency } from '../../services/inventoryConsistencyService';
 import {
   RevenueKPICard,
   RepairsKPICard,
@@ -105,6 +106,109 @@ const DataFreshness = ({ dataHealth }) => {
   );
 };
 
+const DataConsistency = ({
+  consistencyHealth,
+  canReconcile,
+  loading,
+  statusMessage,
+  errorMessage,
+  runDetails,
+  onDryRun,
+  onApply,
+}) => {
+  const checks = consistencyHealth?.checks || {};
+  const hasIssues = (consistencyHealth?.totalMismatches || 0) > 0;
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 shadow-sm p-4">
+      <div className="flex items-center justify-between gap-3 mb-3">
+        <p className="text-sm font-semibold text-slate-800 dark:text-white">Data Consistency</p>
+        <span
+          className={`text-xs px-2 py-0.5 rounded-full ${
+            hasIssues
+              ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+              : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+          }`}
+        >
+          {hasIssues ? `${consistencyHealth.totalMismatches} mismatches` : 'Healthy'}
+        </span>
+      </div>
+      <div className="space-y-1.5 text-xs">
+        <p className="text-slate-600 dark:text-gray-300">
+          Manager mismatch: <strong>{checks.managerMismatches || 0}</strong>
+        </p>
+        <p className="text-slate-600 dark:text-gray-300">
+          Employee count mismatch: <strong>{checks.employeeCountMismatches || 0}</strong>
+        </p>
+        <p className="text-slate-600 dark:text-gray-300">
+          Product count mismatch: <strong>{checks.productCountMismatches || 0}</strong>
+        </p>
+        <p className="text-slate-600 dark:text-gray-300">
+          Employee store-name drift: <strong>{checks.employeeStoreNameMismatches || 0}</strong>
+        </p>
+        <p className="text-slate-600 dark:text-gray-300">
+          Product store-name drift: <strong>{checks.productStoreNameMismatches || 0}</strong>
+        </p>
+      </div>
+      <div className="flex items-center gap-2 mt-3">
+        <button
+          type="button"
+          onClick={onDryRun}
+          disabled={loading || !canReconcile}
+          className="px-2.5 py-1.5 text-xs font-semibold rounded-lg border border-slate-300 dark:border-gray-600 text-slate-700 dark:text-gray-200 hover:bg-slate-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {loading ? 'Running...' : 'Dry Run'}
+        </button>
+        <button
+          type="button"
+          onClick={onApply}
+          disabled={loading || !canReconcile}
+          className="px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Apply Fix
+        </button>
+      </div>
+      {!canReconcile && (
+        <p className="text-xs text-slate-500 dark:text-gray-400 mt-2">
+          Reconciliation actions are available to master accounts only.
+        </p>
+      )}
+      {statusMessage && (
+        <p className="text-xs text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 rounded mt-2">
+          {statusMessage}
+        </p>
+      )}
+      {errorMessage && (
+        <p className="text-xs text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded mt-2">
+          {errorMessage}
+        </p>
+      )}
+      {runDetails && (
+        <div className="mt-3 border-t border-slate-200 dark:border-gray-700 pt-2 space-y-2">
+          {['stores', 'employees', 'products', 'inventoryUsers'].map((section) => {
+            const rows = runDetails?.[section] || [];
+            if (!rows.length) return null;
+            return (
+              <div key={section}>
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-gray-400">
+                  {section} ({rows.length}{runDetails?.truncated?.[section] ? '+' : ''})
+                </p>
+                <div className="max-h-28 overflow-auto mt-1 space-y-1">
+                  {rows.map((row) => (
+                    <p key={`${section}-${row.id}`} className="text-[11px] text-slate-600 dark:text-gray-300">
+                      <span className="font-mono">{row.id}</span>: {row.fields?.join(', ') || 'updated'}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
 export default function MasterDashboard() {
   const { userProfile } = useInventoryAuth();
   const isMaster = userProfile?.role === 'master';
@@ -118,6 +222,11 @@ function EnterpriseDashboard({ userProfile, isMaster }) {
   const [datePreset, setDatePreset] = useState('30d');
   const [selectedStoreId, setSelectedStoreId] = useState('all');
   const [compareMode, setCompareMode] = useState('vs-yesterday');
+  const [reconcileLoading, setReconcileLoading] = useState(false);
+  const [reconcileStatus, setReconcileStatus] = useState('');
+  const [reconcileError, setReconcileError] = useState('');
+  const [reconcileRunDetails, setReconcileRunDetails] = useState(null);
+  const [showApplyConfirm, setShowApplyConfirm] = useState(false);
   const { stores: allStores } = useStores();
 
   const dateRange = useMemo(() => resolveDateRange(datePreset), [datePreset]);
@@ -135,6 +244,7 @@ function EnterpriseDashboard({ userProfile, isMaster }) {
     lastRefresh,
     formatCurrency,
     dataHealth,
+    consistencyHealth,
     compareSnapshot,
   } = useEnhancedDashboard({
     selectedStoreId: effectiveStoreId,
@@ -170,6 +280,28 @@ function EnterpriseDashboard({ userProfile, isMaster }) {
   }, [chartData.performance, employees, kpis]);
 
   const revenueSparkline = useMemo(() => chartData.revenue?.slice(-7) ?? [], [chartData.revenue]);
+
+  async function runReconciliation(apply) {
+    if (!isMaster) return;
+    setReconcileLoading(true);
+    setReconcileStatus('');
+    setReconcileError('');
+    setReconcileRunDetails(null);
+    try {
+      const result = await reconcileInventoryConsistency({ apply });
+      const total = result?.summary?.totalChangesDetected || 0;
+      setReconcileRunDetails(result?.details || null);
+      setReconcileStatus(
+        apply
+          ? `Applied ${total} change(s) across consistency checks.`
+          : `Dry run complete: ${total} change(s) detected.`
+      );
+    } catch (err) {
+      setReconcileError(err?.message || 'Failed to run reconciliation');
+    } finally {
+      setReconcileLoading(false);
+    }
+  }
 
   if (loading) return <LoadingSkeleton />;
 
@@ -287,6 +419,16 @@ function EnterpriseDashboard({ userProfile, isMaster }) {
             <SectionLabel>Intervention Queue</SectionLabel>
             <ActionItems alerts={alerts} />
             <DataFreshness dataHealth={dataHealth} />
+            <DataConsistency
+              consistencyHealth={consistencyHealth}
+              canReconcile={isMaster}
+              loading={reconcileLoading}
+              statusMessage={reconcileStatus}
+              errorMessage={reconcileError}
+              runDetails={reconcileRunDetails}
+              onDryRun={() => runReconciliation(false)}
+              onApply={() => setShowApplyConfirm(true)}
+            />
           </div>
 
           <div className="lg:col-span-6 space-y-6">
@@ -354,6 +496,41 @@ function EnterpriseDashboard({ userProfile, isMaster }) {
           {isMaster ? ' Master scope view enabled.' : ' Store-scoped manager view enabled.'}
         </div>
       </div>
+
+      {showApplyConfirm && (
+        <div className="fixed inset-0 z-50 bg-black/45 backdrop-blur-sm p-4 flex items-center justify-center">
+          <div className="w-full max-w-md rounded-xl border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-2xl p-5">
+            <h3 className="text-base font-bold text-slate-900 dark:text-white mb-2">
+              Apply consistency fixes?
+            </h3>
+            <p className="text-sm text-slate-600 dark:text-gray-300">
+              This will write updates to stores, employees, products, and inventory user profiles
+              for detected mismatches. Run Dry Run first if you want to preview changes.
+            </p>
+            <div className="flex items-center justify-end gap-2 mt-4">
+              <button
+                type="button"
+                onClick={() => setShowApplyConfirm(false)}
+                className="px-3 py-1.5 text-sm font-semibold rounded-lg border border-slate-300 dark:border-gray-600 text-slate-700 dark:text-gray-200 hover:bg-slate-50 dark:hover:bg-gray-700"
+                disabled={reconcileLoading}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  setShowApplyConfirm(false);
+                  await runReconciliation(true);
+                }}
+                className="px-3 py-1.5 text-sm font-semibold rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={reconcileLoading}
+              >
+                Confirm Apply
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

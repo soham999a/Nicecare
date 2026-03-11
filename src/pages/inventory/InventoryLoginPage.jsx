@@ -75,7 +75,7 @@ export default function InventoryLoginPage() {
   const prevFeature = () => setActiveFeature((prev) => (prev === 0 ? FEATURES.length - 1 : prev - 1));
 
   return (
-    <div className="flex min-h-screen w-full bg-[#fcfcfc] dark:bg-[#0a0f1a] transition-colors duration-300 overflow-x-hidden">
+    <div className="modern-auth-shell flex min-h-screen w-full transition-colors duration-300 overflow-x-hidden">
       
       {/* LEFT SIDE: 50% IMAGE PANEL (Now on the left for Desktop) */}
       <div className="relative hidden w-1/2 overflow-hidden md:block">

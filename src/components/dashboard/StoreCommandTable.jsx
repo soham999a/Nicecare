@@ -61,7 +61,7 @@ const StoreCommandTable = ({ rows = [], formatCurrency }) => {
 
     return (
       <div className="overflow-auto">
-        <table className="w-full min-w-[820px]">
+        <table className="w-full min-w-[820px] [&_td]:border [&_td]:border-slate-200 dark:[&_td]:border-gray-700">
           <thead className={`bg-slate-50 dark:bg-gray-700/40 border-b border-slate-200 dark:border-gray-700 ${expanded ? 'sticky top-0 z-10 backdrop-blur-sm' : ''}`}>
             <tr>
               <th className={headerClass}>Store</th>

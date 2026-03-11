@@ -9,6 +9,7 @@ import {
   updateDoc,
   deleteDoc,
   doc,
+  getDoc,
   serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '../../../config/firebase';
@@ -45,6 +46,34 @@ export function subscribeStores(ownerUid, onData, onError) {
     },
     onError
   );
+}
+
+export function subscribeStoreById(storeId, onData, onError) {
+  const storeRef = doc(db, COLLECTIONS.BUSINESS_STORE_LOCATIONS, storeId);
+
+  return onSnapshot(
+    storeRef,
+    (snapshot) => {
+      if (!snapshot.exists()) {
+        onData([]);
+        return;
+      }
+      onData([
+        {
+          id: snapshot.id,
+          ...snapshot.data(),
+        },
+      ]);
+    },
+    onError
+  );
+}
+
+export async function getStoreById(storeId) {
+  const storeRef = doc(db, COLLECTIONS.BUSINESS_STORE_LOCATIONS, storeId);
+  const snapshot = await getDoc(storeRef);
+  if (!snapshot.exists()) return null;
+  return { id: snapshot.id, ...snapshot.data() };
 }
 
 export async function addStore(ownerUid, storeData) {

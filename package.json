@@ -12,6 +12,8 @@
     "preview": "vite preview",
     "migrate:firestore-collections": "node functions/scripts/migrateFirestoreCollectionNames.js",
     "migrate:firestore-collections:write": "node functions/scripts/migrateFirestoreCollectionNames.js --write",
+    "reconcile:inventory-consistency": "node functions/scripts/reconcileInventoryConsistency.js",
+    "reconcile:inventory-consistency:write": "node functions/scripts/reconcileInventoryConsistency.js --write",
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage"

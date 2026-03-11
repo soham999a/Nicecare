@@ -370,7 +370,6 @@ This system was implemented to solve the problem where **users with existing CRM
   name: "Product Name",
   description: "Product description",
   sku: "SKU-001",
-  barcode: "1234567890123",
   category: "Electronics",
   price: 99.99,
   cost: 50.00,
@@ -669,7 +668,7 @@ const {
 ### Inventory Features
 - ✅ Multi-store management
 - ✅ Product catalog with categories
-- ✅ Barcode/SKU support
+- ✅ SKU support
 - ✅ Stock tracking with low-stock alerts
 - ✅ Employee management with invitations
 - ✅ Point of Sale (POS) system

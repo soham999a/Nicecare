@@ -168,6 +168,16 @@ function EmployeeManagementContent({ userProfile, isMaster, isManager }) {
   const visibleEmployees = isManager
     ? filteredEmployees.filter(e => e.role !== 'manager')
     : filteredEmployees;
+  const assignedStoreOptions = editingEmployee?.assignedStoreId &&
+    !stores.some((store) => store.id === editingEmployee.assignedStoreId)
+    ? [
+        {
+          id: editingEmployee.assignedStoreId,
+          name: editingEmployee.assignedStoreName || 'Current assigned store',
+        },
+        ...stores,
+      ]
+    : stores;
 
   return (
     <main className="p-4 md:p-6 lg:p-8 space-y-6 animate-fade-in">
@@ -329,7 +339,7 @@ function EmployeeManagementContent({ userProfile, isMaster, isManager }) {
                     required
                   >
                     <option value="">Select a store</option>
-                    {stores.map((store) => (
+                    {assignedStoreOptions.map((store) => (
                       <option key={store.id} value={store.id}>
                         {store.name}
                       </option>
@@ -430,7 +440,7 @@ function EmployeeManagementContent({ userProfile, isMaster, isManager }) {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm [&_td]:border [&_td]:border-slate-200 dark:[&_td]:border-gray-700">
               <thead>
                 <tr className="border-b border-slate-100 dark:border-gray-700 bg-slate-50/50 dark:bg-gray-800/50">
                   <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 dark:text-gray-500 uppercase tracking-wider">Employee</th>

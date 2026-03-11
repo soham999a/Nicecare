@@ -285,7 +285,7 @@ export default function CustomerTable({ customers, onUpdateStatus, onUpdateCusto
       ) : (
         <>
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-sm">
+          <table className="w-full border-collapse text-sm [&_td]:border [&_td]:border-slate-200 dark:[&_td]:border-gray-700">
             <thead>
               <tr>
                 <th className="text-left px-4 py-3 bg-slate-50 dark:bg-gray-800 text-slate-600 dark:text-gray-400 border-b border-slate-200 dark:border-gray-700 font-medium"></th>
