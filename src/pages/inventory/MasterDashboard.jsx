@@ -1,256 +1,359 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { useStores } from '../../hooks/useStores';
-import { useEmployees } from '../../hooks/useEmployees';
-import { useProducts } from '../../hooks/useProducts';
-import { useSales } from '../../hooks/useSales';
 import { useInventoryAuth } from '../../context/InventoryAuthContext';
+import { useStores } from '../../hooks/useStores';
+import { useEnhancedDashboard } from '../../hooks/useEnhancedDashboard';
+
+import RevenueChart from '../../components/dashboard/charts/RevenueChart';
+import PerformanceChart from '../../components/dashboard/charts/PerformanceChart';
+import RepairTypeChart from '../../components/dashboard/charts/RepairTypeChart';
+import StoreMap from '../../components/dashboard/StoreMap';
+import EmployeeRanking from '../../components/dashboard/EmployeeRanking';
+import RepairPipeline from '../../components/dashboard/RepairPipeline';
+import ActionItems from '../../components/dashboard/ActionItems';
+import StoreCommandTable from '../../components/dashboard/StoreCommandTable';
+import {
+  RevenueKPICard,
+  RepairsKPICard,
+  InventoryKPICard,
+  RepairKPICard,
+} from '../../components/dashboard/KPICard';
+
+const DATE_PRESETS = [
+  { id: 'today', label: 'Today' },
+  { id: '7d', label: 'Last 7d' },
+  { id: '30d', label: 'Last 30d' },
+  { id: 'month', label: 'This Month' },
+];
+
+const resolveDateRange = (preset) => {
+  const now = new Date();
+  const start = new Date(now);
+  const end = new Date(now);
+  end.setHours(23, 59, 59, 999);
+
+  if (preset === 'today') {
+    start.setHours(0, 0, 0, 0);
+    return { start, end };
+  }
+
+  if (preset === '7d') {
+    start.setDate(now.getDate() - 6);
+    start.setHours(0, 0, 0, 0);
+    return { start, end };
+  }
+
+  if (preset === 'month') {
+    start.setDate(1);
+    start.setHours(0, 0, 0, 0);
+    return { start, end };
+  }
+
+  start.setDate(now.getDate() - 29);
+  start.setHours(0, 0, 0, 0);
+  return { start, end };
+};
+
+const LoadingSkeleton = () => (
+  <div className="min-h-screen bg-slate-50 dark:bg-[#0a0f1a]">
+    <div className="h-52 bg-gradient-to-r from-[#0f1f3d] to-[#1a56db] animate-pulse" />
+    <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-5">
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <div key={i} className="h-28 rounded-xl bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 animate-pulse" />
+        ))}
+      </div>
+      <div className="h-[540px] rounded-xl bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 animate-pulse" />
+    </div>
+  </div>
+);
+
+const SectionLabel = ({ children }) => (
+  <p className="text-xs font-bold text-slate-400 dark:text-gray-500 uppercase tracking-widest mb-3">
+    {children}
+  </p>
+);
+
+const DataFreshness = ({ dataHealth }) => {
+  const latest = Math.max(
+    ...Object.values(dataHealth?.sourceTimestamps || {}).map((v) => v || 0),
+    0
+  );
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 shadow-sm p-4">
+      <div className="flex items-center justify-between gap-3 mb-3">
+        <p className="text-sm font-semibold text-slate-800 dark:text-white">Data Trust</p>
+        <span className="text-xs text-slate-500 dark:text-gray-400">
+          {latest ? `Latest update ${new Date(latest).toLocaleTimeString()}` : 'No updates yet'}
+        </span>
+      </div>
+      {dataHealth?.freshnessWarnings?.length ? (
+        <div className="space-y-2">
+          {dataHealth.freshnessWarnings.map((warning) => (
+            <p key={warning} className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded">
+              {warning}
+            </p>
+          ))}
+        </div>
+      ) : (
+        <p className="text-xs text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 rounded">
+          All dashboard sources are streaming live.
+        </p>
+      )}
+    </div>
+  );
+};
 
 export default function MasterDashboard() {
   const { userProfile } = useInventoryAuth();
   const isMaster = userProfile?.role === 'master';
   const isManager = userProfile?.role === 'manager';
 
-  if (!isMaster && !isManager) {
-    return <Navigate to="/inventory/pos" replace />;
-  }
-
-  return (
-    <MasterDashboardContent
-      userProfile={userProfile}
-      isMaster={isMaster}
-      isManager={isManager}
-    />
-  );
+  if (!isMaster && !isManager) return <Navigate to="/inventory/pos" replace />;
+  return <EnterpriseDashboard userProfile={userProfile} isMaster={isMaster} />;
 }
 
-function MasterDashboardContent({ userProfile, isMaster, isManager }) {
-  const { stores, loading: storesLoading } = useStores();
-  const { employees, loading: employeesLoading } = useEmployees();
-  const { products, lowStockProducts, loading: productsLoading } = useProducts();
-  const { stats, loading: salesLoading } = useSales();
+function EnterpriseDashboard({ userProfile, isMaster }) {
+  const [datePreset, setDatePreset] = useState('30d');
+  const [selectedStoreId, setSelectedStoreId] = useState('all');
+  const [compareMode, setCompareMode] = useState('vs-yesterday');
+  const { stores: allStores } = useStores();
 
-  const employeeCountByStore = useMemo(() => {
-    const counts = {};
-    for (const emp of employees) {
-      if (emp.assignedStoreId) {
-        counts[emp.assignedStoreId] = (counts[emp.assignedStoreId] || 0) + 1;
+  const dateRange = useMemo(() => resolveDateRange(datePreset), [datePreset]);
+  const effectiveStoreId = selectedStoreId === 'all' ? null : selectedStoreId;
+
+  const {
+    stores,
+    employees,
+    summary,
+    ownerPulse,
+    chartData,
+    alerts,
+    kpis,
+    loading,
+    lastRefresh,
+    formatCurrency,
+    dataHealth,
+    compareSnapshot,
+  } = useEnhancedDashboard({
+    selectedStoreId: effectiveStoreId,
+    dateRange,
+    compareMode,
+  });
+
+  const storeCommandRows = useMemo(() => {
+    const inventoryByStore = (kpis?.inventory?.stockAlerts || []).reduce((acc, item) => {
+      acc[item.storeId] = (acc[item.storeId] || 0) + 1;
+      return acc;
+    }, {});
+
+    const managerByStore = employees.reduce((acc, employee) => {
+      if (employee.role === 'manager' && employee.assignedStoreId) {
+        acc[employee.assignedStoreId] = employee.displayName || employee.name || 'Manager';
       }
-    }
-    return counts;
-  }, [employees]);
+      return acc;
+    }, {});
 
-  const loading = storesLoading || employeesLoading || productsLoading || salesLoading;
+    return (chartData.performance || [])
+      .map((store) => ({
+        ...store,
+        lowStockCount: inventoryByStore[store.storeId] || 0,
+        managerName: managerByStore[store.storeId] || '',
+      }))
+      .sort((a, b) => {
+        const riskScoreA = a.staleRepairs + a.lowStockCount;
+        const riskScoreB = b.staleRepairs + b.lowStockCount;
+        if (riskScoreB !== riskScoreA) return riskScoreB - riskScoreA;
+        return b.revenue - a.revenue;
+      });
+  }, [chartData.performance, employees, kpis]);
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency', currency: 'USD',
-    }).format(amount || 0);
-  };
+  const revenueSparkline = useMemo(() => chartData.revenue?.slice(-7) ?? [], [chartData.revenue]);
+
+  if (loading) return <LoadingSkeleton />;
+
+  const greetingHour = new Date().getHours();
+  const greeting =
+    greetingHour < 12 ? 'Good morning' : greetingHour < 17 ? 'Good afternoon' : 'Good evening';
 
   return (
-    <main className="p-3 sm:p-4 md:p-6 lg:p-8 space-y-4 sm:space-y-6 animate-fade-in">
-
-      {/* --- HERO SECTION --- */}
-      <section className="bg-gradient-to-br from-blue-600 to-blue-700 dark:from-blue-700 dark:to-blue-900 rounded-2xl p-6 md:p-8 text-white shadow-lg">
-        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-          <div className="space-y-2">
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
-              Welcome back, {userProfile?.displayName || (isMaster ? 'Business Owner' : 'Store Manager')}
-            </h1>
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="text-blue-100 text-sm md:text-base">
-                {isMaster
-                  ? 'Monitor your performance and manage operations in real-time.'
-                  : 'Monitor your assigned store performance and team operations in real-time.'}
-              </p>
-              {isManager && userProfile?.assignedStoreName && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 text-xs font-semibold tracking-wide">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                  </svg>
-                  Store: {userProfile.assignedStoreName}
-                </span>
-              )}
-            </div>
-          </div>
-          {lowStockProducts.length > 0 && (
-            <div className="flex items-start gap-2 sm:gap-3 bg-amber-500/20 backdrop-blur-sm border border-amber-300/30 rounded-lg sm:rounded-xl px-3 sm:px-4 py-2 sm:py-3 max-w-md">
-              <div className="text-amber-200 shrink-0 mt-0.5">
-                <svg width="20" height="20" className="sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-                  <line x1="12" y1="9" x2="12" y2="13"/>
-                  <line x1="12" y1="17" x2="12.01" y2="17"/>
-                </svg>
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0a0f1a]">
+      <div className="bg-gradient-to-br from-[#0f1f3d] via-[#0d2d6b] to-[#1a56db]">
+        <div className="px-4 sm:px-6 lg:px-8 py-8">
+          <div className="max-w-[1500px] mx-auto">
+            <div className="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-6">
+              <div className="text-white">
+                <p className="text-xs font-semibold text-blue-200 uppercase tracking-widest mb-2">
+                  Owner Dashboard Cockpit
+                </p>
+                <h1 className="text-3xl lg:text-4xl font-bold tracking-tight">
+                  {greeting}, {userProfile?.displayName?.split(' ')[0] || 'Owner'}
+                </h1>
+                <p className="text-sm text-blue-200 mt-2">
+                  Balanced view of profitability, operations, inventory, and team execution.
+                </p>
               </div>
-              <div className="space-y-1 min-w-0">
-                <strong className="text-xs sm:text-sm font-semibold text-amber-100">Low Stock Alert!</strong>
-                <div className="flex flex-wrap items-center gap-1 sm:gap-1.5 text-[0.65rem] sm:text-xs">
-                  {lowStockProducts.slice(0, 3).map((product, idx) => (
-                    <span key={idx} className="bg-white/15 px-1.5 sm:px-2 py-0.5 rounded-full truncate max-w-[80px] sm:max-w-none">{product.name}</span>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <select
+                  value={selectedStoreId}
+                  onChange={(e) => setSelectedStoreId(e.target.value)}
+                  className="px-3 py-2 rounded-lg text-sm bg-white/10 text-white border border-white/20"
+                >
+                  <option value="all" className="text-slate-800">All Stores</option>
+                  {allStores.map((store) => (
+                    <option key={store.id} value={store.id} className="text-slate-800">
+                      {store.name}
+                    </option>
                   ))}
-                  {lowStockProducts.length > 3 && <span className="text-amber-200">+{lowStockProducts.length - 3} more</span>}
-                  <a href="/inventory/products" className="text-white font-semibold underline underline-offset-2 hover:text-amber-100 ml-1">View All</a>
+                </select>
+
+                <select
+                  value={datePreset}
+                  onChange={(e) => setDatePreset(e.target.value)}
+                  className="px-3 py-2 rounded-lg text-sm bg-white/10 text-white border border-white/20"
+                >
+                  {DATE_PRESETS.map((preset) => (
+                    <option key={preset.id} value={preset.id} className="text-slate-800">
+                      {preset.label}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  value={compareMode}
+                  onChange={(e) => setCompareMode(e.target.value)}
+                  className="px-3 py-2 rounded-lg text-sm bg-white/10 text-white border border-white/20"
+                >
+                  <option value="vs-yesterday" className="text-slate-800">Compare: Yesterday</option>
+                  <option value="vs-last-week" className="text-slate-800">Compare: Last Week</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 text-white mt-6">
+              {[
+                {
+                  label: "Today's Revenue",
+                  value: formatCurrency(ownerPulse?.todayRevenue || 0),
+                  sub: `${(summary?.revenue?.growth || 0).toFixed(1)}% vs yesterday`,
+                },
+                {
+                  label: 'Gross Profit',
+                  value: formatCurrency(ownerPulse?.grossProfit || 0),
+                  sub: `${(ownerPulse?.grossMarginPct || 0).toFixed(1)}% margin`,
+                },
+                {
+                  label: 'Open Queue',
+                  value: ownerPulse?.openRepairQueue || 0,
+                  sub: `${summary?.repairs?.staleTickets || 0} stale`,
+                },
+                {
+                  label: 'Critical Inventory',
+                  value: ownerPulse?.criticalInventory || 0,
+                  sub: `${summary?.inventory?.lowStock || 0} low stock`,
+                },
+                {
+                  label: 'Cash At Risk',
+                  value: formatCurrency(ownerPulse?.cashAtRisk || 0),
+                  sub: `${formatCurrency(summary?.cashflow?.pendingPickupValue || 0)} pending pickup`,
+                },
+                {
+                  label: 'Compare Snapshot',
+                  value: compareSnapshot?.label || '--',
+                  sub: compareMode === 'vs-last-week'
+                    ? formatCurrency(compareSnapshot?.value || 0)
+                    : `${(compareSnapshot?.value || 0).toFixed(1)}%`,
+                },
+              ].map((card) => (
+                <div
+                  key={card.label}
+                  className="bg-white/10 backdrop-blur-sm border border-white/15 rounded-xl px-4 py-3"
+                >
+                  <p className="text-lg font-bold tabular-nums">{card.value}</p>
+                  <p className="text-xs text-blue-100 mt-0.5 font-medium">{card.label}</p>
+                  <p className="text-xs text-blue-200 mt-0.5">{card.sub}</p>
                 </div>
-              </div>
+              ))}
             </div>
-          )}
-        </div>
-      </section>
-
-      <div className="space-y-6 sm:space-y-8">
-        {/* --- MAIN STATS --- */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 relative z-10 px-2">
-          <StatCard label={isMaster ? 'Total Stores' : 'Assigned Store'} value={loading ? '...' : (isMaster ? stores.length : 1)} icon={<StoreIcon />} type="stores" />
-          <StatCard label="Total Products" value={loading ? '...' : products.length} icon={<ProductIcon />} type="products" />
-          <StatCard label="Total Employees" value={loading ? '...' : employees.length} icon={<EmployeeIcon />} type="employees" />
-          <StatCard label="Total Revenue" value={loading ? '...' : formatCurrency(stats?.totalRevenue)} icon={<RevenueIcon />} type="revenue" />
-        </div>
-
-        {/* --- SECONDARY STATS --- */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-            <MiniCard label="Today's Sales" value={loading ? '...' : stats?.todaySales} />
-            <MiniCard label="Today's Revenue" value={loading ? '...' : formatCurrency(stats?.todayRevenue)} />
-            <MiniCard label="Avg. Order" value={loading ? '...' : formatCurrency(stats?.averageOrderValue)} />
-            <MiniCard label="Low Stock" value={loading ? '...' : lowStockProducts.length} warning />
-        </div>
-
-        {/* --- QUICK ACTIONS SECTION --- */}
-        <div className="space-y-4">
-          <h2 className="text-lg font-bold text-slate-900 dark:text-gray-50">Quick Actions</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {isMaster && <QuickActionCard href="/inventory/stores" label="Add Store" icon={<AddIcon />} />}
-            <QuickActionCard href="/inventory/employees" label="Add Employee" icon={<UserAddIcon />} />
-            <QuickActionCard href="/inventory/products" label="Add Product" icon={<BoxAddIcon />} />
-            <QuickActionCard href="/inventory/sales" label="View Reports" icon={<ReportIcon />} />
           </div>
         </div>
+      </div>
 
-        {/* --- TABLE OVERVIEWS --- */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-          
-          {/* Stores Table Panel (master only) */}
-          {isMaster && (
-            <div className="bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-xl shadow-card overflow-hidden">
-              <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-gray-700">
-                <h3 className="text-base font-bold text-slate-900 dark:text-gray-50">Stores Overview</h3>
-                <a href="/inventory/stores" className="text-xs font-bold text-blue-600 dark:text-blue-400 tracking-wide hover:underline">VIEW ALL</a>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-slate-100 dark:border-gray-700">
-                      <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 dark:text-gray-500 uppercase tracking-wider">Store Name</th>
-                      <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 dark:text-gray-500 uppercase tracking-wider">Location</th>
-                      <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 dark:text-gray-500 uppercase tracking-wider">Employees</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-gray-700">
-                    {loading ? (
-                      <tr><td colSpan="3" style={{ textAlign: 'center', padding: '20px' }} className="text-slate-400 dark:text-gray-500">Loading data...</td></tr>
-                    ) : stores.slice(0, 5).map(store => (
-                      <tr key={store.id} className="hover:bg-slate-50 dark:hover:bg-gray-700/50 transition-colors">
-                        <td className="px-5 py-3 font-semibold text-slate-900 dark:text-gray-50">{store.name}</td>
-                        <td className="px-5 py-3 text-slate-500 dark:text-gray-400">{store.address || 'Global Store'}</td>
-                        <td className="px-5 py-3 font-semibold text-blue-600 dark:text-blue-400">{employeeCountByStore[store.id] || 0}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
+      <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="lg:col-span-3 space-y-6">
+            <SectionLabel>Intervention Queue</SectionLabel>
+            <ActionItems alerts={alerts} />
+            <DataFreshness dataHealth={dataHealth} />
+          </div>
 
-          {/* Employees Table Panel */}
-          <div className="bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-xl shadow-card overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-gray-700">
-              <h3 className="text-base font-bold text-slate-900 dark:text-gray-50">Recent Employees</h3>
-              <a href="/inventory/employees" className="text-xs font-bold text-blue-600 dark:text-blue-400 tracking-wide hover:underline">VIEW ALL</a>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-slate-100 dark:border-gray-700">
-                    <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 dark:text-gray-500 uppercase tracking-wider">Employee Name</th>
-                    <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 dark:text-gray-500 uppercase tracking-wider">Assigned Store</th>
-                    <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 dark:text-gray-500 uppercase tracking-wider">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-gray-700">
-                  {loading ? (
-                    <tr><td colSpan="3" style={{textAlign: 'center', padding: '20px'}} className="text-slate-400 dark:text-gray-500">Loading data...</td></tr>
-                  ) : employees.slice(0, 5).map(emp => (
-                    <tr key={emp.id} className="hover:bg-slate-50 dark:hover:bg-gray-700/50 transition-colors">
-                      <td className="px-5 py-3 font-semibold text-slate-900 dark:text-gray-50">{emp.displayName}</td>
-                      <td className="px-5 py-3 text-slate-500 dark:text-gray-400">{emp.assignedStoreName || 'Corporate'}</td>
-                      <td className="px-5 py-3">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                          emp.isActive
-                            ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'
-                            : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
-                        }`}>
-                          {emp.isActive ? 'Active' : 'Inactive'}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          <div className="lg:col-span-6 space-y-6">
+            <SectionLabel>Business Health</SectionLabel>
+            <RevenueChart data={chartData.revenue} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <RevenueKPICard
+                todayRevenue={summary?.revenue?.today || 0}
+                growth={summary?.revenue?.growth || 0}
+                sparklineData={revenueSparkline}
+              />
+              <RepairsKPICard
+                repairsCount={summary?.repairs?.totalTickets || 0}
+                completionRate={summary?.repairs?.completionRate || 0}
+                sparklineData={revenueSparkline}
+              />
+              <InventoryKPICard
+                criticalCount={summary?.inventory?.criticalStock || 0}
+                lowStockCount={summary?.inventory?.lowStock || 0}
+              />
+              <RepairKPICard
+                queueLength={summary?.repairs?.queueLength || 0}
+                staleCount={summary?.repairs?.staleTickets || 0}
+                sparklineData={revenueSparkline}
+              />
             </div>
           </div>
 
+          <div className="lg:col-span-3 space-y-6">
+            <SectionLabel>Store Command</SectionLabel>
+            <StoreCommandTable rows={storeCommandRows} formatCurrency={formatCurrency} />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+          <div className="xl:col-span-4">
+            <PerformanceChart data={chartData.performance} />
+          </div>
+          <div className="xl:col-span-4">
+            <RepairPipeline
+              stores={stores}
+              queueLength={summary?.repairs?.queueLength || 0}
+              staleTickets={summary?.repairs?.staleTickets || 0}
+              performanceData={chartData.performance ?? []}
+            />
+          </div>
+          <div className="xl:col-span-4">
+            <RepairTypeChart data={chartData.repairTypes ?? []} />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+          <div className="xl:col-span-7">
+            <EmployeeRanking employees={chartData.employeePerformance ?? []} />
+          </div>
+          <div className="xl:col-span-5">
+            <StoreMap stores={stores} performanceData={chartData.performance ?? []} />
+          </div>
         </div>
       </div>
-    </main>
-  );
-}
 
-/* Sub-Components */
-function MiniCard({ label, value, warning }) {
-    return (
-        <div className="bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-lg sm:rounded-xl px-3 sm:px-4 py-2.5 sm:py-3.5 shadow-card">
-            <span className="text-[0.65rem] sm:text-xs font-medium text-slate-400 dark:text-gray-500 block truncate">{label}</span>
-            <h3 className={`text-base sm:text-lg font-bold mt-0.5 break-words ${warning ? 'text-amber-600 dark:text-amber-400' : 'text-slate-900 dark:text-gray-50'}`}>{value}</h3>
+      <div className="px-4 sm:px-6 lg:px-8 pb-6">
+        <div className="max-w-[1500px] mx-auto text-xs text-slate-500 dark:text-gray-400">
+          Last refresh: {lastRefresh ? new Date(lastRefresh).toLocaleTimeString() : 'waiting for first interval'}.
+          {isMaster ? ' Master scope view enabled.' : ' Store-scoped manager view enabled.'}
         </div>
-    );
-}
-
-function QuickActionCard({ href, label, icon }) {
-  return (
-    <a href={href} className="flex flex-col items-center gap-1.5 sm:gap-2 bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-lg sm:rounded-xl px-3 sm:px-4 py-3 sm:py-5 shadow-card hover:shadow-md hover:border-blue-300 dark:hover:border-blue-600 hover:-translate-y-0.5 transition-all group">
-      <div className="text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform">{icon}</div>
-      <span className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-gray-300 text-center">{label}</span>
-    </a>
-  );
-}
-
-function StatCard({ label, value, icon, type }) {
-  const colors = {
-    stores: { bg: '#eef2ff', color: '#4318ff' },
-    products: { bg: '#fef2f2', color: '#ee5d50' },
-    employees: { bg: '#f0fdf4', color: '#05cd99' },
-    revenue: { bg: '#fffbeb', color: '#ffb547' }
-  };
-  
-  return (
-    <div className="bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-lg sm:rounded-xl p-3 sm:p-5 shadow-card flex items-center gap-2 sm:gap-4">
-      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0" style={{ background: colors[type].bg, color: colors[type].color }}>
-        {icon}
-      </div>
-      <div className="flex-1 min-w-0">
-        <h3 className="text-base sm:text-xl font-bold text-slate-900 dark:text-gray-50 leading-tight break-words">{value}</h3>
-        <p className="text-[0.65rem] sm:text-xs text-slate-400 dark:text-gray-500 mt-0.5 truncate">{label}</p>
       </div>
     </div>
   );
 }
-
-/* Icons */
-const StoreIcon = () => <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>;
-const ProductIcon = () => <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>;
-const EmployeeIcon = () => <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>;
-const RevenueIcon = () => <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>;
-const AddIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
-const UserAddIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>;
-const BoxAddIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="12" y1="10" x2="12" y2="18"/><line x1="8" y1="14" x2="16" y2="14"/></svg>;
-const ReportIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>;
