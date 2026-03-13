@@ -48,7 +48,7 @@ const DemoBookingModal = ({ isOpen, onClose }) => {
       console.log('Demo request saved successfully with ID:', docRef.id);
       setSubmitStatus('success');
       
-      // Reset form and close modal after showing success
+      // Reset form after successful submission
       setTimeout(() => {
         setFormData({
           firstName: '',
@@ -68,7 +68,7 @@ const DemoBookingModal = ({ isOpen, onClose }) => {
         });
         setSubmitStatus(null);
         onClose();
-      }, 3000);
+      }, 2000);
 
     } catch (error) {
       console.error('Error submitting demo request:', error);
@@ -104,51 +104,20 @@ const DemoBookingModal = ({ isOpen, onClose }) => {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-          {/* Success Message with Animation */}
+          {/* Success/Error Messages */}
           {submitStatus === 'success' && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fadeIn">
-              <div className="bg-white rounded-3xl p-8 sm:p-12 shadow-2xl max-w-md mx-4 text-center animate-scaleIn">
-                {/* Success Icon with Animation */}
-                <div className="relative mx-auto w-20 h-20 sm:w-24 sm:h-24 mb-6">
-                  <div className="absolute inset-0 bg-green-100 rounded-full animate-ping"></div>
-                  <div className="relative flex items-center justify-center w-full h-full bg-gradient-to-br from-green-400 to-green-600 rounded-full">
-                    <svg className="w-10 h-10 sm:w-12 sm:h-12 text-white animate-checkmark" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                    </svg>
-                  </div>
-                </div>
-
-                {/* Success Text */}
-                <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">
-                  🎉 Success!
-                </h3>
-                <p className="text-base sm:text-lg text-gray-600 mb-2">
-                  Your demo request has been submitted successfully!
-                </p>
-                <p className="text-sm text-gray-500">
-                  We'll contact you within 24 hours to schedule your personalized demo.
-                </p>
-
-                {/* Confetti Effect */}
-                <div className="absolute inset-0 pointer-events-none">
-                  {[...Array(20)].map((_, i) => (
-                    <div
-                      key={i}
-                      className="absolute w-2 h-2 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full animate-confetti"
-                      style={{
-                        left: `${Math.random() * 100}%`,
-                        top: `${Math.random() * 100}%`,
-                        animationDelay: `${Math.random() * 0.5}s`,
-                        animationDuration: `${1 + Math.random()}s`
-                      }}
-                    />
-                  ))}
-                </div>
+            <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg">
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+                <span className="font-semibold">Demo request submitted successfully!</span>
               </div>
+              <p className="text-sm mt-1">We'll contact you within 24 hours to schedule your personalized demo.</p>
             </div>
           )}
 
-          {/* Error Message */}
+          {submitStatus === 'error' && (
             <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
               <div className="flex items-center gap-2">
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
