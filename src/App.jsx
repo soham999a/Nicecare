@@ -4,6 +4,7 @@ import { InventoryAuthProvider } from './context/InventoryAuthContext';
 
 // Landing Page
 import LandingPage from './pages/LandingPage';
+import WirelessPOSLanding from './pages/WirelessPOSLanding';
 
 // Inventory Components
 import InventoryProtectedRoute from './components/inventory/InventoryProtectedRoute';
@@ -32,6 +33,9 @@ function App() {
         <Routes>
           {/* Landing Page */}
           <Route path="/" element={<LandingPage />} />
+          
+          {/* WirelessPOS Landing Page */}
+          <Route path="/wireless" element={<WirelessPOSLanding />} />
 
           {/* Legacy auth routes - redirect to inventory */}
           <Route path="/login" element={<Navigate to="/inventory/login" replace />} />
