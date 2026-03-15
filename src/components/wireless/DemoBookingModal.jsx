@@ -85,7 +85,7 @@ const DemoBookingModal = ({ isOpen, onClose }) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-2 sm:p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 sm:p-6 rounded-t-2xl">
+        <div className="text-white p-4 sm:p-6 rounded-t-2xl" style={{ background: 'linear-gradient(135deg, #0d1117, #1a2332)' }}>
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl sm:text-2xl font-bold mb-1 sm:mb-2">Book Your Demo</h2>
@@ -363,7 +363,8 @@ const DemoBookingModal = ({ isOpen, onClose }) => {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+              className="flex-1 px-4 sm:px-6 py-2 sm:py-3 font-semibold rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base text-white"
+              style={{ background: 'linear-gradient(135deg, #00d4aa, #0ea5e9)' }}
             >
               {isSubmitting ? (
                 <div className="flex items-center justify-center gap-2">
