@@ -1,5 +1,5 @@
-const WirelessHeroSection = ({ onJoinWaitlist }) => (
-  <section className="relative text-white overflow-hidden py-20 sm:py-24"
+const WirelessHeroSection = ({ onJoinWaitlist, onStartAudit }) => (
+  <section className="relative text-white overflow-hidden pt-32 pb-20 sm:pt-36 sm:pb-24"
     style={{ background: 'linear-gradient(135deg, #0d1117 0%, #1a2332 50%, #0d1f2d 100%)' }}>
     {/* Grid */}
     <div className="absolute inset-0 pointer-events-none opacity-[0.03]"
@@ -36,10 +36,15 @@ const WirelessHeroSection = ({ onJoinWaitlist }) => (
       </p>
 
       <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
-        <button onClick={onJoinWaitlist}
+        <button onClick={onStartAudit}
           className="group w-full sm:w-auto px-8 py-4 font-bold rounded-xl text-lg flex items-center justify-center gap-2 text-white transition-all hover:-translate-y-0.5"
           style={{ background: 'linear-gradient(135deg, #00d4aa, #0ea5e9)', boxShadow: '0 8px 30px rgba(0,212,170,0.25)' }}>
-          Join Waitlist
+          🎯 Get Your Free Store Profit Audit
+        </button>
+        <button onClick={onJoinWaitlist}
+          className="group w-full sm:w-auto px-8 py-4 font-bold rounded-xl text-lg flex items-center justify-center gap-2 transition-all hover:-translate-y-0.5"
+          style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', color: 'white' }}>
+          Join Early Access
           <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3"/>
           </svg>

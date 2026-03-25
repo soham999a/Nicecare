@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import WirelessNav from '../components/wireless/WirelessNav';
-import AuditHeroSection from '../components/wireless/AuditHeroSection';
+import WirelessHeroSection from '../components/wireless/WirelessHeroSection';
 import WirelessProblemSection from '../components/wireless/WirelessProblemSection';
-import WhatWirelessCEODoes from '../components/wireless/WhatWirelessCEODoes';
-import HowItWorksSection from '../components/wireless/HowItWorksSection';
-
+import WirelessSolutionSection from '../components/wireless/WirelessSolutionSection';
+import WirelessCEOSection from '../components/wireless/WirelessCEOSection';
+import TwoWaysProfitSection from '../components/wireless/TwoWaysProfitSection';
+import WirelessBenefitsSection from '../components/wireless/WirelessBenefitsSection';
+import WhyDifferentSection from '../components/wireless/WhyDifferentSection';
 import WirelessFinalCTA from '../components/wireless/WirelessFinalCTA';
+import WirelessFooter from '../components/wireless/WirelessFooter';
 import DemoBookingModal from '../components/wireless/DemoBookingModal';
 import AuditFunnel from '../components/wireless/AuditFunnel';
 
@@ -15,23 +18,16 @@ const WirelessPOSLanding = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Sticky nav */}
       <WirelessNav onStartAudit={() => setShowAudit(true)} onJoinWaitlist={() => setShowWaitlist(true)} />
-
-      {/* 1. New Hero — Autopilot + system diagram */}
-      <AuditHeroSection onStartAudit={() => setShowAudit(true)} onJoinWaitlist={() => setShowWaitlist(true)} />
-
-      {/* 2. Problem — with dollar amounts */}
+      <WirelessHeroSection onJoinWaitlist={() => setShowWaitlist(true)} onStartAudit={() => setShowAudit(true)} />
       <WirelessProblemSection />
-
-      {/* 4. What WirelessCEO Does */}
-      <WhatWirelessCEODoes onStartAudit={() => setShowAudit(true)} />
-
-      {/* 5. How It Works */}
-      <HowItWorksSection />
-
-      {/* 7. Final CTA */}
+      <WirelessSolutionSection />
+      <WirelessCEOSection />
+      <TwoWaysProfitSection />
+      <WirelessBenefitsSection />
+      <WhyDifferentSection />
       <WirelessFinalCTA onJoinWaitlist={() => setShowAudit(true)} />
+      <WirelessFooter onStartAudit={() => setShowAudit(true)} onJoinWaitlist={() => setShowWaitlist(true)} />
 
       <DemoBookingModal isOpen={showWaitlist} onClose={() => setShowWaitlist(false)} />
       <AuditFunnel isOpen={showAudit} onClose={() => setShowAudit(false)} />

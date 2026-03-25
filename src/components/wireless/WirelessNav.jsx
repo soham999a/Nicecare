@@ -1,14 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 const WirelessNav = ({ onStartAudit, onJoinWaitlist }) => {
-  const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
 
   const scrollTo = (id) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -18,9 +11,9 @@ const WirelessNav = ({ onStartAudit, onJoinWaitlist }) => {
   return (
     <nav className="fixed top-0 left-0 right-0 z-40 transition-all duration-300"
       style={{
-        background: scrolled ? 'rgba(13,17,23,0.95)' : 'transparent',
-        backdropFilter: scrolled ? 'blur(12px)' : 'none',
-        borderBottom: scrolled ? '1px solid rgba(255,255,255,0.06)' : 'none',
+        background: 'rgba(13,17,23,0.97)',
+        backdropFilter: 'blur(12px)',
+        borderBottom: '1px solid rgba(255,255,255,0.06)',
       }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
@@ -41,7 +34,7 @@ const WirelessNav = ({ onStartAudit, onJoinWaitlist }) => {
 
           {/* Desktop links */}
           <div className="hidden md:flex items-center gap-6">
-            {[['problem-section','Problem'],['how-it-works','How It Works'],['features-section','Features']].map(([id,label])=>(
+            {[['problem-section','Problem'],['solution-section','Features'],['wirelessceo-section','WirelessCEO']].map(([id,label])=>(
               <button key={id} onClick={()=>scrollTo(id)}
                 className="text-sm font-medium transition-colors"
                 style={{ color: 'rgba(255,255,255,0.6)' }}
@@ -81,7 +74,7 @@ const WirelessNav = ({ onStartAudit, onJoinWaitlist }) => {
         {/* Mobile menu */}
         {menuOpen && (
           <div className="md:hidden pb-4 pt-2 flex flex-col gap-2 border-t" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
-            {[['problem-section','The Problem'],['how-it-works','How It Works'],['features-section','Features']].map(([id,label])=>(
+            {[['problem-section','The Problem'],['solution-section','Features'],['wirelessceo-section','WirelessCEO']].map(([id,label])=>(
               <button key={id} onClick={()=>scrollTo(id)}
                 className="text-left px-2 py-2 text-sm font-medium rounded-lg"
                 style={{ color: 'rgba(255,255,255,0.7)' }}>

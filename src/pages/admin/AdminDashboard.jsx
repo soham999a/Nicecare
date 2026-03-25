@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, onSnapshot, doc, updateDoc, deleteDoc, query, orderBy } from 'firebase/firestore';
-import { wirelessDb } from '../../config/firebaseWireless';
+import { signOut } from 'firebase/auth';
+import { wirelessDb, wirelessAuth } from '../../config/firebaseWireless';
 import Papa from 'papaparse';
 import EditRequestModal from '../../components/admin/EditRequestModal';
 import DeleteConfirmModal from '../../components/admin/DeleteConfirmModal';
@@ -41,7 +42,8 @@ const AdminDashboard = () => {
 
   const fetchRequests = () => {}; // kept for any remaining references
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await signOut(wirelessAuth);
     sessionStorage.removeItem('wirelessAdminAuth');
     sessionStorage.removeItem('wirelessAdminEmail');
     navigate('/admin/login');
