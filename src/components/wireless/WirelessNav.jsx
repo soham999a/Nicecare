@@ -47,18 +47,22 @@ const WirelessNav = ({ onStartAudit, onJoinWaitlist }) => {
 
           {/* CTAs */}
           <div className="flex items-center gap-3">
-            <button onClick={onJoinWaitlist}
+            <a 
+              href="https://remoteshopsupport.web.app/inventory/login"
               className="hidden sm:block text-sm font-semibold px-4 py-2 rounded-lg transition-all"
               style={{ color: 'rgba(255,255,255,0.7)', border: '1px solid rgba(255,255,255,0.15)' }}
               onMouseEnter={e=>e.currentTarget.style.borderColor='rgba(0,212,170,0.4)'}
-              onMouseLeave={e=>e.currentTarget.style.borderColor='rgba(255,255,255,0.15)'}>
-              Join Waitlist
-            </button>
-            <button onClick={onStartAudit}
-              className="text-sm font-bold px-4 py-2 rounded-lg text-white transition-all hover:opacity-90"
-              style={{ background: 'linear-gradient(135deg, #00d4aa, #0ea5e9)' }}>
-              Free Audit
-            </button>
+              onMouseLeave={e=>e.currentTarget.style.borderColor='rgba(255,255,255,0.15)'}
+            >
+              Sign in
+            </a>
+            <a 
+              href="https://remoteshopsupport.web.app/inventory/signup"
+              className="text-sm font-bold px-4 py-2 rounded-lg text-white transition-all hover:opacity-90 inline-block"
+              style={{ background: 'linear-gradient(135deg, #00d4aa, #0ea5e9)' }}
+            >
+              Get started
+            </a>
             {/* Mobile menu toggle */}
             <button onClick={()=>setMenuOpen(o=>!o)} className="md:hidden p-1.5 rounded-lg"
               style={{ color: 'rgba(255,255,255,0.7)' }}>
